@@ -173,7 +173,7 @@ Then set `DEXSTASH_VERSION=0.28.0` in `.env` and run `sudo docker compose up -d`
 
 ### Trying a pull request
 
-Every pull request from this repository gets an image tagged `pr-<number>` (Actions › Test image shows it), rebuilt on each push and removed when the pull request closes. To try one, back up first (Account › Backups › Back up now), then set `DEXSTASH_VERSION=pr-<number>` in `.env` and run `sudo docker compose pull && sudo docker compose up -d`. To go back, set `DEXSTASH_VERSION` back to the release (or remove it) and run the same again.
+A pull request from this repository with the `test image` label gets an image tagged `pr-<number>` (Actions › Test image shows it). It's built when the label is added, rebuilt on each push after that, and removed when the pull request closes. Ask on the pull request if you'd like one. To try one, back up first (Account › Backups › Back up now), then set `DEXSTASH_VERSION=pr-<number>` in `.env` and run `sudo docker compose pull && sudo docker compose up -d`. To go back, set `DEXSTASH_VERSION` back to the release (or remove it) and run the same again.
 
 A pull request that adds a database step says so at the top. Its image upgrades your database, and the release you go back to won't start on it: put the `-upgrade.db` backup back by hand first, as under Going back above.
 

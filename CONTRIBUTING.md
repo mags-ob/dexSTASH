@@ -23,7 +23,9 @@ python -m pytest
 DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
 ```
 
-The tests need no network: every outside request is replaced with a fake one. `tools/demo_data.py` makes a demo collection to click around in. Every push and pull request runs the same tests on GitHub Actions, and a release image is only built after they pass. The Checks workflow also runs `ruff check .`, `python tools/check_rules.py` (personal details, files that must never be committed, and the spec rule), gitleaks and pip-audit; run the first two before you push.
+The tests need no network: every outside request is replaced with a fake one. `tools/demo_data.py` makes a demo collection to click around in. Every pull request and every push to `main` runs the same tests on GitHub Actions, and a release image is only built after they pass. The Checks workflow also runs `ruff check .`, `python tools/check_rules.py` (personal details, files that must never be committed, and the spec rule), gitleaks and pip-audit.
+
+Run the quick ones before you push. `git config core.hooksPath tools/hooks` turns on a hook that runs ruff, the rules check and the tests on every `git push` (and gitleaks, if it's installed), so a failure shows up on your machine instead of on GitHub. `git push --no-verify` skips it once.
 
 On Windows, set `PYTHONUTF8=1` first (PowerShell: `$env:PYTHONUTF8 = "1"`). The few Linux-only tests (file permissions, process priority, open files) are skipped there.
 
