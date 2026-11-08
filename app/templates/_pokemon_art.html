@@ -1,5 +1,6 @@
-{# The Edit art sheet's insides: the art's cards one per row, Add a card to this art, and what was taken out. #}
-{% from "_macros.html" import cname %}
+{# The Edit art sheet's insides: the art's cards one per row, then Add a card to this art: the Pokémon's cards
+   (closest pictures first, then every card) or All cards by search. A card taken out is found again by search. #}
+{% from "_pokemon_cand.html" import cand with context %}
 {% set anchor = d.anchor %}
 <link rel="stylesheet" href="{{ asset("css/pokemon-art.css") }}">
 <div class="as-head">
@@ -30,31 +31,28 @@
 </div>
 {% endfor %}
 
-<form method="post" action="/pokemon/{{ dex }}/fix/add" class="as-add">
+<form method="post" action="/pokemon/{{ dex }}/fix/add" class="as-add" data-add>
   <input type="hidden" name="to" value="{{ anchor }}">
-  <h3 class="cv-label">Add a card to this art <span>&middot; closest pictures first</span></h3>
-  {% if candidates %}
-  <div class="pgrid">
-    {% for c in candidates %}
-    <label class="cand">
-      <span class="face">{% if c.image_url %}<img src="{{ c.image_url }}" alt="" loading="lazy">{% elif sprite %}<img class="spr" src="{{ sprite }}" alt="">{% endif %}
-        <input type="checkbox" name="card" value="{{ c.card_id }}" aria-label="Add {{ c.set_code }} {{ c.number }}">
-        <span class="ltags"><span class="ltg ltg-{{ 'zh' if c.lang.startswith('zh') else c.lang }}">{{ tags.get(c.lang, c.lang | upper) }}</span></span></span>
-      <span class="n">{{ c.set_code }} &middot; {{ c.number }}</span>
-      <span class="t">{{ c.word }}</span>
-    </label>
-    {% endfor %}
+  <h3 class="cv-label">Add a card to this art</h3>
+  <nav class="set-sort as-scope" aria-label="Where to look">
+    <button type="button" class="chip on" data-scope="mine" aria-pressed="true">{{ name }} cards</button>
+    <button type="button" class="chip" data-scope="all" aria-pressed="false">All cards</button>
+  </nav>
+  <input class="as-q" type="search" placeholder="Search name, set or number" aria-label="Search cards" autocomplete="off" {{ no_correct }} data-q>
+  <div data-pane="mine">
+    {% if candidates.close %}
+    <h4 class="as-sub">Closest pictures</h4>
+    <div class="as-strip">{% for c in candidates.close %}{{ cand(c) }}{% endfor %}</div>
+    {% endif %}
+    {% if candidates.every %}
+    <h4 class="as-sub">Every {{ name }} card &middot; {{ candidates.every | length }}, newest first</h4>
+    <div class="pgrid as-every">{% for c in candidates.every %}{{ cand(c, "In the " ~ c.in_art ~ " art" if c.in_art else "") }}{% endfor %}</div>
+    <p class="muted as-none" data-none hidden>No {{ name }} cards match.</p>
+    <button type="button" class="quiet as-more" data-more hidden>Show more</button>
+    {% else %}<p class="muted" style="font-size:13px">No other cards of this Pokémon.</p>{% endif %}
   </div>
-  <button class="as-go">Add to this art</button>
-  {% else %}<p class="muted" style="font-size:13px">No other cards of this Pokémon.</p>{% endif %}
+  <div data-pane="all" hidden data-search="/pokemon/{{ dex }}/art/search?{{ qs(card=anchor) }}">
+    <p class="muted as-none">Search every card by name, set or number.</p>
+  </div>
+  <button class="as-go" data-go disabled>Add to this art</button>
 </form>
-
-{% if d.removed %}
-<div class="as-out">
-  <h3 class="cv-label">Taken out of this art ({{ d.removed | length }})</h3>
-  {% for c in d.removed %}
-  <form class="rm" method="post" action="/pokemon/{{ dex }}/fix/undo"><span><span class="ltg ltg-{{ 'zh' if c.lang.startswith('zh') else c.lang }}">{{ tags.get(c.lang, c.lang | upper) }}</span> {{ cname(c.name, c.card_id) }}, {{ c.set_name or c.set_code }} {{ c.number }}</span>
-    <input type="hidden" name="card" value="{{ c.card_id }}"><input type="hidden" name="back" value="{{ anchor }}"><button class="quiet">Undo</button></form>
-  {% endfor %}
-</div>
-{% endif %}

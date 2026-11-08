@@ -45,8 +45,10 @@
   {% else %}<span></span>
   {% endif %}
 </section>
-{% if evo %}{% call evolution(evo) %}{% if ptags %}{{ pokemon_tags(dex, ptags, "/pokemon/" ~ dex) }}{% endif %}{% endcall %}
-{% elif ptags %}<section class="evo">{{ pokemon_tags(dex, ptags, "/pokemon/" ~ dex) }}</section>{% endif %}
+{# The Pokémon's words start collapsed, as on Find. #}
+{% macro poke_tags() %}{% if ptags %}<details class="fp-tags pset-tags"><summary>Tags &middot; {{ ptags.tags | length }} &rsaquo;</summary>{{ pokemon_tags(dex, ptags, "/pokemon/" ~ dex) }}</details>{% endif %}{% endmacro %}
+{% if evo %}{% call evolution(evo) %}{{ poke_tags() }}{% endcall %}
+{% elif ptags %}<section class="evo">{{ poke_tags() }}</section>{% endif %}
 
 {% if running %}<p class="banner" style="margin-top:12px">Getting {{ name }}'s cards and comparing their pictures. It shows under Running now on Data sources; <a href="">refresh</a> to see the latest.</p>{% endif %}
 
@@ -92,7 +94,7 @@
           {%- for l in t.langs %}<span class="ltg ltg-{{ l.key }}{% if l.owned %} h{% endif %}">{{ l.tag }}</span>{% endfor %}</span>{% endif %}
       </span></span>
       <span class="n">{% if t.by_hand %}{{ cname(t.cover.name, t.cover.card_id) }}{% else %}{{ t.cover.set_name or t.cover.set_code }}{% endif %}</span>
-      <span class="t">{% if t.by_hand %}Added by you{% else %}{{ t.prints }} print{{ "s" if t.prints != 1 }}{% if t.prints_owned %} &middot; {{ t.prints_owned }} {{ icon("check", 14) }}{% endif %}{% endif %}</span>
+      <span class="t">{% if t.by_hand %}Added by you{% else %}<span aria-label="{{ t.prints_owned }} of {{ t.prints }} printings">{{ t.prints_owned }}/{{ t.prints }}</span>{% endif %}</span>
       <span class="p">{% if t.price is not none %}{{ t.price | money }}{% else %}<span class="muted" style="font-weight:400">No price</span>{% endif %}</span>
     </a>
   </div>

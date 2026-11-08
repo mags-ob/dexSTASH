@@ -1,0 +1,11 @@
+{# One tickable card in Edit art's Add a card to this art. #}
+{% macro cand(c, note="") -%}
+<label class="cand" data-find="{{ (c.name or '') ~ ' ' ~ (c.set_name or '') ~ ' ' ~ (c.set_code or '') ~ ' ' ~ (c.number or '') }}">
+  <span class="face">{% if c.image_url %}<img src="{{ c.image_url }}" alt="" loading="lazy">{% elif sprite %}<img class="spr" src="{{ sprite }}" alt="">{% endif %}
+    <input type="checkbox" name="card" value="{{ c.card_id }}" aria-label="Add {{ c.name }}, {{ c.set_code }} {{ c.number }}">
+    <span class="ltags"><span class="ltg ltg-{{ c.group }}">{{ c.tag }}</span></span></span>
+  <span class="n">{{ c.name }}</span>
+  <span class="t">{{ c.set_name or c.set_code }} &middot; {{ c.number }}</span>
+  {% if note %}<span class="t">{{ note }}</span>{% endif %}
+</label>
+{%- endmacro %}

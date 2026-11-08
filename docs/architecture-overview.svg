@@ -58,7 +58,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <rect class="box hot" x="420" y="56" width="430" height="112" rx="8"/>
 <text class="t" x="436" y="82">Web app · FastAPI + Uvicorn</text>
 <rect class="k-py" x="782.0" y="67" width="56" height="20" rx="4"/><text class="kt" x="789.0" y="81">Python</text>
-<text class="d" x="436" y="104">app/routes/: 16 page modules, 216 routes</text>
+<text class="d" x="436" y="104">app/routes/: 16 page modules, 217 routes</text>
 <text class="d" x="436" y="122">app/web.py: templates, sign-in, shared helpers</text>
 <text class="d" x="436" y="140">app/main.py: start-up, middleware, the routers</text>
 <path class="edge" d="M635 168 V188" marker-end="url(#ar)"/>

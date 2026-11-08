@@ -23,8 +23,16 @@
   .cand input { position:absolute; top:6px; right:6px; width:22px; height:22px; margin:0; z-index:2; }
   .cand:has(input:checked) .face { outline:3px solid var(--accent); outline-offset:-3px; }
   .cand .n { display:block; font-weight:600; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .cand .t { display:block; color:var(--muted); }
-  .as-go { width:100%; margin-top:10px; }
-  .as-out { border-top:1px dashed var(--line); margin-top:14px; }
-  .rm { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:13px; padding:4px 0; }
-  .rm button { min-height:30px; padding:2px 10px; font-size:13px; }
+  .cand .t { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cand[hidden], .as-add [hidden] { display:none; }
+  .as-scope { margin:0 0 10px; }
+  .as-scope .chip { font:inherit; font-size:13px; color:var(--fg); background:none; cursor:pointer; }
+  .as-scope .chip.on { border:1px solid var(--accent); background:var(--accent-tint); color:var(--ink); }
+  .as-q { width:100%; box-sizing:border-box; min-height:44px; margin:0 0 4px; }
+  .as-sub { font-size:13px; font-weight:500; color:var(--muted); margin:12px 0 6px; }
+  .as-strip { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; scroll-snap-type:x proximity; }
+  .as-strip .cand { flex:none; width:88px; scroll-snap-align:start; }
+  .as-none { font-size:13px; margin:12px 0; }
+  .as-more { display:block; margin:12px auto 0; }
+  .as-go { position:sticky; bottom:0; width:100%; margin-top:12px; z-index:3; box-shadow:0 -8px 16px var(--surface); }
+  .as-go:disabled { opacity:.55; }

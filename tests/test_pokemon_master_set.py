@@ -94,7 +94,7 @@ def test_edit_arts_opens_a_sheet_of_the_arts_cards(client, monkeypatch):
     assert r.headers["location"] == "/pokemon/35?open=sv03.5-035"  # the same art's sheet opens again
     assert 'data-open-art="' in client.get(r.headers["location"]).text
     sheet = client.get("/pokemon/35/art", params={"card": "sv03.5-035"}).text
-    assert "Taken out of this art (1)" in sheet and "2 cards" in sheet
+    assert "2 cards" in sheet and "Taken out" not in sheet and 'value="ja:SV2a-035"' in sheet  # found again under Add
 
 
 def test_the_card_page_lists_the_arts_languages(client, monkeypatch):
@@ -111,3 +111,44 @@ def test_the_card_page_lists_the_arts_languages(client, monkeypatch):
     main.conn.execute("INSERT INTO cards (id, set_id, number, sort_number, is_main_set, name) VALUES ('base1-5', 'base1', '5', 5, 1, 'Clefairy')")
     main.conn.commit()
     assert 'aria-label="Languages"' not in client.get("/cards/base1-5").text
+
+
+def test_the_pokemon_words_start_collapsed_as_on_find(client, monkeypatch):
+    from app import pokemon_words, web
+    _clefairy(client, monkeypatch)
+    monkeypatch.setattr(web.describer, "ready", lambda: True)
+    monkeypatch.setattr(pokemon_words, "for_pokemon", lambda conn, d, dex: {"tags": [("pink", "auto"), ("fairy", "auto")]})
+    page = client.get("/pokemon/35").text
+    assert '<details class="fp-tags pset-tags"><summary>Tags &middot; 2 &rsaquo;</summary>' in page and 'id="ptags"' in page
+    assert 'class="ltags"' in page  # the language tags on the tiles stay as they are
+
+
+def test_tiles_show_printings_owned_of_total(client, monkeypatch):
+    _clefairy(client, monkeypatch)  # the Taiwan Chinese normal of the 151 art
+    page = client.get("/pokemon/35").text
+    assert '<span aria-label="1 of 6 printings">1/6</span>' in page and '<span aria-label="0 of 1 printings">0/1</span>' in page
+
+
+def test_add_a_card_offers_every_card_and_all_cards(client, monkeypatch):
+    rows = _chase_rows()
+    rows += [dict(rows[3], card_id=f"far-{i}", number=str(i)) for i in range(20)]  # 20 more, nothing like the art
+    _clefairy(client, monkeypatch, rows=rows)
+    vectors = dict(VECTORS, **{f"far-{i}": _vec(0, 1, i / 100) for i in range(20)}, **{"base1-5": _vec(0, 0, 1)})
+    monkeypatch.setattr(chase, "fingerprints", lambda conn, dex, encoder, *a, **k: vectors)
+    found = chase_pages.candidates(main.conn, 35, "sv03.5-035", vectors)
+    assert len(found["every"]) == 21 and len(found["close"]) == chase_pages.CLOSEST  # however unalike
+    assert "word" not in found["every"][0]
+    sheet = client.get("/pokemon/35/art", params={"card": "sv03.5-035"}).text
+    assert "Closest pictures" in sheet and "Every Clefairy card &middot; 21, newest first" in sheet
+    assert ">Clefairy cards</button>" in sheet and ">All cards</button>" in sheet and "Long shot" not in sheet
+    # All cards: any stored card by name, set or number, even one not of this Pokémon; adding it puts it on the page.
+    main.conn.execute("INSERT INTO cards (id, set_id, number, sort_number, is_main_set, name) VALUES "
+                      "('sv03.5-150', 'sv03.5', '150', 150, 1, 'Pokémon Center Lady')")
+    main.conn.commit()
+    hits = client.get("/pokemon/35/art/search", params={"card": "sv03.5-035", "q": "pokemon center"}).text
+    assert 'value="sv03.5-150"' in hits and "Pokémon Center Lady" in hits and 'value="sv03.5-035"' not in hits
+    assert "No cards match" in client.get("/pokemon/35/art/search", params={"card": "sv03.5-035", "q": "zzz"}).text
+    client.post("/pokemon/35/fix/add", data={"card": "sv03.5-150", "to": "sv03.5-035"})
+    assert main.conn.execute("SELECT how FROM pokemon_cards WHERE dex_id = 35 AND card_id = 'sv03.5-150'").fetchone()[0] == "manual"
+    art = next(a for a in chase_pages.arts(main.conn, 35) if "sv03.5-035" in a["card_ids"])
+    assert "sv03.5-150" in art["card_ids"]
