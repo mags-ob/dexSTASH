@@ -88,6 +88,7 @@ def test_compose_uses_the_release_image_and_can_build_it():
         assert services[name]["image"] == "ghcr.io/obiehq/dexstash:${DEXSTASH_VERSION:-latest}"
         assert services[name]["build"] == "."   # docker compose up -d --build
         assert "pull_policy" not in services[name]
+        assert services[name]["env_file"] == [{"path": ".env", "required": False}]   # starts without one
     assert "VERSION" in settings.KNOWN and not {"IMAGE", "PULL_POLICY"} & set(settings.KNOWN)
     example = (ROOT / ".env.example").read_text(encoding="utf-8")
     assert "# DEXSTASH_VERSION=" in example
@@ -106,4 +107,5 @@ def test_deploy_explains_published_and_test_images():
         assert heading in deploy
     assert "docker load -i dexstash-" in deploy and "DEXSTASH_VERSION=0.28.0" in deploy
     assert "DEXSTASH_VERSION=pr-<number>" in deploy and "docker compose pull" in deploy
+    assert "raw.githubusercontent.com/obiehq/dexSTASH/main/.env.example" in deploy
     assert "DEXSTASH_IMAGE" not in deploy and "DEXSTASH_PULL_POLICY" not in deploy
