@@ -165,8 +165,7 @@ def overview(f: dict) -> Svg:
             "app/sites.py, which sends one User-Agent and refuses sites that are switched off. TCGdex, TCGCSV, the "
             "European Central Bank and PokéAPI are always on; CardTrader's and PriceCharting's APIs need your own key; "
             "Limitless TCG, "
-            "the Chinese card datasets and Bulbapedia are switches that start off on a new install. TCGplayer's and "
-            "PriceCharting's pages are never read.")
+            "the Chinese card datasets and Bulbapedia are switches that start off on a new install.")
     # Phone and proxy
     s.box(20, 190, 175, 230, "Phone browser", rx=18)
     s.badge(36, 226, "Jinja HTML", "html")
@@ -272,7 +271,7 @@ def detailed(f: dict) -> Svg:
                   "region · pokemon_words · card_index"]),
         ("Prices and links", ["prices (one rule) · sync (nightly)", "tcgcsv · cardtrader · pricecharting",
                               "fx (currency) · keys (API keys)",
-                              "extras (your links, never read)"]),
+                              "extras (your links)"]),
         ("Pictures and themes", ["card_pictures · pictures (CLIP)", "themes · icons", "scans · scanner (queue)", ""]),
         ("Data and import", ["tcgdex · chinese · bulbapedia", "importer · collectr", "", ""]),
         ("Platform", ["db (numbered steps) · auth", "backup · reset · settings", "activity (log) · recent",
@@ -331,7 +330,7 @@ def detailed(f: dict) -> Svg:
     s.arrow("M1015 596 V%d H1038" % midk)
     s.arrow("M1015 596 V%d H1038" % mid2)
     s.text(1040, bottom + 26, "Hosts each source uses are listed in the", "ds")
-    s.text(1040, bottom + 42, "README under “Where your data comes from”.", "ds")
+    s.text(1040, bottom + 42, "README under “Where data comes from”.", "ds")
     s.text(20, 900, "Solid boxes run on your server; dashed boxes are on the internet. Orange boxes are switches.", "ds")
     s.text(20, 918, "Colours mark each part's language: blue Python, orange HTML and Jinja, yellow JavaScript and htmx, "
                     "teal SQL, purple configuration.", "ds")

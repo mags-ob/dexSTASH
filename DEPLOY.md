@@ -5,7 +5,7 @@ These steps assume a Linux server or NAS with Docker, and Caddy as the reverse p
 - `dexstash`, the web app. Your Caddy proxies to `dexstash:8000`. The port isn't opened to the LAN, so only Caddy can reach it. Limits: 1 CPU, 1 GB.
 - `dexstash-scanner` reads scan photos, runs Enhanced Search and fingerprints, and looks up pictures. It runs at low priority (1 CPU, 1.4 GB), so pages and searches stay quick while a batch is being read. Nothing reaches into it. It starts only with the `scanner` profile (step 3).
 
-Both share `data/`: your database (`dexstash.db`), the downloaded card data, prices and Find's card catalog (`dexstash-catalog.db`), backups, scan photos and the Pokémon name list. Without scanning, or on a host that runs one container, see the README's Scanning section.
+Both share `data/`: your database (`dexstash.db`), the downloaded card data, prices and Find's card catalog (`dexstash-catalog.db`), backups, scan photos and the Pokémon name list. Without scanning, or on a host that runs one container, see [docs/scanning.md](docs/scanning.md).
 
 
 ## 1. A domain
@@ -188,7 +188,7 @@ Uncomment `ports` under `app` in `docker-compose.yml`, set `DEXSTASH_HTTPS_ONLY=
 
 ## Good to know
 
-- **Outgoing traffic.** If your firewall limits what the server may reach, allow `api.tcgdex.net` and `assets.tcgdex.net`, `tcgcsv.com`, `www.ecb.europa.eu` and `raw.githubusercontent.com`. `tcgplayer-cdn.tcgplayer.com` for TCGplayer's product pictures, and `api.cardtrader.com` with a CardTrader token. Each site you switch on under Data sources › Price and picture sites needs its own host too. The README's "Where your data comes from" lists them all.
+- **Outgoing traffic.** If your firewall limits what the server may reach, allow `api.tcgdex.net` and `assets.tcgdex.net`, `tcgcsv.com`, `www.ecb.europa.eu` and `raw.githubusercontent.com`. `tcgplayer-cdn.tcgplayer.com` for TCGplayer's product pictures, and `api.cardtrader.com` with a CardTrader token. Each site you switch on under Data sources › Price and picture sites needs its own host too. The README's "Where data comes from" lists them all.
 - **Prices update once a night** (04:00 in your time zone by default). Turn it off or change the time under Account › Data sources › Prices. If the server was off at that time, the update runs shortly after the app starts again. The same update fetches new sets for Find's card catalog, makes the nightly backup and thins old price history as set under Prices › Price history.
 - **Activity log.** Both containers write their log to `data/logs/` (2 MB × 3 files each, passwords and keys left out). Admins can read it on a phone under Account › Data sources › Activity log, and **Copy last hour** copies it for a bug report. Docker's own log stops at 3 files of 10 MB per container.
 - **One web worker on purpose:** the login lockout and the job runner live in one process. Photos are read in `dexstash-scanner` (or, with `DEXSTASH_SCANNER=inside`, a lowest-priority child of the app), which shares the database with the app (SQLite WAL; a writer waits its turn).

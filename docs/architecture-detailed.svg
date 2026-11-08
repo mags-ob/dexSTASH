@@ -114,7 +114,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="ds" x="774" y="320">prices (one rule) · sync (nightly)</text>
 <text class="ds" x="774" y="337">tcgcsv · cardtrader · pricecharting</text>
 <text class="ds" x="774" y="354">fx (currency) · keys (API keys)</text>
-<text class="ds" x="774" y="371">extras (your links, never read)</text>
+<text class="ds" x="774" y="371">extras (your links)</text>
 <rect class="box " x="270" y="396" width="232" height="114" rx="8"/>
 <text class="t2" x="286" y="422">Pictures and themes</text>
 <text class="ds" x="286" y="444">card_pictures · pictures (CLIP)</text>
@@ -229,7 +229,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <path class="edge" d="M1015 596 V357 H1038" marker-end="url(#ar)"/>
 <path class="edge" d="M1015 596 V526 H1038" marker-end="url(#ar)"/>
 <text class="ds" x="1040" y="634">Hosts each source uses are listed in the</text>
-<text class="ds" x="1040" y="650">README under “Where your data comes from”.</text>
+<text class="ds" x="1040" y="650">README under “Where data comes from”.</text>
 <text class="ds" x="20" y="900">Solid boxes run on your server; dashed boxes are on the internet. Orange boxes are switches.</text>
 <text class="ds" x="20" y="918">Colours mark each part&#x27;s language: blue Python, orange HTML and Jinja, yellow JavaScript and htmx, teal SQL, purple configuration.</text>
 </svg>
