@@ -1,11 +1,12 @@
 """Runs the pull request checks on your own machine and reports each result to GitHub, for when GitHub Actions
 is switched off for the repository.
 
+    python tools/local_checks.py 50       # pull request #50, from any branch
     python tools/local_checks.py          # the pull request for the branch you're on
-    python tools/local_checks.py 50       # pull request #50 (check out its branch first)
 
 Each check is reported on the pull request's last commit under the same name as its GitHub Actions job, so a
-ruleset that requires those checks (from any source) accepts it. Needs the GitHub CLI signed in (`gh auth
+ruleset that requires those checks (from any source) accepts it. The pull request's last commit is checked out
+in a temporary folder, so the branch you're on and any changes you haven't committed don't matter. Needs the GitHub CLI signed in (`gh auth
 login`), gitleaks, `pip install ruff`, Docker (or the project's packages), and DEXSTASH_PRIVATE_WORDS set the
 same as the repository secret. The tests and pip-audit run directly when the project's packages are installed,
 otherwise in Docker; where neither works they're left out and not reported (they aren't required for a merge).
@@ -21,6 +22,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+WORK = ROOT  # where the checks run: the pull request's own copy while main() runs
 PY = sys.executable
 
 # Name on GitHub (the Actions job's check name) -> the command that runs it.
@@ -47,7 +49,7 @@ IN_DOCKER = {
 
 def docker(script: str) -> list[str]:
     """A command that runs a shell script in the Python image GitHub Actions uses, with this folder as /src."""
-    return ["docker", "run", "--rm", "-v", f"{ROOT}:/src", "-w", "/src", "-v", "dexstash-pip-cache:/root/.cache/pip",
+    return ["docker", "run", "--rm", "-v", f"{WORK}:/src", "-w", "/src", "-v", "dexstash-pip-cache:/root/.cache/pip",
             "python:3.13-slim", "sh", "-c", script]
 
 
@@ -61,8 +63,8 @@ def command(name: str) -> list[str] | None:
 
 
 def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
-    """A command's result, run from the repository root, with its output captured as text."""
-    return subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, **kw)
+    """A command's result, run from the pull request's copy, with its output captured as text."""
+    return subprocess.run(cmd, cwd=WORK, capture_output=True, text=True, **kw)
 
 
 def gh(*args: str) -> str:
@@ -94,31 +96,41 @@ def report(repo: str, sha: str, name: str, state: str, description: str) -> None
        "-f", f"description={description[:140]}")
 
 
-def fetch_base(pr: dict) -> None:
-    """Fetches the pull request's base commit, which the spec rule compares with."""
-    run(["git", "fetch", "--quiet", "origin", pr["baseRefOid"]])
+def fetch(pr: dict) -> None:
+    """Fetches the pull request's last commit and its base, which the spec rule compares with."""
+    for ref in (f"pull/{pr['number']}/head", pr["baseRefOid"]):
+        out = subprocess.run(["git", "fetch", "--quiet", "origin", ref], cwd=ROOT, capture_output=True, text=True)
+        if out.returncode:
+            sys.exit(f"Couldn't fetch {ref}: {out.stderr.strip()}")
 
 
-def problem_before_running(pr: dict) -> str | None:
-    """Why the checks can't stand for the pull request's last commit, or None when they can."""
-    head = run(["git", "rev-parse", "HEAD"]).stdout.strip()
-    if head != pr["headRefOid"]:
-        return (f"You have {head[:7]} checked out but the pull request's last commit is {pr['headRefOid'][:7]}. "
-                "Push, or pull, so they match.")
-    if run(["git", "status", "--porcelain", "--untracked-files=no"]).stdout.strip():
-        return "There are changes that aren't committed. Commit or stash them first."
-    return None
+def checkout(sha: str, folder: str) -> Path:
+    """A copy of the repository at this commit in a new folder (a git worktree), separate from your own."""
+    path = Path(folder) / "pr"
+    subprocess.run(["git", "worktree", "add", "--quiet", "--detach", str(path), sha], cwd=ROOT, check=True,
+                   capture_output=True)
+    return path
 
 
 def main(argv: list[str]) -> int:
+    global WORK
     pr = pull_request(argv[0] if argv else None)
-    if problem := problem_before_running(pr):
-        print(problem)
-        return 1
     repo = json.loads(gh("repo", "view", "--json", "nameWithOwner"))["nameWithOwner"]
-    fetch_base(pr)
+    fetch(pr)
     sha = pr["headRefOid"]
     print(f"Checking {pr['url']} at {sha[:7]}")
+    with tempfile.TemporaryDirectory() as folder:
+        WORK = checkout(sha, folder)
+        try:
+            return check(pr, repo, sha, folder)
+        finally:
+            WORK = ROOT
+            subprocess.run(["git", "worktree", "remove", "--force", str(Path(folder) / "pr")], cwd=ROOT,
+                           capture_output=True)
+
+
+def check(pr: dict, repo: str, sha: str, folder: str) -> int:
+    """Runs each check in the pull request's copy and reports it; 1 when any failed."""
     commands = {name: command(name) for name in CHECKS}
     for name, cmd in commands.items():
         if cmd is None:
@@ -126,28 +138,27 @@ def main(argv: list[str]) -> int:
         else:
             report(repo, sha, name, "pending", "Running on a contributor's machine")
     failed = []
-    with tempfile.TemporaryDirectory() as folder:
-        env = {**os.environ, "GITHUB_EVENT_NAME": "pull_request", "GITHUB_EVENT_PATH": event_file(pr, folder)}
-        for name, cmd in commands.items():
-            if cmd is None:
-                continue
-            print(f"- {name} ... ", end="", flush=True)
-            if not env.get("DEXSTASH_PRIVATE_WORDS") and name == "Core rules and spec":
-                ok, note = False, "DEXSTASH_PRIVATE_WORDS isn't set"
-            elif shutil.which(cmd[0]) is None:
-                ok, note = False, f"{cmd[0]} isn't installed"
-            else:
-                out = run(cmd, env=env)
-                ok = out.returncode == 0
-                note = "Passed" if ok else "Failed"
-                if not ok:
-                    print("failed\n" + (out.stdout + out.stderr)[-4000:])
-            if ok:
-                print("passed")
-            elif note != "Failed":
-                print(note)
-            report(repo, sha, name, "success" if ok else "failure", f"{note} (run locally)")
-            failed += [] if ok else [name]
+    env = {**os.environ, "GITHUB_EVENT_NAME": "pull_request", "GITHUB_EVENT_PATH": event_file(pr, folder)}
+    for name, cmd in commands.items():
+        if cmd is None:
+            continue
+        print(f"- {name} ... ", end="", flush=True)
+        if not env.get("DEXSTASH_PRIVATE_WORDS") and name == "Core rules and spec":
+            ok, note = False, "DEXSTASH_PRIVATE_WORDS isn't set"
+        elif shutil.which(cmd[0]) is None:
+            ok, note = False, f"{cmd[0]} isn't installed"
+        else:
+            out = run(cmd, env=env)
+            ok = out.returncode == 0
+            note = "Passed" if ok else "Failed"
+            if not ok:
+                print("failed\n" + (out.stdout + out.stderr)[-4000:])
+        if ok:
+            print("passed")
+        elif note != "Failed":
+            print(note)
+        report(repo, sha, name, "success" if ok else "failure", f"{note} (run locally)")
+        failed += [] if ok else [name]
     print(f"Failed: {', '.join(failed)}" if failed else "All checks passed and were reported.")
     return 1 if failed else 0
 
