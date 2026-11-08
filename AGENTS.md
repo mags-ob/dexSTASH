@@ -40,6 +40,34 @@ Every change starts from a GitHub issue and follows the same five steps.
 5. **Learn.** Anything non-obvious you found goes into the spec or the docs, so the next change starts
    from it.
 
+## Threads and phases
+
+An assistant works on one issue in one thread, ending in one pull request (several only when a maintainer
+groups them, see step 3). It suggests work but never starts any a maintainer hasn't asked for. A bug becomes a
+bug issue first; an urgent fix gets a patch release.
+
+**Three gates.** The maintainer decides at each one; the assistant waits.
+
+1. **Ready:** the issue's story and criteria are right. The maintainer moves the card to Ready.
+2. **Go:** the plan is right. The plan goes in a "Plan" section of the issue body, never in a comment. The
+   maintainer moves the card to In progress.
+3. **Approved:** the pull request is right. The maintainer says so or merges it.
+
+A small issue (one bug, one screen) merges gates 1 and 2: the issue and its plan come together for one go.
+The assistant never moves board cards; the board's workflows move the rest.
+
+**Four kinds of thread.**
+
+- **Intake:** the project chat, where requests arrive and become issues.
+- **Issue:** one issue through Define, Plan, Build, Validate and Learn.
+- **Spec:** Define only, writing or updating one spec.
+- **Cycle:** one goal (a parent issue). It orders the sub-issues and suggests groupings; at the end it bumps
+  the minor version, updates `CHANGELOG.md`, drafts the release for the maintainer to publish, and writes the
+  cycle's notes in the parent issue's body.
+
+**Tools.** Skills help where they fit: brainstorming for a vague idea, a written plan for a big change, a
+code review before asking for gate 3. No subagents or multi-agent workflows unless the maintainer asks.
+
 ## Commands
 
 ```sh
