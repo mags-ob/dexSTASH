@@ -33,8 +33,10 @@ Every change starts from a GitHub issue and follows the same five steps.
    maintainer asks to group related issues; a grouped pull request has one `Closes #<issue>` line for each.
    Commits and pull requests are short and say only what changed; the why is on the issue. No attribution
    lines, sign-offs or links to anyone's assistant sessions ([rules/project.md](rules/project.md)).
-4. **Validate.** GitHub Actions runs the checks on every pull request. Each acceptance criterion should have a
-   test. Changes to pages get a look at phone width.
+4. **Validate.** GitHub Actions runs the checks on every pull request. While Actions is switched off, a
+   maintainer runs `python tools/local_checks.py <number>` from `main`, which reports the required checks (lint,
+   rules check, gitleaks) on the pull request ([CONTRIBUTING.md](CONTRIBUTING.md)); whoever makes a code change
+   runs the whole test suite before pushing. Each acceptance criterion should have a test. Changes to pages get a look at phone width.
 5. **Learn.** Anything non-obvious you found goes into the spec or the docs, so the next change starts
    from it.
 
