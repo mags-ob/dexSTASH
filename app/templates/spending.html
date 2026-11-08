@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% set keep_place = true %}{# Opens where you left it when you come back #}
+{% from "_macros.html" import card_image, card_picture, sname %}
+{% block title %}Spending · {{ app_name }}{% endblock %}
+{% block heading %}My Stash{% endblock %}
+{% from "_mycards.html" import switcher %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/spending.css") }}">
+{{ switcher("spending") }}
+<div class="sp-top">
+  <div><span>Spent</span><b>{{ totals.total | money }}</b></div>
+  <div><span>Cards worth</span><b>{{ value.value | money }}</b></div>
+</div>
+<div class="sp-sub"><span>This month <strong>{{ totals.month | money }}</strong></span><span>This year <strong>{{ totals.year | money }}</strong></span></div>
+
+<details class="panel" style="margin:12px 0">
+<summary style="font-weight:600">&#65291; Log spending</summary>
+<form method="post" action="/purchases" style="display:grid;gap:8px;margin-top:8px">
+  <input name="label" placeholder="What, e.g. 3 Obsidian Flames packs" required aria-label="What">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <input name="cost" placeholder="Total {{ currency_symbol() }}" inputmode="decimal" required aria-label="Total paid">
+    <input name="purchased_on" type="date" value="{{ today }}" aria-label="Date bought">
+  </div>
+  <div class="chips">{% for key, label in kinds.items() %}<label class="chip"><input type="radio" name="kind" value="{{ key }}" {% if loop.first %}checked{% endif %}>{{ label }}</label>{% endfor %}</div>
+  <select name="set_id" aria-label="Set">
+    <option value="">Set (optional)</option>
+    {% for s in sets %}<option value="{{ s.set_id }}">{{ set_label(s.set_id, s.name) }}{% if s.language != "en" %} ({{ s.language }}){% endif %}</option>{% endfor %}
+  </select>
+  <button>Log it</button>
+</form>
+</details>
+
+{% for m in months %}
+<div class="sp-month"><strong>{{ m.label }}</strong><span>{{ m.total | money }}</span></div>
+<div class="panel" style="padding:0 14px">
+  {% for i in m["items"] %}
+  {% if i.type == "purchase" %}
+  <a class="sp-line" href="/purchases/{{ i.id }}">
+    <span class="ic" aria-hidden="true">{{ icon({"packs": "box", "box": "gift", "single": "card"}.get(i.kind, "bag"), 20) }}</span>
+    <span><strong>{{ i.label }}</strong><span class="muted" style="display:block;font-size:12px">{{ kinds.get(i.kind, "Purchase") }}{% if i.date %} &middot; {{ i.date | short_date }}{% endif %}{% if i.set_name %} &middot; {{ set_label(i.set_id, i.set_name) }}{% endif %}{% if i.cards %} &middot; {{ i.cards }} card{{ "s" if i.cards != 1 }}{% endif %}</span></span>
+    <span class="num">{{ i.amount | money(i.currency) }}</span>
+  </a>
+  {% else %}
+  <a class="sp-line" href="/cards/{{ i.card_id }}">
+    <span class="ic">{{ card_picture(card_pics(i.card_id, i.image_url), i.name, i.number, i.logo_url, caption=False) }}</span>
+    <span><strong>{{ en_name(i.name, i.card_id if ":" in i.card_id else "en", i.twin_name).en }}</strong><span class="muted" style="display:block;font-size:12px">{{ i.variant_label }}{% if i.copies > 1 %} &times;{{ i.copies }}{% endif %}{% if i.date %} &middot; {{ i.date | short_date }}{% endif %}</span></span>
+    <span class="num">{{ i.amount | money(i.currency) }}</span>
+  </a>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endfor %}
+
+<div class="sp-month"><strong>Spent before we started tracking</strong>{% if before %}<span>{{ before.cost | money(before.currency) }}</span>{% endif %}</div>
+<form method="post" action="/spending/before" class="panel" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center">
+  <input name="cost" value="{{ '%.2f' % before.cost if before else '' }}" placeholder="Total {{ currency_symbol() }}" inputmode="decimal" aria-label="Spent before we started tracking">
+  <input name="purchased_on" type="date" value="{{ before.purchased_on or '' if before else '' }}" aria-label="Up to which date">
+  <button class="quiet">Save</button>
+</form>
+{% endblock %}

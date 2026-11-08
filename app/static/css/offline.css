@@ -1,0 +1,13 @@
+@font-face { font-family:"Nunito"; src:url("/static/fonts/nunito-latin.woff2") format("woff2"); font-weight:200 1000; font-display:swap; }
+:root { color-scheme:dark; }
+html, body { margin:0; min-height:100%; background:#111113; color:#f2f2f4; font-family:"Nunito", system-ui, sans-serif; }
+main { min-height:100vh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center;
+       gap:6px; padding:max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); text-align:center; max-width:460px; margin:0 auto; }
+img { border-radius:16px; margin-bottom:12px; }
+h1 { font-size:22px; margin:0 0 6px; }
+p { margin:0 0 8px; line-height:1.45; color:#d0d0d6; }
+.muted { color:#9a9aa1; font-size:14px; }
+.photos { color:#f2f2f4; font-weight:600; }
+button { margin:10px 0 6px; min-height:48px; padding:0 28px; border:0; border-radius:12px; background:#399494; color:#fff;
+         font:inherit; font-size:16px; font-weight:600; touch-action:manipulation; }
+button:active { transform:scale(.96); filter:brightness(.9); }

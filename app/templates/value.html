@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cname %}
+{% block title %}Value · {{ app_name }}{% endblock %}
+{% block heading %}Value over time{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/", "Home") }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/value.css") }}">
+<section class="panel">
+  <div class="vhead">
+    <div style="font-size:28px;font-weight:600">{{ stats.value | money }}</div>
+    {% if data.change is not none %}
+    <div class="{{ 'up' if data.change > 0 else ('down' if data.change < 0 else 'muted') }}" style="font-weight:600">
+      {{ "▲" if data.change > 0 else ("▼" if data.change < 0 else "") }} {{ (data.change | abs) | money }}{% if data.percent is not none %} ({{ "%+.1f" % data.percent }}%){% endif %}
+      <span class="muted" style="font-weight:400">since {{ data.start | short_date }}</span></div>
+    {% endif %}
+  </div>
+  <nav class="rchips" aria-label="Range">
+    {% for key, label in ranges.items() %}<a class="chip{% if key == data.range %} on{% endif %}" href="/value?range={{ key }}&by={{ by }}&of={{ of }}">{{ label }}</a>{% endfor %}
+  </nav>
+  {% if data.points | length > 1 %}
+    {% with label = "Collection value from " ~ (data.start | short_date) %}{% include "_chart_svg.html" %}{% endwith %}
+    <div class="muted" style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px">
+      <span>{{ data.points[0][0] | short_date }}</span><span>Low {{ chart.lo | money }} &middot; High {{ chart.hi | money }}</span><span>Today</span></div>
+  {% else %}
+    <p class="muted">The chart fills in as prices are updated each night.</p>
+  {% endif %}
+  <p class="muted" style="font-size:13px;margin-bottom:0">The cards you have today at each day's prices, so adding cards isn't counted as a rise.
+    {% if data.first %}History starts {{ data.first | short_date }}.{% endif %}
+    {% if fresh.last %}Prices last changed {{ fresh.last | short_date }}.{% endif %}</p>
+  {% if fresh.stale %}<p class="banner" role="status" style="font-size:13px;margin:10px 0 0">No TCGplayer price has changed since {{ fresh.last | short_date }}, though the price update ran {{ fresh.runs }} times since. The price source may be stuck: see <a href="/account/data#prices">Data sources &rsaquo; Prices and links</a> and the Activity log.</p>{% endif %}
+</section>
+
+<h2 id="movers" style="scroll-margin-top:80px">Top movers{% if moves %} today{% endif %}</h2>
+{% if moves %}<p class="muted" style="font-size:13px;margin-top:-4px">Since the day before. <a href="/value?range={{ data.range }}&by={{ by }}&of={{ of }}#movers">Over the chart's range instead</a></p>{% endif %}
+<nav class="rchips" aria-label="Movers">
+  <a class="chip{% if by == 'usd' %} on{% endif %}" href="/value?range={{ data.range }}&by=usd&of={{ of }}{% if moves %}&moves={{ moves }}{% endif %}#movers">{{ shown_symbol() }}</a>
+  <a class="chip{% if by == 'pct' %} on{% endif %}" href="/value?range={{ data.range }}&by=pct&of={{ of }}{% if moves %}&moves={{ moves }}{% endif %}#movers">%</a>
+  <span style="width:8px"></span>
+  <a class="chip{% if of == 'cards' %} on{% endif %}" href="/value?range={{ data.range }}&by={{ by }}&of=cards{% if moves %}&moves={{ moves }}{% endif %}#movers">Cards</a>
+  <a class="chip{% if of == 'chases' %} on{% endif %}" href="/value?range={{ data.range }}&by={{ by }}&of=chases{% if moves %}&moves={{ moves }}{% endif %}#movers">Chases</a>
+</nav>
+{% macro mrow(m) -%}
+<a class="mrow" href="/cards/{{ m.card_id }}">
+  <span class="mmain"><strong class="one">{{ cname(m.name, m.card_id, m.twin_name) }}</strong>
+    <span class="muted one" style="font-size:12px">{{ set_label(m.set_id, m.set_name) }} &middot; <span class="cno">#{{ m.number }}</span>{% if m.variant_label %} &middot; {{ m.variant_label }}{% endif %} &middot; {{ m.source }}</span></span>
+  <span class="mchg"><span class="muted" style="font-size:12px">{% if m.since %}{{ m.since | short_date }}: {% endif %}{{ m.then | money }} &rarr; {{ m.now | money }}</span><br>
+    <b class="{{ 'up' if m.change > 0 else 'down' }}">{{ "▲" if m.change > 0 else "▼" }} {% if by == 'pct' and m.percent is not none %}{{ "%.1f" % (m.percent | abs) }}%{% else %}{{ (m.change | abs) | money }}{% endif %}</b></span>
+</a>
+{%- endmacro %}
+<div class="vmov">
+  {% for title, rows in (("Up", movers.up), ("Down", movers.down)) %}
+  <section class="panel" style="padding:8px 14px">
+    <h3 style="margin:6px 0">{{ title }}</h3>
+    {% for m in rows[:shown] %}{{ mrow(m) }}{% else %}<p class="muted">Nothing {{ "went up" if title == "Up" else "went down" }} since {{ movers.start | short_date }}.</p>{% endfor %}
+    {% if rows | length > shown %}
+    <details><summary>Show all {{ rows | length }}</summary>{% for m in rows[shown:] %}{{ mrow(m) }}{% endfor %}</details>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
+{% if movers.thin %}<p class="muted" style="font-size:13px">Price history starts {{ movers.thin | short_date }}; moves fill in day by day.</p>{% endif %}
+<p class="muted" style="font-size:13px">Cards under {{ min_price | money }} now are left out.{% if of == 'chases' %} Chases use their cheapest printing.{% endif %}</p>
+{% endblock %}

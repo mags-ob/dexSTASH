@@ -1,0 +1,44 @@
+{# Scan Details' three tabs with counts. Tapping a card makes it the match straight away; its magnifier shows it
+   big beside your photo first, with Use this card. #}
+{% from "_macros.html" import card_image, card_picture %}
+{% if load_set %}
+<div class="banner" style="font-size:14px">
+  {% if loading %}A Chinese set is loading. Search again in a minute.
+  {% elif owner %}<form method="post" action="/account/data/chs/all" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0">
+    <input type="hidden" name="back" value="/scans/{{ batch.id }}">
+    <span style="flex:1 1 180px">{{ load_set }} isn't here yet, so its cards can't be found.</span><button>Load all Chinese sets</button></form>
+  {% else %}{{ load_set }} isn't here yet. An admin can load the Chinese sets from Data sources.{% endif %}
+</div>
+{% endif %}
+{# The tab for the box just edited opens, when it has cards; otherwise the first with cards. #}
+{% set prefer = {"name": ["name_number", "name_set"], "number": ["name_number", "number_set"], "code": ["name_set", "number_set"]}.get(edited or "", []) %}
+{% set preferred = tabs | selectattr("cards") | selectattr("key", "in", prefer) | list %}
+{% set first = preferred[0] if preferred else ((tabs | selectattr("cards") | first) or tabs[0]) %}
+<div class="sd-tabs" role="tablist">
+  {% for t in tabs %}<button type="button" role="tab" class="sd-tab" data-tab="{{ t.key }}" aria-selected="{{ 'true' if t.key == first.key else 'false' }}">{{ t.label }} <span class="n">{{ t.cards | length }}</span></button>{% endfor %}
+</div>
+{% for t in tabs %}
+<div class="sd-tabpane" data-pane="{{ t.key }}"{% if t.key != first.key %} hidden{% endif %}>
+  {% if t.fallback %}<p class="muted" style="font-size:13px;margin:6px 0">Nothing matched two boxes, so these match one.</p>{% endif %}
+  <div class="ts-row">
+    {% for c in t.cards %}
+    {% set tp = card_pics(our_card_id(c.id, c.lang or lang), c.image) %}
+    <div class="ts-item">
+    <form method="post" action="/scans/item/{{ s.id }}/found" hx-post="/scans/item/{{ s.id }}/found" hx-target="#ts" hx-swap="innerHTML" style="display:contents">
+      <input type="hidden" name="card_id" value="{{ c.id }}"><input type="hidden" name="set_id" value="{{ c.set_id }}">
+      <input type="hidden" name="lang" value="{{ c.lang or lang }}"><input type="hidden" name="back" value="{{ back }}">
+      <button class="ts-card" aria-label="Use {{ c.name }} #{{ c.number }}">
+        {{ card_picture(tp, c.name, c.number, small=True, caption=False) }}
+        <strong class="one">{{ en_name(c.name, c.lang or lang).en }}</strong>
+        <span class="muted"><span class="cno">#{{ c.number }}</span></span>
+        <span class="muted one">{% if c.lang == "zh-tw" %}TW &middot; {% endif %}{{ set_label(c.set_id, c.set_name) }}</span>
+      </button>
+    </form>
+    {% if tp %}<button type="button" class="ts-zoom" data-compare="{{ big_url(tp) }}"{% if s.photo %} data-photo="/scans/photo/{{ s.id }}?v={{ s.photo[:12] }}"{% endif %}
+            aria-label="Compare {{ c.name }} #{{ c.number }} with your photo" title="Compare with your photo">{{ icon("search", 16) }}</button>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% if not t.cards %}<p class="muted" style="font-size:14px;margin:8px 0">{% if q.name or q.number or q.code %}No cards match this way.{% else %}Type a name, number or set.{% endif %}</p>{% endif %}
+</div>
+{% endfor %}

@@ -1,0 +1,7 @@
+{# Find's ★ for the Pokémon searched. Filled = followed (its Pokémon set is on your chases). #}
+<form class="fp-star" id="fp-star" method="post" action="/pokemon/{{ dex }}/star" hx-post="/pokemon/{{ dex }}/star" hx-target="this" hx-swap="outerHTML"
+      {% if following %}hx-confirm="Stop following {{ name }}? Its Pokémon set leaves your chases."{% endif %}>
+  <input type="hidden" name="on" value="{{ '' if following else '1' }}">
+  <button type="submit" class="icon-btn quiet{% if following %} on{% endif %}" aria-pressed="{{ 'true' if following else 'false' }}"
+          aria-label="{{ ('Following ' ~ name ~ '. Tap to stop.') if following else ('Follow ' ~ name) }}" title="{{ 'Following. Tap to stop.' if following else 'Follow this Pokémon' }}">{{ icon("star-on" if following else "star", 22) }}</button>
+</form>

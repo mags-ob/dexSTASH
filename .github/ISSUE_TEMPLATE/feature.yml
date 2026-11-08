@@ -1,0 +1,61 @@
+name: Feature
+description: Something new dexSTASH should do, or a change to what it does now.
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One change per issue. Write it for anyone running dexSTASH: no server names, addresses or other personal
+        details.
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      description: Who wants this, what they want to do, and why.
+      placeholder: As someone who collects Japanese cards, I want to ... so that ...
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Acceptance criteria
+      description: |
+        Short statements that can each be tested. Where a spec exists, say which of its statements each one
+        adds or changes.
+      placeholder: |
+        1. When I ..., I see ...
+        2. ... never ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Part of the app
+      multiple: true
+      options:
+        - scanning
+        - prices
+        - collection (My Stash)
+        - binders
+        - chases
+        - sets and search
+        - sharing
+        - accounts and setup
+        - data model
+        - data sources
+        - design system
+        - deploy
+        - not sure
+    validations:
+      required: true
+  - type: input
+    id: spec
+    attributes:
+      label: Spec
+      description: The spec in docs/specs/ this touches, or "none yet" if it hasn't been written.
+      placeholder: docs/specs/prices.md
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Screenshots, links to public pages, earlier decisions this touches.

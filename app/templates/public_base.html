@@ -1,0 +1,18 @@
+<!doctype html>
+{# Share my binder: the visitor's pages. No tab bar, no login, no theme; the app's standard colours. #}
+<html lang="en" data-mode="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>{% block title %}Shared binder{% endblock %}</title>
+  <link rel="stylesheet" href="{{ asset("css/public-base.css") }}">
+  <script src="{{ asset("js/public-base.js") }}"></script>
+  <script src="{{ asset("js/actions.js") }}"></script>
+</head>
+<body>
+<main>{% block content %}{% endblock %}
+<footer>Shared from {{ app_name }}. Read only.</footer></main>
+</body>
+</html>

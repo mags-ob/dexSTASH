@@ -1,0 +1,12 @@
+{# A set page's Filter sheet: the rarities in this set, one at a time. Needs view and here. #}
+<form method="get" action="{{ here }}">
+  <h2>Filters <a href="{{ here }}{% if request.query_params.get('from') %}?from={{ request.query_params.get('from') }}{% endif %}">Clear filters</a></h2>
+  {% if request.query_params.get("from") %}<input type="hidden" name="from" value="{{ request.query_params.get('from') }}">{% endif %}
+  <div class="fgroup"><b>Rarity</b>
+    <div class="chips">
+      <label class="chip"><input type="radio" name="rarity" value="" {% if not view.rarity %}checked{% endif %}>All</label>
+      {% for r in view.rarities %}<label class="chip"><input type="radio" name="rarity" value="{{ r }}" {% if r == view.rarity %}checked{% endif %}>{{ r }}</label>{% endfor %}
+    </div>
+  </div>
+  <button>Show cards</button>
+</form>

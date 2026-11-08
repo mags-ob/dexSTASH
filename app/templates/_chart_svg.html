@@ -1,0 +1,8 @@
+{# An inline chart drawn on the server: chart from value.svg_path. Each point has a tooltip. #}
+<svg class="vchart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" preserveAspectRatio="none" role="img" aria-label="{{ label }}">
+  {% if chart.band %}<polygon class="band" points="{{ chart.band }}"/>{% endif %}
+  <polygon class="area" points="{{ chart.area }}"/>
+  <polyline class="line" points="{{ chart.line }}"/>
+  {% for d in chart.dots %}<circle class="dot" cx="{{ d.x }}" cy="{{ d.y }}" r="4" tabindex="0"><title>{{ d.day | short_date }}: {{ d.value | money }}{% if d.low is not none and d.high is not none and d.low != d.high %} ({{ d.low | money }} – {{ d.high | money }}){% endif %}{% if d.source %} · {{ d.source }}{% endif %}</title></circle>{% endfor %}
+</svg>
+{% if shown_symbol() != "$" %}<p class="muted" style="font-size:12px;margin:2px 0 0">In {{ currency_shown_name() }}, as saved at each price update.</p>{% endif %}

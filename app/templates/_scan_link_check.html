@@ -1,0 +1,15 @@
+{# After a TCGplayer or PriceCharting search is tapped in scan review, the paste box for the link you
+   found, saved on the matched card. A PriceCharting link can bring the price you saw there. #}
+{% from "_macros.html" import paste_input %}
+{% set f = lc %}
+{% macro hidden() %}<input type="hidden" name="site" value="{{ f.site }}"><input type="hidden" name="lang" value="{{ f.lang }}">
+<input type="hidden" name="set_id" value="{{ f.set_id }}"><input type="hidden" name="card_id" value="{{ f.card_id }}">{% endmacro %}
+{% if message %}<p class="{{ 'error' if error else 'muted' }}" style="font-size:14px;margin:0 0 6px">{{ message }}</p>{% endif %}
+{% if paste %}
+<form class="sd-lc-paste" hx-post="{{ f.action }}" hx-target="closest .sd-lc" hx-swap="innerHTML">{{ hidden() }}
+  <label class="cv-label">{% if not message %}Found it on {{ label }}? {% endif %}Paste a price link for this card</label>
+  <div style="display:flex;gap:8px;align-items:center">{{ paste_input("url", "", "https://…", "Price link") }}<button>Save</button></div>
+  {% if f.site == "pricecharting" %}<label class="cv-label">Price on PriceCharting (optional)
+    <input name="pc_price" placeholder="{{ currency_symbol() }} 0.00" inputmode="decimal" autocomplete="off" style="max-width:160px;display:block;margin-top:4px"></label>{% endif %}
+</form>
+{% endif %}

@@ -1,0 +1,26 @@
+{# The evolution line: the whole line on every Pokémon's page in it, in one row with › arrows.
+   Where the line splits, a bracket, then the branches: one-stage branches in a grid of at most two rows,
+   longer branches (Wurmple) as short stacked rows. On a Pokémon's page each one opens its set; on Find
+   (href given) each one searches that Pokémon. A {% call %} adds content (the Pokémon's words) under it. #}
+{% macro evolution(evo, href=None) -%}
+{% macro mon(m) -%}
+<a href="{{ (href ~ (m.name | urlencode)) if href else '/pokemon/' ~ m.dex }}"{% if m.here %} class="here" aria-current="page"{% endif %}>{% if m.sprite %}<img src="{{ m.sprite }}" alt="">{% endif %}<span>{{ m.name }}{% if m.following %} {{ icon("star-on", 14) }}{% endif %}</span></a>
+{%- endmacro %}
+{% macro stage(st) -%}
+{% if st is mapping %}{{ mon(st) }}{% else %}<span class="evo-alt">{% for m in st %}{{ mon(m) }}{% endfor %}</span>{% endif %}
+{%- endmacro %}
+<section class="evo" aria-label="Evolution">
+  <div class="evo-row{% if evo.branches | length > 4 %} many{% endif %}">
+    {% for m in evo.trunk %}{{ mon(m) }}{% if not loop.last %}<span class="arrow" aria-hidden="true">&rsaquo;</span>{% endif %}{% endfor %}
+    {% if evo.branches %}
+    <span class="arrow" aria-hidden="true">&rsaquo;</span><span class="evo-brace" aria-hidden="true"></span>
+    {% if evo.multi %}
+    <div class="evo-stack">{% for b in evo.branches %}<div class="evo-line">{% for st in b %}{{ stage(st) }}{% if not loop.last %}<span class="arrow" aria-hidden="true">&rsaquo;</span>{% endif %}{% endfor %}</div>{% endfor %}</div>
+    {% else %}
+    <div class="evo-grid" style="--rows:{{ [evo.branches | length, 2] | min }}">{% for b in evo.branches %}{{ stage(b[0]) }}{% endfor %}</div>
+    {% endif %}
+    {% endif %}
+  </div>
+  {% if caller is defined %}{{ caller() }}{% endif %}
+</section>
+{%- endmacro %}

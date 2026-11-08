@@ -1,0 +1,205 @@
+{# A card's picture, or a tile with the set logo, name and number when there isn't one (or it fails to load). #}
+{% macro card_image(image_url, name, number, logo_url=None, big=False, small=False) -%}
+{%- set radius = "8px" if big else "4px" -%}
+{%- if image_url %}<img src="{{ image_url | replace('/low.webp', '/high.webp') if big else image_url }}" alt="{{ name }}" loading="lazy" style="width:100%;border-radius:{{ radius }};display:block" data-fail="swap">{% endif -%}
+<div class="card-ph{% if small %} small{% endif %}"{% if image_url %} hidden{% endif %} style="border-radius:{{ radius }}{% if big %};font-size:15px{% endif %}">
+  {%- set spr = sprite_for(name) %}
+  {% if spr %}<img class="ph-spr" src="{{ spr }}" alt="" data-fail="remove">
+  {% elif logo_url %}<img src="{{ logo_url }}" alt="" style="max-width:80%;max-height:30%;object-fit:contain" data-fail="remove">{% endif %}
+  {% if not small and not spr %}<strong>{{ name }}</strong>{% endif %}{% if number %}<span class="muted"><span class="cno">#{{ number }}</span></span>{% endif %}
+  {% if spr and not small %}<span class="muted ph-none">No picture</span>{% endif %}
+</div>
+{%- endmacro %}
+
+{# Printing picker: the printings in `offered` first; "Show all printings" swaps in the full list. #}
+{% macro variant_picker(variants, offered, selected, name="variant") -%}
+{%- set pick = selected if selected in offered else offered[0] -%}
+<span style="display:inline-flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <select name="{{ name }}" aria-label="Printing">
+    {% for key in offered %}<option value="{{ key }}" {% if key == pick %}selected{% endif %}>{{ variants[key] }}</option>{% endfor %}
+  </select>
+  {% if offered | length < variants | length %}
+  <select name="{{ name }}" aria-label="Printing" disabled hidden>
+    {% for key, label in variants.items() %}<option value="{{ key }}" {% if key == pick %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="muted" style="font-size:13px"><input type="checkbox" style="padding:0"
+    data-swap-selects> Show all printings</label>
+  {% endif %}
+</span>
+{%- endmacro %}
+
+{# Where a copy came from. Optional, so the first choice is blank. #}
+{% macro origin_picker(origins, selected, name="origin", blank="Got it from…", blank_value="") -%}
+<select name="{{ name }}" aria-label="Where you got it">
+  <option value="{{ blank_value }}">{{ blank }}</option>
+  {% for key, label in origins.items() %}<option value="{{ key }}" {% if key == selected %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+{%- endmacro %}
+
+{# A copy's condition, spelled out. Near Mint and Damaged get an icon so they stand out in a list. #}
+{% macro condition_badge(code) -%}
+<span class="cond cond-{{ code | lower }}" title="Condition">{% if code == "NM" %}{{ icon("sparkle", 13) }} {% elif code == "DMG" %}{{ icon("warning", 14) }} {% endif %}{{ condition_labels.get(code, code) }}</span>
+{%- endmacro %}
+
+{# Condition picker. Optional in practice: it starts on Near Mint. #}
+{% macro condition_picker(conditions, selected, name="condition", style="") -%}
+<select name="{{ name }}" aria-label="Condition"{% if style %} style="{{ style }}"{% endif %}>
+  {% for c in conditions %}<option value="{{ c }}" {% if c == selected %}selected{% endif %}>{{ condition_labels.get(c, c) }}</option>{% endfor %}
+</select>
+{%- endmacro %}
+
+{# Chip pickers: plain radio buttons styled as chips, so they work without JavaScript. #}
+{% macro printing_chips(variants, offered, selected, price_map, name="variant", sources={}) -%}
+{%- set listed = offered | select("in", price_map) | list -%}
+{%- set shown = listed or offered -%}
+<div class="chips" data-printings>
+  {% for key in variants %}
+  {%- set hide = key not in shown -%}
+  <label class="chip"{% if hide %} hidden data-more{% endif %}><input type="radio" name="{{ name }}" value="{{ key }}" {% if key == selected %}checked{% endif %}
+    {% if key in price_map %}data-price="{{ price_map[key] | money }}"{% endif %} data-label="{{ variants[key] }}"
+    {%- set src = sources.get(key) %}{% if src %} data-source="{{ src.label }}"{% if src.url %} data-source-url="{{ src.url }}"{% endif %}{% endif %}>{{ variants[key] }}
+    {% if key in price_map %}<small{% if src %} title="{{ src.label }}"{% endif %}>{% if src and src.label.startswith("≈") %}&asymp;&#8202;{% endif %}{{ price_map[key] | money }}</small>{% elif not hide %}<small>no price</small>{% endif %}</label>
+  {% endfor %}
+  {% if shown | length < variants | length %}<button type="button" class="chip chip-more" data-show-more>More&hellip;</button>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro condition_chips(conditions, selected, name="condition") -%}
+<div class="chips">
+  {% for c in conditions %}<label class="chip"><input type="radio" name="{{ name }}" value="{{ c }}" {% if c == selected %}checked{% endif %}>{% if c == "NM" %}{{ icon("sparkle", 13) }} {% elif c == "DMG" %}{{ icon("warning", 14) }} {% endif %}{{ condition_labels.get(c, c) }}</label>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro origin_chips(origins, selected, name="origin") -%}
+<div class="chips">
+  <label class="chip"><input type="radio" name="{{ name }}" value="" {% if not selected %}checked{% endif %}>Not set</label>
+  {% for key, label in origins.items() %}<label class="chip"><input type="radio" name="{{ name }}" value="{{ key }}" {% if key == selected %}checked{% endif %}>{{ label }}</label>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro qty_stepper(name="quantity", value=1) -%}
+<span class="stepper">
+  <button type="button" class="quiet" aria-label="One fewer" data-step="-1">&minus;</button>
+  <input name="{{ name }}" type="number" min="1" max="99" value="{{ value }}" inputmode="numeric" aria-label="How many">
+  <button type="button" class="quiet" aria-label="One more" data-step="1">+</button>
+</span>
+{%- endmacro %}
+
+{# A card's picture from a list of (address, label) to try in order: its own, TCGplayer's, your link's,
+   the English or Japanese version, your photo. A borrowed picture says where it's from; with none, the set tile shows. #}
+{% macro card_picture(pics, name, number, logo_url=None, big=False, small=False, caption=True) -%}
+{%- set radius = "8px" if big else "4px" -%}
+{%- if pics %}<img src="{{ big_url(pics) if big else pics[0][0] }}" data-pics="{{ pics[1:] | tojson | forceescape }}" alt="{{ name }}" loading="lazy" style="width:100%;border-radius:{{ radius }};display:block" data-fail="next">
+{%- if caption %}<span class="pic-label"{% if not pics[0][1] %} hidden{% endif %}>{{ pics[0][1] }}</span>{% endif %}{% endif -%}
+<div class="card-ph{% if small %} small{% endif %}"{% if pics %} hidden{% endif %} style="border-radius:{{ radius }}{% if big %};font-size:15px{% endif %}">
+  {%- set spr = sprite_for(name) %}
+  {% if spr %}<img class="ph-spr" src="{{ spr }}" alt="" data-fail="remove">
+  {% elif logo_url %}<img src="{{ logo_url }}" alt="" style="max-width:80%;max-height:30%;object-fit:contain" data-fail="remove">{% endif %}
+  {% if not small and not spr %}<strong>{{ name }}</strong>{% endif %}{% if number %}<span class="muted"><span class="cno">#{{ number }}</span></span>{% endif %}
+</div>
+{%- endmacro %}
+
+
+{# The Enhanced Search mark: a magnifier with a sparkle. #}
+{% macro enhanced_icon(size=18) -%}
+<svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><circle cx="10" cy="10" r="6"/><path d="m20 20-5.5-5.5"/><path d="M19 2v4M17 4h4" stroke-width="1.6"/></svg>
+{%- endmacro %}
+
+{# A card's name in English when it can be, with (j)/(c)/(k) for the language it's printed in.
+   where is the card's id ('ja:M1S-054') or a language code. #}
+{% macro cname(name, where=None, twin=None) -%}
+{%- set d = en_name(name, where, twin) -%}
+{{ d.en }}{% if d.mark %} <span class="lmark" title="{{ d.original }}">({{ d.mark }})</span>{% endif %}
+{%- endmacro %}
+
+
+{# A ✕ that closes something: a round button in the theme colour. onclick is what it does. #}
+{% macro x_close(onclick="", label="Close", attrs="") -%}
+<button type="button" class="x-close" aria-label="{{ label }}" title="{{ label }}"{% if onclick %} data-dialog-close{% endif %} {{ attrs | safe }}>{{ icon("x", 17) }}</button>
+{%- endmacro %}
+
+
+{# The floating back button: ← (or ✕ on a screen over a list). It always goes back one page, like the
+   phone's back; with nothing to go back to (a link opened fresh) it goes Home. href only matters without JavaScript. #}
+{% macro back_to(href, label, close=False, smart="") -%}
+<a class="back-fab" href="{{ href }}" data-back-link
+   aria-label="{{ 'Close' if close else 'Back' }}" title="{{ 'Close' if close else 'Back' }}">{{ icon("x" if close else "back", 22) }}<span class="lbl">{{ 'Close' if close else 'Back' }}</span></a>
+{%- endmacro %}
+
+{# The one card tile: picture, name, price, then a third line (set name, or the
+   number on a set page). Owned cards get the ring and ✓ in the theme's second colour; chased ones (star) a rose
+   heart, and a rose ring unless owned. pending: the price is being read ("Checking price…", filled in by
+   find-prices.js under the key pending gives).
+   caller(), when given, adds things on top of the tile (a checkbox, a remove button). #}
+{% macro tile(href, pics, name, number, logo=None, price=None, third="", owned=False, title="", qty=0, tag="", star=False,
+              price_html=None, lang_tag="", pic_id=None, pending=None) -%}
+<div class="ctile{% if owned %} owned{% elif star %} chased{% endif %}"{% if pic_id %} data-pic-id="{{ pic_id }}"{% endif %}{% if pending %} data-price-pending="{{ pending }}"{% endif %}>
+  {% if caller %}{{ caller() }}{% endif %}
+  <a href="{{ href }}"{% if title %} title="{{ title }}"{% endif %}>
+    <span class="pic">{{ card_picture(pics, number=number, name=name | striptags, logo_url=logo, caption=False) }}
+      {% if owned %}<span class="own-ck" aria-label="You have it">{{ icon("check", 14) }}</span>{% endif %}
+      {% if star %}<span class="star-ck" aria-label="Chasing">{{ icon("heart-on", 13) }}</span>{% endif %}
+      {% if lang_tag %}<span class="lang-tag">{{ lang_tag }}</span>{% endif %}
+      {% if qty > 1 %}<span class="badge-q">&times;{{ qty }}</span>{% endif %}
+      {% if tag %}<span class="badge-l">{{ tag }}</span>{% endif %}</span>
+    <span class="n">{{ name }}</span>
+    <span class="p">{% if price_html %}{{ price_html }}{% elif price is number %}{{ price | money }}{% elif pending %}<span class="muted">Checking price…</span>{% else %}<span class="muted">No price</span>{% endif %}</span>
+    {% if third %}<span class="t">{{ third }}</span>{% endif %}
+  </a>
+</div>
+{%- endmacro %}
+
+{# English · Japanese · Chinese chips (Find, Pokémon sets, Scan's new batch). With url, each chip is
+   a link: url with __L__ replaced by its language ('' for All). Without, they're radio buttons named name.
+   scan=True gives them their fixed language colours. #}
+{% macro lang_chips(name, selected, url=None, all=None, scan=False, big=False) -%}
+<div class="chips lang-chips{% if scan %} scan{% endif %}{% if big %} big-chips{% endif %}">
+  {% if all %}<a class="chip{% if not selected %} on{% endif %}" href="{{ url.replace('__L__', '') }}">{{ all }}</a>{% endif %}
+  {% for key, label in [("en", "English"), ("ja", "Japanese"), ("zh", "Chinese")] %}
+  {% if url %}<a class="chip lc-{{ key }}{% if selected == key %} on{% endif %}" href="{{ url.replace('__L__', key) }}"{% if selected == key %} aria-current="true"{% endif %}>{{ label }}</a>
+  {% else %}<label class="chip lc-{{ key }}"><input type="radio" name="{{ name }}" value="{{ key }}" {% if selected == key %}checked{% endif %}>{{ label }}</label>{% endif %}
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{# A language tag with its fixed colour: EN blue, JA red, ZH gold (Scan only). #}
+{% macro lang_tag(lang) -%}
+{%- set key = "zh" if lang and lang.startswith("zh") else lang -%}
+<span class="ltag ltag-{{ key }}">{{ {"en": "EN", "ja": "JA", "zh": "ZH"}.get(key, (lang or "").upper()) }}</span>
+{%- endmacro %}
+
+{# Rarity with its symbol: ● Common, ★★ Double Rare, gold for the special ones; codes keep their full name. #}
+{% macro rarity_line(text) -%}
+{%- set r = rarity_of(text) -%}
+{%- if r %}<span class="rar{% if r.gold %} gold{% endif %}">{% if r.symbol %}<span class="rar-s" aria-hidden="true">{{ r.symbol }}</span> {% endif %}{{ r.label }}</span>{% endif -%}
+{%- endmacro %}
+
+{# The small round symbol for a card-game type, drawn by the app (no images). #}
+{# An energy symbol: the type's colour with its white shape (display.TYPE_GLYPHS). #}
+{% macro type_icon(t) -%}
+{%- set g = type_glyphs.get(t, ("", "")) -%}
+<svg class="ty" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" data-type="{{ type_letters[t] }}"><circle cx="12" cy="12" r="12" fill="{{ type_colours[t] }}"/>
+{%- if g[0] %}<path d="{{ g[0] }}" fill="#fff" fill-rule="evenodd"/>{% endif %}
+{%- if g[1] %}<path d="{{ g[1] }}" fill="none" stroke="{{ '#fff' if not g[0] else type_colours[t] }}" stroke-width="{{ 2.2 if not g[0] else 1.3 }}" stroke-linecap="round"/>{% endif %}</svg>
+{%- endmacro %}
+
+{% macro type_line(types) -%}
+{%- for t in card_types(types) %}<span class="ty-line">{{ type_icon(t) }}{{ t }}</span>{% if not loop.last %} &middot; {% endif %}{% endfor -%}
+{%- endmacro %}
+
+{# A set's picture: TCGdex's logo, else its symbol, else its code in a box. #}
+{% macro set_image(set_id, logo=None, symbol=None) -%}
+<span class="set-img">{% if logo or symbol %}<img src="{{ logo or symbol }}" alt="" loading="lazy" data-fail="code" data-code="{{ set_code(set_id) }}">{% else %}<b>{{ set_code(set_id) }}</b>{% endif %}</span>
+{%- endmacro %}
+
+{# A set's name as shown: mainland sets in English when they have one, with (j)/(c)/(k) for the language. #}
+{% macro sname(set_id, name, language="en") -%}
+{{ set_label(set_id, name) }}{% if language and language != "en" %} <span class="lmark">({{ {"ja": "j", "ko": "k"}.get(language, "c" if language.startswith("zh") else language[:2]) }})</span>{% endif %}
+{%- endmacro %}
+
+
+{# A link box with a Paste button (shown on https only, where the browser allows it). #}
+{% macro paste_input(name, value="", placeholder="", label="") -%}
+{# A link box (a plain box). #}
+<input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" inputmode="url"{% if label %} aria-label="{{ label }}"{% endif %} autocomplete="off" style="flex:1;min-width:0">
+{%- endmacro %}

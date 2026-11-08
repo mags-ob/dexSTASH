@@ -1,0 +1,15 @@
+{# The card page's tags (no hidden list: type straight into the + Tag chip).
+   Needs card, card_tags ({tags: [(tag, kind)]}), tags_used. Automatic tags are plain, yours are solid.
+   ✕ hides an automatic tag for this card or deletes yours; Data sources › Reset tags brings hidden ones back. #}
+<div class="cv-tags" id="tags">
+  {% for t, kind in card_tags.tags %}
+  <span class="chip tagc{% if kind == 'mine' %} on{% endif %}"><a href="/search?{{ qs(tag=t) }}" title="Every card tagged {{ t }}">{{ t }}</a>
+    <form method="post" action="/cards/{{ card.id }}/tags/remove" hx-post="/cards/{{ card.id }}/tags/remove" hx-target="#tags" hx-swap="outerHTML">
+      <input type="hidden" name="tag" value="{{ t }}">
+      <button aria-label="{% if kind == 'mine' %}Delete{% else %}Remove{% endif %} the tag {{ t }}" title="{% if kind == 'mine' %}Delete{% else %}Remove{% endif %}">{{ icon("x", 14) }}</button></form></span>
+  {% endfor %}
+  <form class="tag-type" method="post" action="/cards/{{ card.id }}/tags/add" hx-post="/cards/{{ card.id }}/tags/add" hx-target="#tags" hx-swap="outerHTML">
+    <input class="chip" name="tag" list="tags-used" maxlength="40" placeholder="+ Tag" aria-label="Add a tag" required {{ no_correct }} autocomplete="off" data-tag-type>
+    <datalist id="tags-used">{% for t in tags_used %}<option value="{{ t }}">{% endfor %}</datalist>
+  </form>
+</div>

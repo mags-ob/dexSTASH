@@ -1,0 +1,14 @@
+{$DEXSTASH_DOMAIN} {
+	encode zstd gzip
+	# Scan photos can be a few MB each.
+	request_body {
+		max_size 25MB
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		-Server
+	}
+	reverse_proxy app:8000
+}

@@ -1,0 +1,167 @@
+{# The card view (it replaced Scan Details): your photo next to the match, how the card will be added,
+   Change match (other guesses, Enhanced Search, Find it), Remove from batch, then Cancel / Save / Save & next.
+   Nothing is kept until Save: a match picked here is put back by Cancel. #}
+{% from "_macros.html" import card_picture, enhanced_icon, x_close, lang_tag, printing_chips, condition_chips, qty_stepper %}
+{% set here = "/scans/item/" ~ s.id ~ "/details" %}
+{% set searching = s.status in ("picture_waiting", "picture_searching") %}
+{% set item = "/scans/item/" ~ s.id %}
+<div class="sd-panel"></div>
+{% set change_open = applied and (request.query_params.get("change") == "1") %}
+<div class="ts-head sd-head cv-head">
+  <button type="submit" form="cv-cancel" class="x-close" aria-label="Cancel" data-cv-cancel>{{ icon("x", 14) }}</button>
+  <div style="flex:1;min-width:0">
+    <h2 class="one">{% if applied %}{{ en_name(current.name, current.lang or slang).en }}{% else %}No match yet{% endif %}</h2>
+    <div class="cv-pos">{% if at %}{{ at }} of {{ total }}{% endif %}</div>
+  </div>
+</div>
+{% if total %}<div class="cv-prog" aria-hidden="true"><span style="width:{{ (at / total * 100) | round(1) }}%"></span></div>{% endif %}
+<div class="ts-body">
+  {% if message %}<p class="error">{{ message }}</p>{% endif %}
+  <div class="sd-pair">
+    <figure>
+      {% if s.photo %}<button type="button" class="sd-zoom" data-lightbox="/scans/photo/{{ s.id }}?v={{ s.photo[:12] }}" aria-label="Show your photo full screen"><img src="/scans/photo/{{ s.id }}?v={{ s.photo[:12] }}" alt="Your photo" data-fail="retry"></button>{% endif %}
+      <figcaption>Your photo</figcaption>
+    </figure>
+    <figure>
+      {% if current %}
+        {% set cp = card_pics(our_card_id(current.id, current.lang or slang), current.image) %}
+        <button type="button" class="sd-zoom" data-lightbox="{{ big_url(cp) if cp else '' }}" aria-label="Show the card full screen"{% if not cp %} disabled{% endif %}>
+          {{ card_picture(cp, current.name, current.number, caption=False) }}</button>
+        <figcaption>{% if current.by_hand and current.src == "guess" %}<span class="tag ok">Picked by you</span>{% elif current.word %}<span class="tag {{ word_class[current.word] }}">{{ current.word }}</span>{% else %}Another guess{% endif %}</figcaption>
+      {% else %}
+        <div class="card-ph"><strong>?</strong></div>
+        <figcaption>{{ "Enhanced Search is looking…" if searching else "No match yet" }}</figcaption>
+      {% endif %}
+    </figure>
+  </div>
+  {% if current %}
+  <div class="sd-who">
+    <div style="min-width:0">
+      <strong>{{ en_name(current.name, current.lang or slang).en }}</strong>
+      <div class="muted">{{ set_label(current.set_id, current.set_name) }} &middot; <span class="cno">#{{ current.number }}</span></div>
+      <div class="muted">In your stash: {{ info.owned }}</div>
+    </div>
+    <div class="sd-price" data-cv-price>{% if info.price is not none %}<strong>{{ (info.price * (0 if condition == "DMG" else 1)) | money }}</strong><div class="muted">{{ info.variant_label }}</div>{% else %}<span class="muted">{{ "Checking prices…" if info.checking else "No price found yet" }}</span>{% endif %}</div>
+  </div>
+  {% if info.lines or info.ct_checking %}{# Round 27: every source's price, each linking to where it came from #}
+  <div class="sd-src">
+    {% for l in info.lines %}<div{% if l.left_out %} class="muted"{% endif %}><span>{{ l.name }}{% if l.note %} <span class="muted">({{ l.note }})</span>{% endif %}</span>
+      {% if l.url %}<a href="{{ l.url }}" target="_blank" rel="noopener">{{ l.amount }} &#8599;</a>{% else %}<span>{{ l.amount }}</span>{% endif %}</div>{% endfor %}
+    {% if info.ct_checking %}<div><span>CardTrader</span><span class="muted">Checking CardTrader…</span></div>{% endif %}
+  </div>
+  {% endif %}
+  <div class="sd-links">
+    <a href="{{ info.tcg_url }}" target="_blank" rel="noopener"{% if info.tcg_check %} data-lc-site="tcgplayer"{% endif %}>{{ "TCGplayer" if info.tcg_exact else "Search TCGplayer" }} &#8599;</a>
+    <a href="{{ info.pc_url }}" target="_blank" rel="noopener"{% if info.pc_check %} data-lc-site="pricecharting"{% endif %}>{{ "PriceCharting" if info.pc_exact else "Search PriceCharting" }} &#8599;</a>
+    {% if info.ct_url %}<a href="{{ info.ct_url }}" target="_blank" rel="noopener">{{ "CardTrader" if info.ct_exact else "Search CardTrader" }} &#8599;</a>{% endif %}
+    {% if info.ebay_url %}<a href="{{ info.ebay_url }}" target="_blank" rel="noopener">Search eBay sold &#8599;</a>{% endif %}
+  </div>
+  {# On return from a link, check it (or paste the right one), saved on this card. #}
+  {% for site, label, kind in (("tcgplayer", "TCGplayer", info.tcg_check), ("pricecharting", "PriceCharting", info.pc_check)) if kind %}
+  <div class="sd-lc" id="sd-lc-{{ site }}" hidden>
+    {% with lc={"action": item ~ "/link", "site": site, "lang": current.lang or slang, "set_id": current.set_id, "card_id": current.id},
+            label=label, paste=True, message=None, error=False %}{% include "_scan_link_check.html" %}{% endwith %}
+  </div>
+  {% endfor %}
+  {% if applied %}<button type="button" class="cv-change" data-cv-change aria-expanded="{{ 'true' if change_open else 'false' }}">Change match
+    <span class="cv-change-ic" aria-hidden="true">{{ "&#8964;" | safe if change_open else "&rsaquo;" | safe }}</span></button>{% endif %}
+  {% if not applied %}
+  <form method="post" action="{{ item }}/match" hx-post="{{ item }}/match" hx-target="#ts" hx-swap="innerHTML" style="margin-top:10px">
+    <input type="hidden" name="src" value="{{ current.src }}"><input type="hidden" name="pick" value="{{ current.pick }}">
+    <button style="width:100%">Use this match</button>
+  </form>
+  {% endif %}
+  {% elif s.message %}
+  <p class="muted" style="font-size:14px">{{ s.message }}</p>
+  {% endif %}
+
+  {% if applied %}
+  <form id="cv-save" class="cv-choices" method="post" action="{{ item }}/save"{% if change_open %} hidden{% endif %}>
+    <div class="cv-label">Printing</div>
+    {{ printing_chips(variants, offered, variant, offer.price_map if offer else {}, sources=info.sources) }}
+    <div class="cv-label">Condition</div>
+    {{ condition_chips(conditions, condition) }}
+    <div class="cv-two">
+      <label><span class="cv-label">Quantity</span>{{ qty_stepper("quantity", quantity) }}</label>
+      <label><span class="cv-label">Paid each</span><input name="paid" value="{{ '%.2f' | format(paid) if paid is not none else '' }}" placeholder="Not set" inputmode="decimal" style="width:7em"></label>
+    </div>
+    {% if binder_on %}
+    <input type="hidden" name="in_binder_shown" value="1">
+    <label class="cv-switch"><input type="checkbox" name="in_binder" value="1"{% if s.in_binder %} checked{% endif %}> In the binder</label>
+    {% endif %}
+  </form>
+  {% endif %}
+
+  <div data-cv-search{% if applied and not change_open %} hidden{% endif %}>
+  {# The reading's guesses and Enhanced Search's picture matches are two rows; tapping one makes it the match. #}
+  {% set guesses = options | rejectattr("src", "equalto", "picture") | list %}
+  {% set matches = options | selectattr("src", "equalto", "picture") | list %}
+  {% macro option_row(items) %}
+  <div class="sd-others">
+    {% for o in items %}
+    {% set url = here ~ "?src=" ~ o.src ~ "&pick=" ~ o.pick %}
+    <a class="sd-card{% if current and o.src == current.src and o.pick == current.pick %} on{% endif %}" href="{{ url }}"
+       hx-post="{{ item }}/match" hx-vals='{"src": "{{ o.src }}", "pick": {{ o.pick }}}' hx-target="#ts" hx-swap="innerHTML"
+       aria-label="Use {{ o.name }} #{{ o.number }}">
+      <span data-pic-id="{{ our_card_id(o.id, o.lang or slang) }}" style="display:contents">{{ card_picture(card_pics(our_card_id(o.id, o.lang or slang), o.image), o.name, o.number, small=True, caption=False) }}</span>
+      {% if o.word %}<span class="tag {{ word_class[o.word] }}">{{ o.word }}</span>{% endif %}
+      {% if o.src == "picture" and o.lang != slang %}<span class="pr-lang">{{ "TW" if o.lang == "zh-tw" else o.lang.split("-")[0] | upper }}</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endmacro %}
+  {% if guesses | length > 1 or (guesses and matches) %}
+  <div class="sd-label">Other guesses</div>
+  {{ option_row(guesses) }}
+  {% endif %}
+  {% if matches %}
+  <div class="sd-label">Enhanced Search</div>
+  {{ option_row(matches) }}
+  {% elif searching %}
+  <div class="sd-label">Enhanced Search</div>
+  <p class="muted" style="font-size:14px;margin:0 0 8px"><span class="spin"></span> Looking for pictures like your photo&hellip;</p>
+  {% endif %}
+
+  <div class="sd-label">Find it</div>
+  <form class="ts-fields sd-fields" action="{{ item }}/found" hx-get="{{ item }}/found" hx-target="#sd-found"
+        hx-trigger="input delay:500ms, submit" hx-sync="this:replace" data-no-submit
+        data-track-edited>
+    <input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="edited" value="">
+    <label>Name <input name="name" value="{{ q.name }}" autocomplete="off" {{ no_correct }}></label>
+    <label>Number <input name="number" value="{{ q.number }}" autocomplete="off" inputmode="text" {{ no_correct }}></label>
+    <label>Set <input name="code" value="{{ q.code }}" autocomplete="off" {{ no_correct }}></label>
+  </form>
+  <div id="sd-found">{% include "_scan_found.html" %}</div>
+
+  <div class="sd-not">
+    <span class="muted">Not there?</span>
+    {% if searching %}
+      <span class="muted"><span class="spin"></span> Enhanced Search is looking</span>
+    {% elif pictures_ready and s.photo and s.status in ("ready", "nomatch", "failed", "picture_ready") %}
+      <form method="post" action="{{ item }}/picture" style="display:inline"><input type="hidden" name="back" value="batch">
+        <button class="linkish">{{ enhanced_icon(14) }} Enhanced Search</button></form>
+    {% else %}
+      <span class="muted" title="An admin can turn it on in Data sources.">{{ enhanced_icon(14) }} Enhanced is off</span>
+    {% endif %}
+    &middot;
+    <form method="post" action="{{ item }}/retry" style="display:inline"><button class="linkish">{{ icon("refresh", 15) }} Read again</button></form>
+    &middot;
+    <a href="/cards/new?lang={{ slang }}&code={{ (s.reading.code or '') | urlencode }}&number={{ ((s.reading.number or '') ~ ('/' ~ s.reading.total if s.reading.total else '')) | urlencode }}&name={{ (s.reading.name or '') | urlencode }}&scan={{ s.id }}">{{ icon("pencil", 14) }} By hand</a>
+  </div>
+  {% if s.status == "picture_ready" and not s.matches %}<p class="muted" style="font-size:13px">Enhanced Search found no close pictures.</p>{% endif %}
+  </div>
+
+  {% if s.status not in ("added", "skipped", "expired") %}
+  <form method="post" action="{{ item }}/skip" hx-post="{{ item }}/skip" hx-target="#ts" hx-swap="innerHTML" class="cv-remove">
+    <input type="hidden" name="view" value="1">
+    <button type="submit" class="danger-outline" data-cv-remove>Remove from batch</button>
+  </form>
+  {% endif %}
+</div>
+<form id="cv-cancel" method="post" action="{{ item }}/cancel" hidden></form>
+<div class="ts-foot sd-acts cv-foot">
+  <button type="submit" form="cv-cancel" class="quiet" data-cv-cancel>Cancel</button>
+  <button type="submit" form="cv-save" name="next" value="" data-cv-save{% if not applied %} disabled{% endif %}>Save</button>
+  <button type="submit" form="cv-save" name="next" value="1" data-cv-save{% if not applied %} disabled{% endif %}>{{ "Save & next ›" if next_id else "Save & finish" }}</button>
+</div>
+<script src="{{ asset("js/scan-details.js") }}" data-zero="{{ 0 | money }}"></script>

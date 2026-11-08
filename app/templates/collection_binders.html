@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% set keep_place = true %}{# Opens where you left it when you come back #}
+{% from "_macros.html" import card_picture %}
+{% from "_mycards.html" import switcher %}
+{% block title %}Binders · {{ app_name }}{% endblock %}
+{% block heading %}My Stash{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/collection-binders.css") }}">
+{{ switcher("binders") }}
+{% if done %}<p role="status">{{ done }}</p>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+<div class="binder-list">
+  {% for b in binders %}
+  <a class="panel binder-row{% if b.id is none %} loose{% endif %}" href="/collection/binders/{{ b.id if b.id is not none else 'none' }}">
+    <span class="cover">{% if b.cover %}{{ card_picture(pictures_for(b.cover, extras_map.get(b.cover.card_id)), number=b.cover.number, name=b.cover.name, caption=False) }}
+      {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18"/></svg>{% endif %}</span>
+    <span><strong>{{ b.name }}</strong>{% if b.id in shared_ids %} <span class="badge-shared" style="font-size:11px;color:var(--accent);font-weight:600">Shared</span>{% endif %}<span class="muted" style="font-size:13px">{{ b.count }} card{{ "s" if b.count != 1 }}</span></span>
+    <span class="num">{{ b.value | money }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% if binders | length == 1 %}<p class="muted" style="font-size:14px">No binders yet. Make one for each real binder or box, like "Misty's binder" or "Bulk box". New cards start Not in a binder.</p>{% endif %}
+<form method="post" action="/collection/binders" class="new-binder">
+  <input name="name" maxlength="40" placeholder="New binder name" aria-label="New binder name" required>
+  <button>+ New binder</button>
+</form>
+{% endblock %}

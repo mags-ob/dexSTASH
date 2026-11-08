@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cname %}
+{% block title %}Cards with no picture · {{ app_name }}{% endblock %}
+{% block heading %}Cards with no picture{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/account/data", "Data sources") }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/no-pictures.css") }}">
+<div class="chips" style="margin-bottom:10px">
+  <a class="chip{% if not all %} on{% endif %}" href="/account/data/no-pictures">Cards you have</a>
+  <a class="chip{% if all %} on{% endif %}" href="/account/data/no-pictures?all=1">All stored cards</a>
+</div>
+<p>{{ rows | length }} {{ "of your cards" if not all else "stored card" ~ ("s" if rows | length != 1) }} {{ "has" if rows | length == 1 else "have" }} no picture.
+  <span class="muted">Open one to add a photo; it then shows everywhere.</span></p>
+{% if rows %}
+{# Split by language #}
+{% for language, group in rows[:500] | groupby("language") %}
+<h2 style="font-size:16px;margin:14px 0 6px">{{ language_names.get(language, language) }} <span class="muted" style="font-weight:400">&middot; {{ group | length }}</span></h2>
+<div class="panel nopic" style="padding:2px 14px">
+  {% for r in group %}
+  <a href="/cards/{{ r.id }}#fix">
+    <span style="flex:1;min-width:0"><strong>{{ cname(r.name, r.id, r.twin_name) }}</strong><br><span class="muted" style="font-size:12px">{{ set_label(r.set_id, r.set_name) }} &middot; <span class="cno">#{{ r.number }}</span></span></span>
+    <span class="muted">&rsaquo;</span>
+  </a>
+  {% endfor %}
+</div>
+{% endfor %}
+{% if rows | length > 500 %}<p class="muted">Showing the first 500.</p>{% endif %}
+{% endif %}
+{% endblock %}

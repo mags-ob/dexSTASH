@@ -1,0 +1,17 @@
+  .pgrid { display:grid; gap:10px; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); }
+  @media (min-width:700px) { .pgrid { grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:14px; } }
+  .pt { display:block; background:none; border:0; padding:0; color:inherit; text-align:left; cursor:pointer; min-height:0; font-weight:400; }
+  .pt .pic { display:block; position:relative; aspect-ratio:63/88; }
+  .pt .pic img { width:100%; height:100%; object-fit:contain; border-radius:8px; display:block; }
+  .pt .ph { width:100%; height:100%; border-radius:8px; border:1px dashed var(--line); display:flex; align-items:center; justify-content:center; text-align:center; padding:6px; font-size:12px; }
+  .pt .n { display:block; font-size:13px; font-weight:600; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pt .s { display:block; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pt .ph[hidden] { display:none; }
+  .pt .q { position:absolute; right:4px; bottom:4px; background:rgba(0,0,0,.7); color:#fff; font-size:12px; border-radius:8px; padding:1px 6px; }
+  .tools { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+  .tools input[type=search] { flex:1; min-width:160px; }
+  details.filters { margin-bottom:12px; }
+  details.filters summary { cursor:pointer; color:var(--ink); padding:6px 0; }
+  details.filters .fg { display:grid; gap:8px; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); margin-top:8px; }
+  dialog.big { border:0; border-radius:16px; padding:0; width:min(560px, calc(100% - 20px)); max-height:calc(100% - 20px); background:var(--surface); color:var(--fg); }
+  dialog.big::backdrop { background:rgba(0,0,0,.6); }

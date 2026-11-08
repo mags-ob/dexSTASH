@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Scan batch · {{ app_name }}{% endblock %}
+{% block heading %}Cards{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/scans", "All batches") }}{% endblock %}
+{% block header_actions %}
+<details class="cv-menu bt-menu"><summary aria-label="More">{{ icon("more", 20) }}</summary>
+  <div class="cv-menu-list"><button form="delete-batch" type="submit">Delete Batch</button></div>
+</details>
+{% endblock %}
+{% block content %}
+{% from "_macros.html" import lang_tag, x_close, condition_chips %}
+{# One batch screen. The grid of photos in the order they were taken, the From · Binder line,
+   Set for all, the card view (_scan_details.html) and Add N to My Stash. #}
+{# Tap the name to change it; empty shows the date again. #}
+<form class="bt-name" method="post" action="/scans/{{ batch.id }}/name" hx-post="/scans/{{ batch.id }}/name" hx-trigger="change" hx-swap="none" data-no-busy>
+  <input name="name" value="{{ batch.name or '' }}" placeholder="{{ batch.created_at | long_date }}" maxlength="60" aria-label="Batch name"
+         enterkeyhint="done" autocomplete="off" data-enter-blur>
+  {{ icon("pencil", 16) }}
+</form>
+<p class="muted bt-line">{% if batch.language != "auto" %}{{ lang_tag(batch.language) }} {% endif %}Started {{ batch.created_at | when }}{% if batch.created_by_name %} &middot; {{ batch.created_by_name }}{% endif %}</p>
+{% if problem %}<p class="banner">{{ problem }}</p>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if added %}<p class="banner ok-banner">Added to your cards.</p>{% endif %}
+
+{% set purchase = purchases | selectattr("id", "equalto", batch.purchase_id) | first if batch.purchase_id else None %}
+{% set binder = binders | selectattr("id", "equalto", (batch.binder | int) if batch.binder and batch.binder != "new" else -1) | first %}
+{% set came = batch.came or "none" %}
+<button type="button" class="bt-from" data-open-sheet="from-sheet">
+  <span>From: <b>{% if came == "add" and purchase %}{{ purchase.label }}{% elif came == "new" %}New purchase{% if batch.new_label %} &middot; {{ batch.new_label }}{% endif %}{% else %}Not a purchase{% endif %}</b></span>
+  <span>&middot; Binder: <b>{% if batch.binder == "new" %}{{ batch.new_binder }} (new){% elif binder %}{{ binder.name }}{% else %}none{% endif %}</b></span>
+  <span class="muted">&rsaquo;</span>
+</button>
+
+<div class="bt-sum">
+  <span><span data-sum>{{ counts.photos }} photo{{ "s" if counts.photos != 1 }} &middot; {{ counts.checked }} checked</span>
+    <span class="amber" data-needs{% if not counts.needs_match %} hidden{% endif %}>&middot; {{ counts.needs_match }} need{{ "s" if counts.needs_match == 1 }} a match</span></span>
+  <button type="button" class="linkish" data-open-sheet="all-sheet">Set for all &rsaquo;</button>
+</div>
+
+<noscript>
+  <form method="post" action="/scans/{{ batch.id }}/photos" enctype="multipart/form-data" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input type="file" name="photos" accept="image/*" multiple required><button>Upload</button>
+  </form>
+</noscript>
+<p id="upload-status" class="muted" style="font-size:13px;min-height:1.4em;margin:4px 0"></p>
+
+{% set grid = items | selectattr("status", "in", ("waiting", "reading", "picture_waiting", "picture_searching", "ready", "nomatch", "failed", "picture_ready")) | list %}
+{% set done = items | selectattr("status", "equalto", "added") | list %}
+{% set deleted = items | selectattr("status", "equalto", "skipped") | list %}
+<div id="scan-list" data-rev="{{ rev }}">
+  <div class="bgrid" id="grid">{% for s in grid %}{% include "_scan_item.html" %}{% endfor %}</div>
+  <p class="muted" id="scan-empty"{% if grid %} hidden{% endif %}>No photos yet. Tap the camera button to start.</p>
+  <details class="bfold" id="fold-added"{% if not done %} hidden{% endif %}>
+    <summary>Added &middot; <span data-n>{{ done | length }}</span> <span class="muted">&rsaquo;</span></summary>
+    <div class="bfold-rows" id="rows-added">{% for s in done %}{% include "_scan_item.html" %}{% endfor %}</div>
+  </details>
+  <details class="bfold" id="fold-deleted"{% if not deleted %} hidden{% endif %}>
+    <summary>Deleted scans &middot; <span data-n>{{ deleted | length }}</span> <span class="muted">&rsaquo;</span></summary>
+    <div class="bfold-rows" id="rows-deleted">{% for s in deleted %}{% include "_scan_item.html" %}{% endfor %}</div>
+  </details>
+</div>
+
+<form method="post" action="/scans/{{ batch.id }}/delete" id="delete-batch" hidden
+      data-confirm="Delete this batch? Photos you haven't added, and deleted scans, are deleted. Cards you already added stay."
+     ></form>
+<form method="post" action="/scans/{{ batch.id }}/add" id="add-form" hidden></form>
+
+{# Scan more is a round camera button above the tab bar. #}
+<button type="button" id="open-cam" class="cam-fab" aria-label="Scan more" title="Scan more">{{ icon("camera", 26) }}</button>
+<dialog class="ds-dialog" id="leave-dialog" aria-labelledby="leave-h">
+  <div class="dlg-ic warn">{{ icon("warning", 24) }}</div>
+  <h2 id="leave-h" data-leave-n>Photos are still sending</h2>
+  <p>They're saved on this phone. If you leave, they'll finish sending the next time you open this batch.</p>
+  <div class="dlg-acts"><button type="button" data-stay>Stay until done</button><button type="button" class="quiet" data-go>Leave, finish later</button></div>
+</dialog>
+<div class="review-bar bt-bar" id="review-bar">
+  <div class="rb-acts">
+    <button type="submit" form="add-form" class="go pop" data-add-all data-heavy="Adding {{ counts.to_add }} card{{ 's' if counts.to_add != 1 }} to your collection…"{% if not counts.to_add %} disabled{% endif %}>Add {{ counts.to_add }} to My Stash</button>
+  </div>
+</div>
+
+{# From · Binder #}
+<dialog class="sheet" id="from-sheet" aria-label="Where these came from and their binder">
+  <form method="post" action="/scans/{{ batch.id }}/from" class="from-form">
+    <div class="sheet-head"><h2>From &middot; Binder</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+    <div class="sheet-body">
+      <div><b>Where did these come from?</b>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="came" value="add"{% if came == "add" %} checked{% endif %}{% if not purchases %} disabled{% endif %}>Add to a purchase</label>
+          <label class="chip"><input type="radio" name="came" value="new"{% if came == "new" %} checked{% endif %}>New purchase</label>
+          <label class="chip"><input type="radio" name="came" value="none"{% if came not in ("add", "new") %} checked{% endif %}>Not a purchase</label>
+        </div>
+      </div>
+      <div data-came="add"{% if came != "add" %} hidden{% endif %}>
+        <select name="purchase_id" aria-label="Purchase" style="width:100%">
+          {% for p in purchases %}<option value="{{ p.id }}"{% if p.id == batch.purchase_id %} selected{% endif %}>{{ p.label }} &middot; {{ p.cost | money(p.currency) }}{% if p.purchased_on %} &middot; {{ p.purchased_on | short_date }}{% endif %}</option>{% endfor %}
+        </select>
+      </div>
+      <div data-came="new"{% if came != "new" %} hidden{% endif %} style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px">
+        <input name="new_label" value="{{ batch.new_label or '' }}" placeholder="What, e.g. 3 Obsidian Flames packs" aria-label="What it was">
+        <input name="new_cost" value="{{ '%.2f' | format(batch.new_cost) if batch.new_cost is not none else '' }}" placeholder="Total {{ currency_symbol() }}" inputmode="decimal" aria-label="Total paid">
+      </div>
+      <div><b>Put in a binder</b>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="to_binder" value=""{% if not batch.binder %} checked{% endif %}>None</label>
+          {% for b in binders %}<label class="chip"><input type="radio" name="to_binder" value="{{ b.id }}"{% if batch.binder == b.id | string %} checked{% endif %}>{{ b.name }}</label>{% endfor %}
+          <label class="chip"><input type="radio" name="to_binder" value="new"{% if batch.binder == "new" %} checked{% endif %}>+ New binder</label>
+        </div>
+        <input name="new_binder" maxlength="40" value="{{ batch.new_binder or '' }}" placeholder="New binder name" aria-label="New binder name" data-new-binder{% if batch.binder != "new" %} hidden{% endif %} style="margin-top:8px;width:100%">
+        <p class="muted" style="font-size:13px;margin:6px 0 0">Every card added goes in it. A card can be left out with In the binder in its card view.</p>
+      </div>
+      <button>Done</button>
+    </div>
+  </form>
+</dialog>
+
+{# Set for all #}
+<dialog class="sheet" id="all-sheet" aria-label="Set for all">
+  <form method="post" action="/scans/{{ batch.id }}/set-all" hx-post="/scans/{{ batch.id }}/set-all" hx-swap="none">
+    <div class="sheet-head"><h2>Set for all</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+    <div class="sheet-body">
+      <p class="muted" style="margin:0;font-size:14px">For every card with a match that isn't added yet. Leave one blank to keep each card's own.</p>
+      <div><b>Condition</b>{{ condition_chips(conditions, "") }}</div>
+      <label><b>Paid each</b> <input name="paid" placeholder="Not set" inputmode="decimal" style="width:8em"></label>
+      <button>Set for all</button>
+    </div>
+  </form>
+</dialog>
+
+{# Add N with cards that haven't been checked #}
+<dialog class="sheet" id="unchecked-sheet" aria-label="Cards not checked">
+  <div class="sheet-head"><h2>Add to My Stash</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+  <div class="sheet-body">
+    <p style="margin:0" data-unchecked-text></p>
+    <div class="bt-mini" data-unchecked-pics></div>
+    <div class="cam-sheet-acts"><button type="button" class="quiet" data-check-first>Check them first</button><button type="submit" form="add-form" data-add-anyway>Yes, add all</button></div>
+  </div>
+</dialog>
+
+<dialog id="ts" class="ts cvf" aria-label="Card"></dialog>
+
+{# The camera: stays open between shots. Photos stay on the phone until "Add to batch". #}
+<div id="cam" class="cam" hidden role="dialog" aria-label="Camera">
+  <div class="cam-top">
+    {{ x_close("", "Close the camera", "data-cam-close") }}
+    <span class="cam-lang">Scanning cards</span>
+    <button type="button" class="cam-round" data-torch aria-label="Flash" hidden>{{ icon("flash", 20) }}</button>
+  </div>
+  <div class="cam-view">
+    <video playsinline muted autoplay></video>
+    <div class="cam-guide" aria-hidden="true"></div>
+    <div class="cam-off" data-cam-off-box hidden><p data-cam-off></p>
+      <button type="button" class="pop" data-cam-phone hidden>{{ icon("camera", 18) }} Take photos with the phone camera</button>
+      <button type="button" class="pop" data-cam-retry hidden>{{ icon("camera", 18) }} Turn on the camera</button>
+      <p class="cam-how" data-cam-how hidden>On iPhone: Settings &rsaquo; Apps &rsaquo; Safari &rsaquo; Camera &rsaquo; Allow. On other phones, allow the camera for this site in the browser's settings.</p></div>
+  </div>
+  <p class="cam-hint">Fill the frame. Tilt a little if you see glare.</p>
+  <div class="cam-shots" data-shots></div>
+  <div class="cam-sum"><span><b data-count>0</b> photos taken</span><span data-sum-hint hidden>Tap {{ icon("x", 14) }} to delete and retake</span></div>
+  <div class="cam-bar">
+    <button type="button" class="cam-round lib" data-library aria-label="Add photos from your library">{{ icon("image", 20) }}</button>
+    <button type="button" class="shutter" data-shutter aria-label="Take a photo"></button>
+    <button type="button" class="cam-next" data-add disabled>Add to batch</button>
+  </div>
+  <input type="file" accept="image/*" multiple hidden data-library-input>
+  <input type="file" accept="image/*" capture="environment" hidden data-camera-input>
+  <div class="cam-sheet" data-big hidden>
+    <img alt="Your photo">
+    <div class="cam-sheet-acts"><button type="button" class="quiet" data-big-delete>Delete and retake</button><button type="button" data-big-close>Done</button></div>
+  </div>
+  <div class="cam-sheet ask" data-ask hidden>
+    <p><strong data-ask-text></strong><br><span class="muted">They haven't been added to the batch.</span></p>
+    <div class="cam-sheet-acts"><button type="button" class="quiet danger" data-ask-discard>Discard</button><button type="button" data-ask-keep>Keep taking</button></div>
+  </div>
+</div>
+
+<script src="/static/photo-queue.js"></script>
+<script src="{{ asset("js/scan-batch.js") }}" data-page="{{ {"batch": batch.id, "toAdd": counts.to_add, "unchecked": counts.unchecked, "delIcon": icon("x", 12) | string, "camera": true if camera else false} | tojson | forceescape }}"></script>
+{% endblock %}

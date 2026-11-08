@@ -1,0 +1,567 @@
+{
+"30C": [
+"30th",
+"30th-c"
+],
+"AOR": [
+"xy7"
+],
+"AQ": [
+"ecard2"
+],
+"AR": [
+"pl4"
+],
+"ASC": [
+"me02.5"
+],
+"ASR": [
+"swsh10"
+],
+"ASR:TG": [
+"swsh10tg"
+],
+"B2": [
+"base4"
+],
+"BCR": [
+"bw7"
+],
+"BKP": [
+"xy9"
+],
+"BKT": [
+"xy8"
+],
+"BLK": [
+"sv10.5b"
+],
+"BLW": [
+"bw1"
+],
+"BRS": [
+"swsh9"
+],
+"BRS:TG": [
+"swsh9tg"
+],
+"BS": [
+"base1"
+],
+"BST": [
+"swsh5"
+],
+"BUS": [
+"sm3"
+],
+"BWP": [
+"bwp"
+],
+"CEC": [
+"sm12"
+],
+"CEL": [
+"cel25"
+],
+"CEL:CC": [
+"cel25cc"
+],
+"CES": [
+"sm7"
+],
+"CG": [
+"ex14"
+],
+"CIN": [
+"sm4"
+],
+"COL": [
+"col1"
+],
+"CPA": [
+"swsh3.5"
+],
+"CRE": [
+"swsh6"
+],
+"CRI": [
+"me04"
+],
+"CRZ": [
+"swsh12.5"
+],
+"CRZ:GG": [
+"swsh12.5gg"
+],
+"DAA": [
+"swsh3"
+],
+"DCR": [
+"dc1"
+],
+"DET": [
+"det1"
+],
+"DEX": [
+"bw5"
+],
+"DF": [
+"ex15"
+],
+"DP": [
+"dp1"
+],
+"DR": [
+"ex3"
+],
+"DRI": [
+"sv10"
+],
+"DRM": [
+"sm7.5"
+],
+"DRV": [
+"dv1"
+],
+"DRX": [
+"bw6"
+],
+"DS": [
+"ex11"
+],
+"DX": [
+"ex8"
+],
+"EM": [
+"ex9"
+],
+"EP": [
+"bw2"
+],
+"EVO": [
+"xy12"
+],
+"EVS": [
+"swsh7"
+],
+"EX": [
+"ecard1"
+],
+"FCO": [
+"xy10"
+],
+"FFI": [
+"xy3"
+],
+"FLF": [
+"xy2"
+],
+"FLI": [
+"sm6"
+],
+"FO": [
+"base3"
+],
+"FST": [
+"swsh8"
+],
+"FUT20": [
+"fut2020"
+],
+"G1": [
+"gym1"
+],
+"G2": [
+"gym2"
+],
+"GE": [
+"dp4"
+],
+"GEN": [
+"g1"
+],
+"GRI": [
+"sm2"
+],
+"HIF": [
+"sm115"
+],
+"HL": [
+"ex5"
+],
+"HP": [
+"ex13"
+],
+"HS": [
+"hgss1"
+],
+"JTG": [
+"sv09"
+],
+"JU": [
+"base2"
+],
+"KSS": [
+"xy0"
+],
+"LA": [
+"dp6"
+],
+"LC": [
+"lc"
+],
+"LM": [
+"ex12"
+],
+"LOR": [
+"swsh11"
+],
+"LOR:TG": [
+"swsh11tg"
+],
+"LOT": [
+"sm8"
+],
+"LTR": [
+"bw11"
+],
+"MA": [
+"ex4"
+],
+"MCD11": [
+"2011bw"
+],
+"MCD12": [
+"2012bw"
+],
+"MCD14": [
+"2014xy"
+],
+"MCD15": [
+"2015xy"
+],
+"MCD16": [
+"2016xy"
+],
+"MCD17": [
+"2017sm"
+],
+"MCD18": [
+"2018sm"
+],
+"MCD19": [
+"2019sm"
+],
+"MCD21": [
+"2021swsh"
+],
+"MCD22": [
+"2022swsh"
+],
+"MCD23": [
+"2023sv"
+],
+"MCD24": [
+"2024sv"
+],
+"MD": [
+"dp5"
+],
+"MEE": [
+"mee"
+],
+"MEG": [
+"me01"
+],
+"MEP": [
+"mep"
+],
+"MEW": [
+"sv03.5"
+],
+"MFB": [
+"mfb"
+],
+"MT": [
+"dp2"
+],
+"N1": [
+"neo1"
+],
+"N2": [
+"neo2"
+],
+"N3": [
+"neo3"
+],
+"N4": [
+"neo4"
+],
+"NVI": [
+"bw3"
+],
+"NXD": [
+"bw4"
+],
+"OBF": [
+"sv03"
+],
+"P1": [
+"pop1"
+],
+"P2": [
+"pop2"
+],
+"P3": [
+"pop3"
+],
+"P4": [
+"pop4"
+],
+"P5": [
+"pop5"
+],
+"P6": [
+"pop6"
+],
+"P7": [
+"pop7"
+],
+"P8": [
+"pop8"
+],
+"P9": [
+"pop9"
+],
+"PAF": [
+"sv04.5"
+],
+"PAL": [
+"sv02"
+],
+"PAR": [
+"sv04"
+],
+"PBL": [
+"me05"
+],
+"PFL": [
+"me02"
+],
+"PGO": [
+"swsh10.5"
+],
+"PHF": [
+"xy4"
+],
+"PK": [
+"ex16"
+],
+"PL": [
+"pl1"
+],
+"PLB": [
+"bw10"
+],
+"PLF": [
+"bw9"
+],
+"PLS": [
+"bw8"
+],
+"POR": [
+"me03"
+],
+"PRC": [
+"xy5"
+],
+"PRE": [
+"sv08.5"
+],
+"RCL": [
+"swsh2"
+],
+"RG": [
+"ex6"
+],
+"RM": [
+"ru1"
+],
+"RO": [
+"base5"
+],
+"ROS": [
+"xy6"
+],
+"RR": [
+"pl2"
+],
+"RS": [
+"ex1"
+],
+"SCR": [
+"sv07"
+],
+"SF": [
+"dp7"
+],
+"SFA": [
+"sv06.5"
+],
+"SHF": [
+"swsh4.5"
+],
+"SHF:SV": [
+"swsh4.5sv"
+],
+"SI": [
+"si1"
+],
+"SIT": [
+"swsh12"
+],
+"SIT:TG": [
+"swsh12tg"
+],
+"SK": [
+"ecard3"
+],
+"SLG": [
+"sm3.5"
+],
+"SMP": [
+"smp"
+],
+"SS": [
+"ex2"
+],
+"SSH": [
+"swsh1"
+],
+"SSP": [
+"sv08"
+],
+"STS": [
+"xy11"
+],
+"SUM": [
+"sm1"
+],
+"SV": [
+"pl3"
+],
+"SVE": [
+"sve"
+],
+"SVI": [
+"sv01"
+],
+"SVP": [
+"svp"
+],
+"SW": [
+"dp3"
+],
+"TEF": [
+"sv05"
+],
+"TEU": [
+"sm9"
+],
+"TK10A": [
+"tk-sm-r"
+],
+"TK10L": [
+"tk-sm-l"
+],
+"TK1A": [
+"tk-ex-latia"
+],
+"TK1O": [
+"tk-ex-latio"
+],
+"TK2M": [
+"tk-ex-m"
+],
+"TK2P": [
+"tk-ex-p"
+],
+"TK3L": [
+"tk-dp-l"
+],
+"TK3M": [
+"tk-dp-m"
+],
+"TK4G": [
+"tk-hs-g"
+],
+"TK4R": [
+"tk-hs-r"
+],
+"TK5E": [
+"tk-bw-e"
+],
+"TK5Z": [
+"tk-bw-z"
+],
+"TK6N": [
+"tk-xy-n"
+],
+"TK6S": [
+"tk-xy-sy"
+],
+"TK7A": [
+"tk-xy-b"
+],
+"TK7B": [
+"tk-xy-w"
+],
+"TK8A": [
+"tk-xy-latia"
+],
+"TK8O": [
+"tk-xy-latio"
+],
+"TK9P": [
+"tk-xy-p"
+],
+"TK9S": [
+"tk-xy-su"
+],
+"TR": [
+"ex7"
+],
+"TRI": [
+"hgss4"
+],
+"TWM": [
+"sv06"
+],
+"UF": [
+"ex10"
+],
+"UL": [
+"hgss2"
+],
+"UNB": [
+"sm10"
+],
+"UND": [
+"hgss3"
+],
+"UNM": [
+"sm11"
+],
+"UPR": [
+"sm5"
+],
+"VIV": [
+"swsh4"
+],
+"WHT": [
+"sv10.5w"
+],
+"XY": [
+"xy1"
+]
+}

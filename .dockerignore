@@ -1,0 +1,13 @@
+.env
+.env.*
+data/
+caddy/
+dist/
+tests/
+export.csv
+*.md
+.git/
+.gitignore
+**/__pycache__/
+**/*.pyc
+.pytest_cache/

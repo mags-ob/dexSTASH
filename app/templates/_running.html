@@ -1,0 +1,17 @@
+{# The "Running now" box on Data sources: every job (jobs.py), running, then waiting its turn (yours first), then
+   finished in the last few minutes. Refreshes itself while something runs or waits. #}
+{% set busy = running | selectattr("running") | list %}
+<div id="running" class="panel" {% if busy %}hx-get="/account/data/running" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <strong style="font-size:15px">Running now</strong>
+  {% for job in running %}
+  <div class="run-line">
+    {% if job.waiting %}<span class="muted">{{ job.describe() }}</span>
+    {% elif job.running %}<span class="spin" aria-hidden="true"></span> {{ job.describe() }}
+      {% if job.total %}<div class="bar" style="margin-top:4px"><span style="width:{{ (100 * job.done / job.total) | round | int }}%"></span></div>{% endif %}
+    {% elif job.error == restarted %}<span class="muted">{{ icon("warning", 14) }} {{ job.label }}: stopped by a restart. Start it again when you want it.</span>
+    {% elif job.error %}<span class="error">{{ icon("warning", 14) }} {{ job.label }} failed: {{ job.error }}</span>
+    {% else %}<span class="deal">{{ icon("check", 14) }}</span> {{ job.result or job.label ~ " finished." }}{% endif %}
+  </div>
+  {% endfor %}
+  {% if not running %}<div class="muted" style="font-size:14px;margin-top:4px">Nothing is running.{% if price_result %} Last price update: {{ price_result }}{% endif %}</div>{% endif %}
+</div>

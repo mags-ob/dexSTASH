@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{#- The first-run wizard (app/routes/welcome.py). One step a page; Finish is on the last. -#}
+{% block title %}Welcome to {{ app_name }}{% endblock %}
+{% block heading %}Welcome to {{ app_name }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/welcome.css") }}">
+{% if waiting %}
+<section class="panel wz">
+  <h2>Your admin is still setting up</h2>
+  <p class="muted">{{ app_name }} opens once the admin has finished the first-run steps. Try again in a little while.</p>
+  <form method="post" action="/logout"><button class="quiet">Sign out</button></form>
+</section>
+{% else %}
+{% if step <= steps %}<p class="wz-count muted">Step {{ step }} of {{ steps }}</p>
+<div class="wz-dots" aria-hidden="true">{% for n in range(1, steps + 1) %}<i class="{{ 'on' if n <= step else '' }}"></i>{% endfor %}</div>{% endif %}
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+{% if step == 7 %}
+<section class="panel wz">
+  <h2>Getting your stash ready</h2>
+  <p class="muted">The basics download one at a time: exchange rates and TCGplayer's set list, Pokémon names and sprites, Find's card catalog, then mainland Chinese sets if you picked them. After Continue, the first price update, Bulbapedia descriptions and Enhanced Search (if picked) carry on in the background.</p>
+  {% include "_welcome_ready.html" %}
+</section>
+
+{% elif step == 1 %}
+<form method="post" action="/welcome/1" class="panel wz">
+  <h2>Change your password</h2>
+  <p class="muted">First, pick a password of your own for {{ me.username }}. Other devices signed in to this account are signed out.</p>
+  {% if from_env %}<p class="banner" role="status">This account came from <code>DEXSTASH_ADMIN_PASSWORD</code> in <code>.env</code>. Once you've changed it here, take that line out of <code>.env</code>: it's only used to make the first account.</p>{% endif %}
+  <input name="current" type="password" placeholder="Current password" autocomplete="current-password" required>
+  <input name="new" type="password" placeholder="New password" autocomplete="new-password" minlength="{{ min_password }}" required>
+  <input name="again" type="password" placeholder="New password again" autocomplete="new-password" minlength="{{ min_password }}" required>
+  <p class="muted wz-small">At least {{ min_password }} characters.</p>
+  <div class="wz-acts"><button>Next</button></div>
+</form>
+
+{% elif step == 2 %}
+<form method="post" action="/welcome/2" class="panel wz">
+  <h2>The basics</h2>
+  <label>Time zone
+    <input name="zone" value="{{ zone }}" list="zone-list" autocomplete="off" spellcheck="false" required></label>
+  <datalist id="zone-list">{% for z in zones %}<option value="{{ z }}">{% endfor %}</datalist>
+  <p class="muted wz-small">Dates and times show in this zone, and the nightly price update runs by its clock. Type a city to search, like London or Chicago.</p>
+  <label>Currency
+    <select name="currency">{% for code, c in currencies.items() | sort(attribute="1.0") %}<option value="{{ code }}"{% if code == currency %} selected{% endif %}>{{ c[0] }} ({{ code }})</option>{% endfor %}</select></label>
+  <p class="muted wz-small">Prices come in US dollars and show in this currency at the European Central Bank's rate.</p>
+  <div class="wz-acts"><button>Next</button></div>
+</form>
+
+{% elif step == 3 %}
+<form method="post" action="/welcome/3" class="panel wz">
+  <h2>Which cards do you collect?</h2>
+  <div class="wz-ticks">
+    {% for code, name in languages.items() %}
+    <label class="ds-site"><input type="checkbox" name="lang-{{ code }}" value="1"{% if code in collected %} checked{% endif %}><span><b>{{ name }}</b></span></label>
+    {% endfor %}
+  </div>
+  <p class="muted wz-small">Find downloads its own card list for each language you pick (the next step shows the sizes). You can still search any language later.</p>
+  <h3>Extra sites</h3>
+  <p class="muted wz-small">Each stays off until you tick it. Off, the app never contacts it.</p>
+  <div class="ds-sites">
+    {% for key, label, use in sites %}
+    <label class="ds-site"><input type="checkbox" name="site-{{ key }}" value="1"{% if site_on[key] %} checked{% endif %}>
+      <span><b>{{ label }}</b><span class="muted">{{ use }}</span></span></label>
+    {% endfor %}
+  </div>
+  <p class="muted wz-small">Mainland Chinese sets load only when Chinese (mainland) and Chinese card datasets are both ticked.</p>
+  <h3>Prices</h3>
+  <label class="ds-site"><input type="checkbox" name="nightly" value="1"{% if nightly.on %} checked{% endif %}><span><b>Update prices by itself every night</b></span></label>
+  <label>At <input type="time" name="at" value="{{ nightly.time }}" required></label>
+  <p class="muted wz-small">{% if cardtrader_token %}A CardTrader token is set in <code>.env</code>, so CardTrader's prices are used too.{% else %}No CardTrader token is set in <code>.env</code>. It's optional; the README says how to add one.{% endif %}</p>
+  <div class="wz-acts"><a class="btn quiet" href="/welcome?step=2">Back</a><button>Next</button></div>
+</form>
+
+{% elif step == 4 %}
+<form method="post" action="/welcome/4" class="panel wz" data-wz-total>
+  <h2>Downloads</h2>
+  <p class="muted">After Finish, the catalogs, Pokémon data and Chinese sets download first while you wait (one at a time); the rest carries on in the background once the app opens. Sizes are estimates.</p>
+  <div class="wz-downloads">
+    {% for row in downloads %}
+    <label class="ds-site wz-dl" data-down="{{ row.down }}" data-kept="{{ row.kept }}"{% if row.fixed %} data-always{% endif %}{% if row.here %} data-here{% endif %}>
+      {% if row.fixed %}<input type="checkbox" checked disabled>{% else %}<input type="checkbox" name="{{ row.key }}" value="1"{% if row.ticked %} checked{% endif %}{% if row.needs %} data-needs="{{ row.needs }}"{% endif %}>{% endif %}
+      <span><b>{{ row.label }}</b><span class="muted">{{ row.note }}</span>
+        <span class="wz-size">{% if row.here %}Already here.{% else %}{{ row.size }}{% endif %}</span></span></label>
+    {% endfor %}
+  </div>
+  <p class="wz-total"><b>Ticked:</b> <span data-wz-sum>about {{ total_down }} downloaded, {{ total_kept }} kept</span> on your server.</p>
+  <p class="muted wz-small">Everything here is also in Account › Data sources, to download, check or turn off later.</p>
+  <div class="wz-acts"><a class="btn quiet" href="/welcome?step=3">Back</a><button>Next</button></div>
+</form>
+<script src="{{ asset("js/welcome.js") }}"></script>
+
+{% elif step == 5 %}
+<form method="post" action="/welcome/5" class="panel wz">
+  <h2>Add your first cards</h2>
+  <p class="muted">Optional. What you pick opens after Finish.</p>
+  <div class="wz-ticks">
+    <label class="ds-site"><input type="radio" name="first" value="collectr"{% if choices.first == "collectr" %} checked{% endif %}><span><b>Import a Collectr CSV</b><span class="muted">Bring in a collection you already track.</span></span></label>
+    <label class="ds-site"><input type="radio" name="first" value=""{% if not choices.first %} checked{% endif %}><span><b>Not now</b><span class="muted">Go to Home.</span></span></label>
+  </div>
+  <div class="wz-acts"><a class="btn quiet" href="/welcome?step=4">Back</a><button>Next</button></div>
+</form>
+
+{% else %}
+<form method="post" action="/welcome/6" class="panel wz">
+  <h2>Collect with someone?</h2>
+  <p class="muted">Optional. Make a login for someone who shares this collection. Leave it empty to skip; you can add logins later in Account.</p>
+  <input name="username" placeholder="Their username" autocomplete="off" value="{{ partner or '' }}">
+  <input name="password" type="password" placeholder="Their password" autocomplete="new-password">
+  <label class="ds-site"><input type="checkbox" name="is_admin" value="1"><span><b>Admin</b><span class="muted">Can add and remove logins.</span></span></label>
+  <div class="wz-acts"><a class="btn quiet" href="/welcome?step=5">Back</a><button>Finish</button></div>
+</form>
+{% endif %}
+<form method="post" action="/logout" class="wz-out"><button class="quiet">Sign out</button></form>
+{% endif %}
+{% endblock %}

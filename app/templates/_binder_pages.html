@@ -1,0 +1,27 @@
+{# A binder's pages, 4, 9 or 12 pockets each, one copy a pocket, empty sleeves after the last card.
+   Swipe or Turn page; the page is kept in the address (?page=). token: a shared link's (tapping opens the card there). #}
+{% from "_macros.html" import card_picture %}
+{% macro binder_pages(pages, layout, page, hit, pics, token=None) %}
+<div class="bp" data-bp data-start="{{ page }}" data-count="{{ pages | length }}">
+  <div class="bp-pages" data-bp-pages tabindex="0" aria-label="Binder pages">
+    {% for pg in pages %}{% set p = loop.index0 %}
+    <section class="bp-page l{{ layout }}" aria-label="Page {{ loop.index }} of {{ pages | length }}">
+      {% for r in pg %}{% set at = p * layout + loop.index0 %}
+      {% if r %}
+      {% if token %}<button type="button" class="bp-pocket{% if hit == at %} hit{% endif %}" data-card="/b/{{ token }}/card/{{ r.card_id | urlencode }}?printing={{ r.variant }}" aria-label="{{ r.name }}, {{ r.set_name }} #{{ r.number }}">
+      {% else %}<a class="bp-pocket{% if hit == at %} hit{% endif %}" href="/cards/{{ r.card_id }}" aria-label="{{ r.name }}, {{ r.set_name }} #{{ r.number }}{% if r.variant != 'normal' %}, {{ r.variant_label }}{% endif %}">{% endif %}
+        {% set cp = pics.get(r.card_id) %}
+        {% if cp %}{{ card_picture(cp, r.name, r.number, small=True, caption=False) }}{% else %}<span class="bp-ph">{{ r.name }}<small><span class="cno">#{{ r.number }}</span></small></span>{% endif %}
+      {% if token %}</button>{% else %}</a>{% endif %}
+      {% else %}<span class="bp-pocket empty" aria-hidden="true"></span>{% endif %}
+      {% endfor %}
+    </section>
+    {% endfor %}
+  </div>
+  <div class="bp-turn">
+    <button type="button" class="quiet" data-bp-prev aria-label="Turn back a page">&lsaquo;</button>
+    <span data-bp-at aria-live="polite">Page {{ page }} of {{ pages | length }}</span>
+    <button type="button" data-bp-next>Turn page &rsaquo;</button>
+  </div>
+</div>
+{% endmacro %}

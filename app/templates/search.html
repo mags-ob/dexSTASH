@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% set keep_place = true %}{# Opens where you left it when you come back #}
+{% set wide = true %}
+{% from "_macros.html" import cname, card_picture, tile, lang_chips, x_close %}
+{% from "_mycards.html" import active_chips, chip_group %}
+{% from "_evolution.html" import evolution %}
+{% from "_pokemon_tags.html" import pokemon_tags %}
+{% block title %}Find a card · {{ app_name }}{% endblock %}
+{% block heading %}Find{% endblock %}
+{% block filters %}
+<form method="get" action="/search">
+  <h2>Filters <a href="/search?lang=en{% if q %}&amp;q={{ q | urlencode }}{% endif %}{{ carry | replace('?', '&') }}">Clear all</a></h2>
+  <input type="hidden" name="q" value="{{ q }}">
+  {% if fix %}<input type="hidden" name="fix" value="{{ fix }}">{% endif %}
+  {% if scan %}<input type="hidden" name="scan" value="{{ scan }}">{% endif %}
+  {# Sort comes first in every filter panel. #}
+  {{ chip_group("Sort by", "sort", sorts.items(), sort, "Best match") }}
+  {{ chip_group("Search for", "by", [("artist", "Artist")], by_chip, "Card name or number") }}
+  <div class="fgroup"><b>Language</b>
+    <div class="chips">
+      {% for code, label in languages.items() %}<label class="chip"><input type="radio" name="lang" value="{{ code }}" {% if code == lang %}checked{% endif %} data-clear-field="set">{{ label }}</label>{% endfor %}
+    </div>
+  </div>
+  <div class="fgroup"><b>Set</b>
+    <select name="set" aria-label="Set">
+      <option value="">All sets</option>
+      {% for s in sets %}<option value="{{ s.id }}" {% if s.id == set %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="fgroup"><b>Rarity</b>
+    <select name="rarity" aria-label="Rarity">
+      <option value="">Any rarity</option>
+      {% for r in rarities %}<option {% if r == rarity %}selected{% endif %}>{{ r }}</option>{% endfor %}
+    </select>
+  </div>
+  {{ chip_group("Card type", "kind", kinds.items(), kind) }}
+  {% if my_tags or tag %}{% set tag_opts = [] %}{% for t in (my_tags or [tag]) %}{% set _ = tag_opts.append((t, t)) %}{% endfor %}
+  {{ chip_group("Your tags", "tag", tag_opts, tag, "Any") }}{% endif %}
+  {{ chip_group("Owned", "owned", [("no", "Not owned"), ("yes", "Owned")], owned, "Either") }}
+  <button>Show cards</button>
+</form>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/search.css") }}">
+{# Finding the card for a photo or an import row is this same screen, with a banner on top. #}
+{% if scan_fix %}<div class="for-banner">{% if scan_fix.photo %}<img src="/scans/photo/{{ scan_fix.id }}?v={{ scan_fix.photo[:12] }}" alt="Your photo">{% endif %}
+  <div><b>For your photo</b>{% if scan_fix.reading.name or scan_fix.reading.number %}<br>Read as "{{ scan_fix.reading.search_text() }}".{% endif %} Tap "Use this" on the right card.</div></div>{% endif %}
+{% if fix_row %}<div class="for-banner"><div><b>For import row {{ fix_row.line }}</b><br>{{ fix_row.raw["Product Name"] }} #{{ fix_row.raw["Card Number"] }} ({{ fix_row.raw["Set"] }}). Tap "Use this" on the right card.</div></div>{% endif %}
+<form method="get" action="/search" class="find-bar">
+  <span class="find-q sbox">{{ icon("search", 20) }}
+    <input type="search" name="q" value="{{ q }}" placeholder="Name, number or set" aria-label="Card name, number or set" {{ no_correct }} {% if not q %}autofocus{% endif %} autocomplete="off" enterkeyhint="search" data-find-q
+           hx-get="/search/suggest" hx-trigger="input changed delay:250ms" hx-target="#suggest" hx-include="closest form" hx-sync="this:replace">
+    <button type="button" class="find-x sbox-x" aria-label="Clear the search" title="Clear" data-find-x {% if not q %}hidden{% endif %}>{{ icon("x", 14) }}</button>
+  </span>
+  <span style="display:flex;gap:6px">{# Filter sits in the sticky bar, next to save #}
+    <button type="button" class="save-btn icon-btn quiet filter-btn" data-filter-toggle aria-expanded="false" aria-controls="filters"
+            aria-label="Filters{% if filter_count %}, {{ filter_count }} on{% endif %}" title="Filters">{{ icon("filter", 20) }}{% if filter_count %}<span class="badge">{{ filter_count }}</span>{% endif %}</button>
+    {% if this_query %}<button type="button" class="save-btn icon-btn quiet" aria-label="Save this search" title="Save this search" data-save-open>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>{% endif %}</span>
+  <div id="suggest" style="grid-column:1/-1"></div>
+  <input type="hidden" name="lang" value="{{ lang }}">
+  {% for key, value in keep.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+</form>
+<div class="find-chips">{{ lang_chips("lang", lang, url=lang_url) }}</div>
+<script src="{{ asset("js/search.js") }}"></script>
+{% if this_query %}
+<form method="post" action="/search/saved" class="save-form" hidden data-save-form>
+  <input type="hidden" name="query" value="{{ this_query }}">
+  <input name="name" placeholder="Name this search, e.g. Pikachu promos" aria-label="Name for this search" maxlength="40" required>
+  <button>Save</button>
+</form>
+{% endif %}
+{% if request.query_params.get("saved_error") %}<p class="error">{{ request.query_params.get("saved_error") }}</p>{% endif %}
+{% if saved %}
+<div class="saved-row" aria-label="Saved searches">
+  {% for sv in saved %}
+  <span class="saved-chip"><a href="{{ sv.href }}">{{ sv.name }}</a>
+    <details class="saved-more"><summary aria-label="More for {{ sv.name }}">{{ icon("more", 20) }}</summary>
+      <div class="saved-menu">
+        <form method="post" action="/search/saved/rename"><input type="hidden" name="name" value="{{ sv.name }}">
+          <input name="new" value="{{ sv.name }}" aria-label="New name" maxlength="40"><button>Rename</button></form>
+        <form method="post" action="/search/saved/delete"><input type="hidden" name="name" value="{{ sv.name }}"><button class="danger">Delete</button></form>
+      </div></details></span>
+  {% endfor %}
+</div>
+{% endif %}
+<script src="{{ asset("js/search-2.js") }}"></script>
+{% if reading.any %}
+<div class="active-filters word-chips" aria-label="How the search was read">{% for label, rq in reading.chips %}<a href="/search?{{ {'q': rq, 'lang': lang} | urlencode }}" aria-label="Take out {{ label }}">{{ label }} {{ icon("x", 14) }}</a>{% endfor %}</div>
+{% endif %}
+{{ active_chips(active, clear) }}
+{# Artist search. #}
+{% if by and q %}<p class="artist-line">{{ icon("palette", 18) }} Cards drawn by <strong>{{ artist_name }}</strong>{% if artist_link %} &middot; <a href="{{ artist_link }}">Their page &rsaquo;</a>{% endif %}</p>
+{% elif artist_hits %}<div class="chips artist-hits" aria-label="Artists">{% for n in artist_hits %}<a class="chip" href="/search?{{ {'q': n, 'by': 'artist', 'lang': lang} | urlencode }}">{{ icon("palette", 14) }} Artist: {{ n }}</a>{% endfor %}</div>{% endif %}
+{% if did_you_mean %}<p class="did-you-mean">Did you mean <a href="{{ did_you_mean.href }}"><strong>{{ did_you_mean.name }}</strong></a>?</p>{% endif %}
+{# The Pokémon box: ★ and "Pokémon set ›" top right, the evolution line (or just this Pokémon),
+   and its tags folded into one line. #}
+{% macro poke_tags() %}{% if poke and poke.tags %}<details class="fp-tags"><summary>Tags &middot; {{ poke.tags.tags | length }} &rsaquo;</summary>{{ pokemon_tags(poke.dex, poke.tags, here_url, on_find=True) }}</details>{% endif %}{% endmacro %}
+{% if poke %}<div class="find-poke">
+  <div class="fp-acts"><a class="fp-set" href="/pokemon/{{ poke.dex }}">Pokémon set &rsaquo;</a>{% with dex=poke.dex, name=poke.name, following=poke.following %}{% include "_find_star.html" %}{% endwith %}</div>
+  {% if evo %}{% call evolution(evo, evo_href) %}{{ poke_tags() }}{% endcall %}
+  {% else %}<section class="evo" aria-label="{{ poke.name }}"><div class="evo-row"><a href="/pokemon/{{ poke.dex }}" class="here">{% if poke.sprite %}<img src="{{ poke.sprite }}" alt="">{% endif %}<span>{{ poke.name }}</span></a></div>{{ poke_tags() }}</section>{% endif %}
+</div>
+{% elif evo %}{% call evolution(evo, evo_href) %}{% endcall %}{% endif %}
+{% if words_only %}<p class="muted">Add a Pokémon's name or a set to those words, for example "pikachu {{ reading.q }}".</p>{% endif %}
+<p class="describe-link"><a href="#" data-describe-open>{{ icon("help", 18) }} Don't know the name? Describe it</a></p>
+{% include "_describe.html" %}
+
+{% if translation and translation.name != translation.english %}<p>Searching {{ languages[lang] }} cards for <strong>{{ translation.name }}</strong> ({{ translation.english }}).</p>{% endif %}
+{% if translate_error %}<p class="muted">{{ translate_error }}</p>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+{% if set_matches %}
+<h2 style="font-size:16px;margin:4px 0 8px">Sets</h2>
+<div class="set-hits">
+  {% for s in set_matches %}
+  <a class="set-hit" href="{{ '/sets/' ~ s.set_id ~ '?from=find' if s.stored else '/set-preview/' ~ s.lang ~ '/' ~ (s.id | urlencode) }}">
+    {% if s.logo %}<span class="logo"><img src="{{ s.logo }}" alt="" data-fail="remove-parent"></span>{% endif %}
+    <span style="flex:1;min-width:0"><strong>{{ s.plain_name }}</strong><br>
+      <span class="muted" style="font-size:12px">{{ s.id }}{% if lang == "zh" %} &middot; {{ "mainland" if s.lang == "zh-cn" else "Taiwan & Hong Kong" }}{% endif %}{% if s.owned %} &middot; you have cards from it{% endif %}</span></span>
+    <span class="muted" aria-hidden="true">&rsaquo;</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if hand %}
+<h2 style="font-size:16px;margin:4px 0 8px">Added by hand</h2>
+<div class="cgrid" style="margin-bottom:18px">
+  {% for r in hand %}
+  {{ tile("/cards/" ~ r.id ~ (carry or '?from=find'), card_pics(r.id, r.image_url), cname(r.name, r.id, r.twin_name), r.number,
+          price=r.price, third=set_label(r.set_id, r.set_name), owned=r.owned) }}
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if recent_views %}{# An empty Find shows the cards opened last #}
+<h2 style="font-size:16px;margin:10px 0 8px">Recently viewed</h2>
+<div class="cgrid recent-views">
+  {% for r in recent_views %}{{ tile(r.href, card_pics(r.card_id, r.image_url), cname(r.name, r.card_id), r.number) }}{% endfor %}
+</div>
+{% endif %}
+
+{% if results %}
+{% if set_matches or hand %}<h2 style="font-size:16px;margin:4px 0 8px">Cards</h2>{% endif %}
+<p class="muted" style="font-size:13px;margin:0 2px 8px"><span id="find-count">{% if token %}{{ page }} of {% endif %}{{ results|length }}</span>{% if results|length >= max_results %}+{% endif %} match{{ "es" if results|length != 1 }}</p>
+<div class="cgrid" id="find-grid">
+  {% with rows = results[:page], next = page, total = results | length, more = False %}{% include "_find_page.html" %}{% endwith %}
+</div>
+{% elif (q or set) and not error and not hand and (close or filtered or not set_matches) %}
+{#- Nothing found. A filter that left nothing says so, with a way out; close matches ignore the filters. -#}
+{% if filtered %}
+<div class="find-none">
+  <h2 style="font-size:16px;margin:4px 0 2px">{% if set and number and not name %}No <span class="cno">#{{ number }}</span> in {{ filter_names[0] if filter_names else "this set" }}{% else %}Nothing for{% if q %} "{{ q }}"{% endif %} in {{ filter_names | join(", ") }}{% endif %}</h2>
+  <p class="muted" style="font-size:13px;margin:0 2px 10px">Your filter left nothing. Try without it{% if close %}, or pick a close match below{% endif %}.</p>
+  <a class="btn" href="{{ unfiltered }}" data-unfiltered>Search without the filter</a>
+</div>
+{% elif not close %}
+<p class="muted">No cards found{% if q %} for "{{ q }}"{% endif %}.</p>
+{% endif %}
+{% if close %}
+<h2 style="font-size:16px;margin:14px 0 2px">Close matches</h2>
+{% if not filtered %}<p class="muted" style="font-size:13px;margin:0 2px 10px">{% if name and number %}Nothing has that name and number together.{% elif number %}Nothing has that number here.{% endif %}</p>{% endif %}
+{% for key, label in (("number", "#" ~ number ~ " in other sets" ~ (", newest first" if not name else "")), ("name", (name | title) ~ " in other sets")) if close[key] %}
+<h3 style="font-size:14px;margin:10px 2px 6px">{{ label }}</h3>
+<div class="cgrid">{% with rows = close[key], token = None, more = False, next = 0, total = 0 %}{% include "_find_page.html" %}{% endwith %}</div>
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if q %}
+<p style="font-size:14px;margin-top:18px">Not here? <a href="/cards/new?lang={{ "zh-cn" if lang == "zh" else lang }}&number={{ ((number or '') ~ ('/' ~ total if total else '')) | urlencode }}&name={{ (name or '') | urlencode }}{% if scan %}&scan={{ scan }}{% elif fix %}&fix={{ fix }}{% endif %}">Add it by hand</a></p>
+{% endif %}
+<script src="{{ asset("js/search-pages.js") }}" data-page="{{ page }}"></script>
+<script src="{{ asset("js/find-prices.js") }}" defer></script>
+{# style moved to css/search.css #}
+{% endblock %}

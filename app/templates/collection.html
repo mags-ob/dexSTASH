@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% set keep_place = true %}{# Opens where you left it when you come back #}
+{% set wide = true %}
+{% from "_macros.html" import card_picture, condition_badge, cname, tile %}
+{% from "_mycards.html" import switcher, active_chips, chip_group %}
+{% block title %}My Stash · {{ app_name }}{% endblock %}
+{% block heading %}<span data-heading data-name="{{ in_binder.name if in_binder else 'My Stash' }}">{{ in_binder.name if in_binder else "My Stash" }}</span>{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{% if in_binder %}{{ back_to("/collection/binders", "Binders") }}{% endif %}{% endblock %}
+{% block header_actions %}{% if rows %}<button type="button" class="head-btn" data-select-toggle>Select</button>{% endif %}{% endblock %}
+{% block filters %}
+<form method="get" action="{{ here }}">
+  <h2>Filters <a href="{{ here }}{% if not in_binder %}?clear=1{% endif %}">Clear filters</a></h2>
+  {# Sort comes first in every filter panel. #}
+  <div class="fgroup"><b>Sort</b>
+    <div class="chips">{% for key, label in sorts.items() %}<label class="chip"><input type="radio" name="sort" value="{{ key }}" {% if key == sort %}checked{% endif %}>{{ label }}</label>{% endfor %}</div>
+  </div>
+  <label class="sbox small">{{ icon("search", 18) }}<input name="q" value="{{ q }}" placeholder="Name or number" aria-label="Name or number" enterkeyhint="search" {{ no_correct }}><button type="button" class="sbox-x" data-sbox-x aria-label="Clear" title="Clear" hidden>{{ icon("x", 14) }}</button></label>
+  {% if languages | length > 1 or language %}{{ chip_group("Language", "language", language_options, language) }}{% endif %}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <label class="fgroup"><b>Set</b><select name="set">
+      <option value="">Any set</option>
+      {% for s in sets %}<option value="{{ s.id }}" {% if s.id == set %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select></label>
+    <label class="fgroup"><b>Rarity</b><select name="rarity">
+      <option value="">Any rarity</option>
+      {% for r in rarities %}<option {% if r == rarity %}selected{% endif %}>{{ r }}</option>{% endfor %}
+    </select></label>
+  </div>
+  {{ chip_group("How it was added", "method", methods.items(), method, "Any way") }}
+  {% if people | length > 1 %}{{ chip_group("Added by", "by", people_options, by, "Anyone") }}{% endif %}
+  {{ chip_group("Got it from", "origin", origins.items(), origin, "Anywhere") }}
+  {{ chip_group("Price", "price", price_options, price, "Any price") }}
+  {% if not in_binder and binders %}{{ chip_group("Binder", "binder", binder_options, binder, "Any") }}{% endif %}
+  {{ chip_group("Added", "added", added_options, added, "Any time") }}
+  {% if tag_options or tag %}{{ chip_group("Tags", "tag", tag_options or [(tag, tag)], tag, "Any tag") }}{% endif %}
+  <button>Show cards</button>
+</form>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/collection.css") }}">
+{{ switcher("binders" if in_binder else "cards") }}
+{% if in_binder %}<link rel="stylesheet" href="{{ asset("css/binder-pages.css") }}">{% include "_binder_head.html" %}{% endif %}
+{{ active_chips(active, clear) }}
+{% if did_you_mean %}<p class="did-you-mean" style="font-size:15px;margin:4px 2px 12px">Did you mean <a href="{{ did_you_mean.href }}" data-replace><strong>{{ did_you_mean.name }}</strong></a>?</p>{% endif %}
+{% if done %}<p role="status">{{ done }}</p>{% endif %}
+{% if moved %}<p class="muted">Changed {{ moved }} cop{{ "y" if moved == "1" else "ies" }}.</p>{% endif %}
+<p class="muted" style="margin:6px 2px">{{ count }} card{{ "s" if count != 1 }} &middot; worth {{ value | money }}{% if paid %} &middot; you paid {{ paid | money }}{% endif %}</p>
+<p class="select-line muted">Tap cards to select them &middot; <a href="#" data-select-all data-total="{{ lines }}">Select all {{ lines }}</a></p>
+
+<form id="bulk" method="post" action="/collection/bulk"><input type="hidden" name="back" value="{{ query }}"><input type="hidden" name="back_path" value="{{ here }}">
+  {% if in_binder %}<input type="hidden" name="from_binder" value="{{ binder }}">{% endif %}
+  <input type="hidden" name="all" value="" data-all></form>
+{% if mismatched %}
+<div class="printing-check">
+  <strong>Check the printing</strong>
+  {% for r in mismatched %}
+  <div>{{ cname(r.name, r.card_id, r.twin_name) }} <span class="cno">#{{ r.number }}</span>: TCGplayer has no {{ r.variant_label }} price for this card. It lists
+    {% for o in r.other_printings %}{{ o.label }} at {{ o.price | money }}{{ ", " if not loop.last }}{% endfor %}.
+    {% for o in r.other_printings %}
+    <form method="post" action="/cards/{{ r.card_id }}/move" style="display:inline">
+      <input type="hidden" name="variant" value="{{ r.variant }}"><input type="hidden" name="condition" value="{{ r.condition }}">
+      <input type="hidden" name="to_variant" value="{{ o.variant }}"><input type="hidden" name="back" value="collection">
+      <button class="quiet" style="padding:2px 8px;font-size:12px;min-height:30px">Change to {{ o.label }}</button>
+    </form>{% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+<div class="cgrid">
+  {% if rows %}{% include "_collection_tiles.html" %}{% else %}
+  <p class="muted">{% if active %}No cards match these filters.{% elif in_binder %}Nothing here yet. Use Select on Cards, or a scan's Put in binder, to move cards in.{% else %}No cards yet. Use Find or Scan to add some.{% endif %}</p>
+  {% endif %}
+</div>
+<p class="muted" style="font-size:12px">Every condition but Damaged counts at the card's price. Tap a card for its printing, condition, price source and what you paid.</p>
+
+{% if rows %}
+<div class="bulk-bar" role="toolbar" aria-label="Selected cards">
+  <b class="bulk-n" data-picked>0 selected</b>
+  <button type="button" class="quiet" data-open="bulk-note">{{ icon("note") }}<span>Add note</span></button>
+  <button type="button" class="quiet pop" data-open="bulk-binder">{{ icon("binder") }}<span>To binder</span></button>
+  <button type="button" class="quiet" data-open="bulk-paid">{{ icon("dollar") }}<span>Set paid</span></button>
+  <button type="button" class="quiet" data-open="bulk-spending">{{ icon("bag") }}<span>Purchase</span></button>
+  <button type="button" class="quiet danger" data-open="bulk-remove">{{ icon("trash") }}<span>Remove</span></button>
+</div>
+
+<dialog class="bulk ds-dialog" id="bulk-remove">
+  <div class="dlg-ic">{{ icon("trash", 24) }}</div>
+  <h2 data-remove-q{% if in_binder %} data-where=""{% endif %}>Remove the selected cards?</h2>
+  {% if in_binder %}
+  <div class="chips" style="flex-direction:column;align-items:stretch">
+    <label class="chip"><input type="radio" form="bulk" name="remove_from" value="stash" checked>Remove from your stash</label>
+    {% if in_binder.id %}<label class="chip"><input type="radio" form="bulk" name="remove_from" value="binder">Only take them out of {{ in_binder.name }}</label>{% endif %}
+  </div>
+  {% else %}<input type="hidden" form="bulk" name="remove_from" value="stash">{% endif %}
+  <p class="muted" style="font-size:13px;margin:8px 0 0">The copies go. Chases, notes, tags and price history stay, and each card's history says who removed them.</p>
+  <div class="acts"><button type="button" class="quiet" data-close>Cancel</button><button form="bulk" name="action" value="remove" class="danger" data-heavy-tpl="Removing {n}…">Remove</button></div>
+</dialog>
+
+<dialog class="bulk ds-dialog" id="bulk-binder">
+  <div class="dlg-ic">{{ icon("binder", 24) }}</div>
+  <h2>Move to binder</h2>
+  <div class="chips" style="flex-direction:column;align-items:stretch">
+    {% for b in binders %}{% if not in_binder or b.id != in_binder.id %}<label class="chip"><input type="radio" form="bulk" name="to_binder" value="{{ b.id }}" {% if loop.first %}checked{% endif %}>{{ b.name }}</label>{% endif %}{% endfor %}
+    {% if not in_binder or in_binder.id %}<label class="chip"><input type="radio" form="bulk" name="to_binder" value="none" {% if not binders %}checked{% endif %}>Not in a binder</label>{% endif %}
+    <label class="chip"><input type="radio" form="bulk" name="to_binder" value="new" data-new-binder>New binder…</label>
+  </div>
+  <input form="bulk" name="new_binder" maxlength="40" placeholder="Name, e.g. Trade binder" aria-label="New binder name" style="width:100%;margin-top:8px" hidden data-new-binder-name>
+  <p class="muted" style="font-size:13px;margin:8px 0 0">{% if in_binder %}The selected cards' copies in {{ in_binder.name }} move.{% else %}Every copy of the selected cards moves, wherever it is now.{% endif %}</p>
+  <div class="acts"><button type="button" class="quiet" data-close>Cancel</button><button form="bulk" name="action" value="binder" data-heavy-tpl="Moving {n} to the binder…">Move</button></div>
+</dialog>
+
+<dialog class="bulk ds-dialog" id="bulk-paid">
+  <div class="dlg-ic">{{ icon("dollar", 24) }}</div>
+  <h2>Set paid</h2>
+  <div class="chips" style="margin-bottom:10px">
+    <label class="chip"><input type="radio" form="bulk" name="mode" value="each" checked>Each card costs</label>
+    <label class="chip"><input type="radio" form="bulk" name="mode" value="split">Split a total</label>
+  </div>
+  <input form="bulk" name="paid" placeholder="{{ currency_symbol() }} 0.00" inputmode="decimal" aria-label="Amount paid" style="width:100%">
+  <p class="muted" style="font-size:13px;margin:8px 0 0" data-paid-help>The same price per copy goes on every selected card. Leave it empty to clear it.</p>
+  <div class="acts"><button type="button" class="quiet" data-close>Cancel</button><button form="bulk" name="action" value="paid" data-heavy-tpl="Saving what you paid for {n}…">Save</button></div>
+</dialog>
+
+<dialog class="bulk ds-dialog" id="bulk-note">
+  <div class="dlg-ic">{{ icon("note", 24) }}</div>
+  <h2>Add note</h2>
+  <input form="bulk" name="note" maxlength="500" placeholder="e.g. binder 2, page 4" aria-label="Note" style="width:100%">
+  <p class="muted" style="font-size:13px;margin:8px 0 0">The note goes on each selected card, for the whole card, with your name.</p>
+  <div class="acts"><button type="button" class="quiet" data-close>Cancel</button><button form="bulk" name="action" value="note" data-heavy-tpl="Adding the note to {n}…">Add note</button></div>
+</dialog>
+
+<dialog class="bulk ds-dialog" id="bulk-spending">
+  <div class="dlg-ic">{{ icon("bag", 24) }}</div>
+  <h2>Add to a spending entry</h2>
+  <select form="bulk" name="purchase_id" aria-label="Spending entry" style="width:100%" data-entry>
+    <option value="new">New entry…</option>
+    {% for p in purchases %}<option value="{{ p.id }}">{{ p.label }} &middot; {{ p.cost | money(p.currency) }}{% if p.purchased_on %} &middot; {{ p.purchased_on }}{% endif %}</option>{% endfor %}
+  </select>
+  <div data-new-entry style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:8px">
+    <input form="bulk" name="new_label" placeholder="What, e.g. Card show singles" aria-label="Entry name">
+    <input form="bulk" name="new_cost" placeholder="Total {{ currency_symbol() }}" inputmode="decimal" aria-label="Total paid">
+  </div>
+  <p class="muted" style="font-size:13px;margin:8px 0 0">Each card's cost becomes its share of the entry. A price paid you set on the card itself is replaced. Nothing is added to your collection.</p>
+  <div class="acts"><button type="button" class="quiet" data-close>Cancel</button><button form="bulk" name="action" value="spending" data-heavy-tpl="Adding {n} to the spending entry…">Add</button></div>
+</dialog>
+
+<script src="{{ asset("js/collection-2.js") }}"></script>
+{% endif %}
+{% endblock %}

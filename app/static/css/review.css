@@ -1,0 +1,3 @@
+  .review a { display:flex; gap:10px; align-items:center; color:inherit; text-decoration:none; padding:8px 0; border-top:1px solid var(--line); }
+  .review a:first-child { border-top:0; }
+  .review .pic { width:34px; flex:none; }

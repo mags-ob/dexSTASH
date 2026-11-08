@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Scan cards · {{ app_name }}{% endblock %}
+{% block heading %}Scan{% endblock %}
+{% block content %}
+<div class="banner" id="photos-later" role="status" hidden>
+  <span data-n></span>
+  <span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" class="pop" data-send>{{ icon("upload", 16) }} Send now</button>
+    <button type="button" class="quiet" data-drop>{{ icon("trash", 16) }} Delete them</button></span>
+</div>
+{% from "_macros.html" import lang_chips, lang_tag %}
+{% macro status_icon(kind) -%}
+{% if kind == "reading" %}<span class="st st-read" title="Being read"><span class="spin"></span></span>
+{% elif kind == "confirm" %}<span class="st st-need" title="Needs you">!</span>
+{% else %}<span class="st st-done" title="Finished">{{ icon("check", 14) }}</span>{% endif %}
+{%- endmacro %}
+{% macro batch_line(b, kind) -%}
+<div class="batch-line" id="batch-{{ b.id }}">
+  {{ status_icon(kind) }}
+  <a href="/scans/{{ b.id }}" style="flex:1;min-width:0;color:inherit;text-decoration:none">
+    <strong>{{ b.name or (b.created_at | long_date) }}</strong>{% if b.language != "auto" %} {{ lang_tag(b.language) }}{% endif %}
+    <div class="muted" style="font-size:12px">{% if b.name %}{{ b.created_at | long_date }}, {% endif %}{{ b.created_at | clock }} &middot; {{ b.photos }} photo{{ "s" if b.photos != 1 }}{% if b.created_by_name %} &middot; by {{ b.created_by_name }}{% endif %}{% if b.origin %} &middot; {{ origins[b.origin] }}{% endif %}</div>
+    {% if b.reading or b.to_confirm or b.added %}<div class="muted" style="font-size:12px">{% if b.reading %}{{ b.reading }} being read{% endif %}{% if b.reading and (b.to_confirm or b.added) %} &middot; {% endif %}{% if b.to_confirm %}<strong style="color:var(--fg)">{{ b.to_confirm }} to confirm</strong>{% endif %}{% if b.to_confirm and b.added %} &middot; {% endif %}{% if b.added %}{{ b.added }} added{% endif %}</div>{% endif %}
+  </a>
+  <form method="post" action="/scans/{{ b.id }}/delete" style="margin:0"
+        data-confirm="Delete this batch?{% if b.reading or b.to_confirm %} Photos you haven't confirmed are deleted.{% endif %} Cards you already added stay.">
+    <button class="quiet" style="width:40px;min-height:40px;padding:0" aria-label="Delete this batch">{{ icon("x", 14) }}</button>
+  </form>
+</div>
+{%- endmacro %}
+<link rel="stylesheet" href="{{ asset("css/scans.css") }}">
+{% if problem %}<p class="banner">{{ problem }}</p>{% endif %}
+<form method="post" action="/scans" class="panel" style="display:grid;gap:10px;margin:12px 0">
+  <strong>New batch</strong>
+  <span class="muted" style="font-size:13px">Scanning works out English, Japanese and Chinese (mainland and Taiwan) cards on its own, in any mix. For Korean cards, tap the photo's language tag and pick KO.</span>
+  <button>Start</button>
+</form>
+
+{% if reading %}
+<h2 style="font-size:16px">Being read</h2>
+<div class="panel" style="padding:0 14px" data-reading>{% for b in reading %}{{ batch_line(b, "reading") }}{% endfor %}</div>
+<p class="muted" style="font-size:12px;margin:4px 2px">This page updates by itself while photos are being read.</p>
+{% endif %}
+
+{% if to_confirm %}
+<h2 style="font-size:16px">To confirm</h2>
+<div class="panel" style="padding:0 14px">{% for b in to_confirm %}{{ batch_line(b, "confirm") }}{% endfor %}</div>
+{% endif %}
+
+{% if finished %}
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+  <h2 style="font-size:16px">Finished</h2>
+  <form method="post" action="/scans-finished/clear" style="margin:0" data-confirm="Delete the {{ finished | length }} finished batch{{ 'es' if finished | length != 1 }}? Cards you added stay.">
+    <button class="quiet" style="min-height:36px;padding:4px 12px;font-size:14px">Clear finished batches</button>
+  </form>
+</div>
+<div class="panel" style="padding:0 14px">{% for b in finished %}{{ batch_line(b, "done") }}{% endfor %}</div>
+{% endif %}
+
+{% if reading or to_confirm %}<p class="muted" style="font-size:12px">Photos stay until you add or remove each card, or delete the batch.</p>{% endif %}
+{% if reading %}
+<script src="{{ asset("js/scans.js") }}"></script>
+{% endif %}
+<script src="/static/photo-queue.js"></script>
+<script src="{{ asset("js/scans-2.js") }}"></script>
+{% endblock %}

@@ -1,0 +1,16 @@
+{# My Stash' tiles, CARDS_CHUNK at a time; the last one loads the next lot when it scrolls into view. #}
+{% from "_macros.html" import cname, tile %}
+  {% for r in rows %}
+  {% set tags = ([r.variant_label] if r.variant != "normal" else []) + ([r.condition] if r.condition != "NM" else []) %}
+  {% set ph %}{% if r.price is not none and not r.counted %}<span class="muted" style="text-decoration:line-through">{{ r.price | money }}</span>
+    <span class="muted" style="display:block;font-size:12px">Damaged, not counted</span>{% endif %}{% endset %}
+  {#- Every card here is yours, so no owned ring or ✓. -#}
+  {% call tile("/cards/" ~ r.card_id, pictures_for(r, extras_map.get(r.card_id)), cname(r.name, r.card_id, r.twin_name), r.number, r.logo_url,
+          price=r.price, third=set_label(r.set_id, r.set_name), owned=false, qty=r.quantity,
+          tag=tags | join(" · ") if tags else "",
+          title=r.name ~ " · " ~ r.set_name ~ " #" ~ r.number ~ " · " ~ r.variant_label,
+          price_html=ph if (r.price is not none and not r.counted) else none) %}
+    <label class="mc-check"><input type="checkbox" form="bulk" name="lines" value="{{ r.key }}" data-card="{{ r.card_id }}" data-qty="{{ r.quantity }}" aria-label="Select {{ r.name }}"></label>
+  {% endcall %}
+  {% endfor %}
+{% if more_url %}<div class="cgrid-more" hx-get="{{ more_url }}" hx-trigger="revealed" hx-swap="outerHTML" aria-hidden="true"></div>{% endif %}

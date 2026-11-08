@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% set keep_place = true %}{# Opens where you left it when you come back #}
+{% from "_macros.html" import set_image, sname %}
+{% from "_mycards.html" import switcher, active_chips, chip_group %}
+{% block title %}Sets · {{ app_name }}{% endblock %}
+{% block heading %}My Stash{% endblock %}
+{% block filters %}
+<form method="get" action="/collection/sets">
+  <h2>Filters <a href="/collection/sets?clear=1">Clear filters</a></h2>
+  {# Sort comes first in every filter panel. #}
+  <div class="fgroup"><b>Sort</b>
+    <div class="chips">{% for key, label in sorts.items() %}<label class="chip"><input type="radio" name="sort" value="{{ key }}" {% if key == sort %}checked{% endif %}>{{ label }}</label>{% endfor %}</div>
+  </div>
+  <label class="sbox small">{{ icon("search", 18) }}<input name="q" value="{{ q }}" placeholder="Set name or code" aria-label="Set name or code" enterkeyhint="search" {{ no_correct }}><button type="button" class="sbox-x" data-sbox-x aria-label="Clear" title="Clear" hidden>{{ icon("x", 14) }}</button></label>
+  {% if language_options | length > 1 or language %}{{ chip_group("Language", "language", language_options, language) }}{% endif %}
+  {{ chip_group("Show", "show", shows.items(), show) }}
+  <button>Show sets</button>
+</form>
+{% endblock %}
+{% block content %}
+{{ switcher("sets") }}
+{{ active_chips(active, clear) }}
+{# A grid of set tiles, 3 across on phones (more on bigger screens): logo, name, progress. #}
+<div class="set-grid">
+  {% for s in sets %}
+  <a class="set-tile" href="/sets/{{ s.set_id }}" title="{{ s.owned_main }} of {{ s.printed_total }}{% if s.extra_total %}, +{{ s.owned_extra }} of {{ s.extra_total }} secret and subset cards{% endif %}{% if s.owned_value %} · Yours: {{ s.owned_value | money }}{% endif %}">
+    <span class="st-logo">{{ set_image(s.set_id, s.logo_url, s.symbol_url) }}</span>
+    <strong class="st-name">{{ sname(s.set_id, s.name, s.language) }}</strong>
+    <span class="bar"><span style="width:{{ s.percent }}%"></span></span>
+    <span class="st-count">{{ s.owned_main }}/{{ s.printed_total }} &middot; {{ s.percent }}%</span>
+  </a>
+  {% else %}
+  <p class="muted">{% if active %}No sets match these filters.{% else %}No sets yet. Add a card from Find and its set shows here.{% endif %}</p>
+  {% endfor %}
+</div>
+{% endblock %}

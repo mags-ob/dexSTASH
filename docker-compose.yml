@@ -1,0 +1,123 @@
+name: dexstash
+# dexSTASH: one image, one or two containers sharing the data folder.
+#   dexstash          the web app; your Caddy proxies to dexstash:8000
+#   dexstash-scanner  reads scan photos, Enhanced Search, fingerprints and picture lookups,
+#                     at low priority, so searches and pages stay quick while a batch reads.
+#                     Only with DEXSTASH_SCANNER=separate and COMPOSE_PROFILES=scanner in .env
+#                     (or: docker compose --profile scanner up -d).
+# Settings come from .env (copy .env.example). See DEPLOY.md.
+# Docker's own log for each container stops at 3 files of 10 MB (the app's activity log is in data/logs/).
+x-logging: &logs
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  app:
+    build: .
+    # Built here from the Dockerfile unless .env names a ready-built image (DEPLOY.md › Using a release image):
+    #   DEXSTASH_IMAGE=dexstash:0.28.0   and   DEXSTASH_PULL_POLICY=never
+    image: ${DEXSTASH_IMAGE:-dexstash:latest}
+    pull_policy: ${DEXSTASH_PULL_POLICY:-build}
+    container_name: dexstash
+    restart: unless-stopped
+    logging: *logs
+    env_file: .env
+    environment:
+      DEXSTASH_SECRET_KEY: ${DEXSTASH_SECRET_KEY:-}   # empty: the app makes one in data/secret_key
+      DEXSTASH_SCANNER: ${DEXSTASH_SCANNER:-}   # off | inside | separate; empty: the switch in Data sources › Scanning
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Etc/UTC}
+      DISPLAY_TZ: ${DISPLAY_TZ:-}   # first start only; then Data sources › Settings › Time zone
+    volumes:
+      - ./data:/srv/data   # database, downloaded data, backups, scan photos, name list: back this folder up
+    # Pages, searches and the nightly price update. Idles around 100-150 MB. The 2 GB cap is a ceiling, room for
+    # the photo reader when scanning runs inside this container; without it the app stays near its idle size.
+    # A small host that doesn't scan inside can lower it with DEXSTASH_APP_MEMORY=1g in .env.
+    # cpu_shares: other containers at the default (1024) win when the CPU is busy; 512 beats the scanner's 256.
+    mem_reservation: 192m
+    mem_limit: ${DEXSTASH_APP_MEMORY:-2g}
+    cpu_shares: 512
+    cpus: 1
+    networks: [dexstash]
+    # Not published: only Caddy reaches the app. For a quick LAN test without
+    # Caddy, uncomment and set DEXSTASH_HTTPS_ONLY=0 in .env.
+    # ports:
+    #   - "127.0.0.1:8000:8000"   # only if Caddy runs on the host itself, not in Docker
+
+  scanner:
+    profiles: [scanner]   # started only with the scanner profile (COMPOSE_PROFILES=scanner in .env)
+    build: .
+    image: ${DEXSTASH_IMAGE:-dexstash:latest}   # the same image as the app
+    pull_policy: ${DEXSTASH_PULL_POLICY:-build}
+    container_name: dexstash-scanner
+    restart: unless-stopped
+    logging: *logs
+    command: ["python", "-m", "app.scan_worker"]
+    env_file: .env
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Etc/UTC}
+      DISPLAY_TZ: ${DISPLAY_TZ:-}   # first start only; then Data sources › Settings › Time zone
+      DEXSTASH_CARDTRADER_TOKEN: ""   # only the app asks CardTrader for prices
+    depends_on:
+      app:
+        condition: service_healthy   # the app sets up the database first
+    volumes:
+      - ./data:/srv/data
+    # Reading a photo needs ~500 MB, the picture model another 400-600 MB while loaded (it unloads after
+    # 5 idle minutes). One CPU at low priority: the web app and your other apps come first.
+    mem_reservation: 256m
+    mem_limit: 1408m
+    cpu_shares: 256
+    cpus: 1
+    healthcheck:
+      disable: true   # no web server here; Data sources shows whether it's running
+    # On the default network only: it reaches out (TCGdex, pictures), nothing reaches in.
+
+  # Only runs with:  docker compose --profile caddy up -d
+  caddy:
+    image: caddy:2
+    container_name: dexstash-caddy
+    restart: unless-stopped
+    logging: *logs
+    profiles: [caddy]
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      DEXSTASH_DOMAIN: ${DEXSTASH_DOMAIN:-cards.example.com}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/data:/data       # HTTPS certificates
+      - ./caddy/config:/config
+    networks: [dexstash]
+
+  # Keeps your DuckDNS name pointed at your home IP. Only runs with:
+  #   docker compose --profile duckdns up -d
+  # Skip it if your router or NAS already updates DuckDNS.
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    container_name: dexstash-duckdns
+    restart: unless-stopped
+    logging: *logs
+    profiles: [duckdns]
+    environment:
+      SUBDOMAINS: ${DUCKDNS_SUBDOMAIN:-}
+      TOKEN: ${DUCKDNS_TOKEN:-}
+      TZ: ${TZ:-Etc/UTC}
+
+# The network Caddy reaches the app on. To join the network your own Caddy
+# already uses, set in .env:
+#   DEXSTASH_NETWORK=<that network's name>   and   DEXSTASH_NETWORK_EXTERNAL=true
+networks:
+  dexstash:
+    name: ${DEXSTASH_NETWORK:-dexstash}
+    external: ${DEXSTASH_NETWORK_EXTERNAL:-false}

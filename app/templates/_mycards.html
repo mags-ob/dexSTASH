@@ -1,0 +1,25 @@
+{# Shared parts of My Stash: the Cards · Binders · Sets · Chases · Spending switcher, the chips
+   for filters that are on, and chip groups for the Filter panel. #}
+{% macro switcher(on) -%}
+<nav class="seg stash-tabs" aria-label="My Stash">
+  <a href="/collection"{% if on == "cards" %} class="on" aria-current="page"{% endif %}>Cards</a>
+  <a href="/collection/binders"{% if on == "binders" %} class="on" aria-current="page"{% endif %}>Binders</a>
+  <a href="/collection/sets"{% if on == "sets" %} class="on" aria-current="page"{% endif %}>Sets</a>
+  <a href="/chases"{% if on == "chases" %} class="on" aria-current="page"{% endif %}>Chases</a>
+  <a href="/spending"{% if on == "spending" %} class="on" aria-current="page"{% endif %}>Spending</a>
+</nav>
+{%- endmacro %}
+
+{% macro active_chips(active, clear) -%}
+{% if active %}<div class="active-filters">{% for label, key in active %}<a href="{{ clear[key] }}" aria-label="Clear {{ label }}">{{ label }} {{ icon("x", 14) }}</a>{% endfor %}</div>{% endif %}
+{%- endmacro %}
+
+{# One row of radio chips; the first, "All", is the empty value. #}
+{% macro chip_group(title, name, options, selected, all="All") -%}
+<div class="fgroup"><b>{{ title }}</b>
+  <div class="chips">
+    <label class="chip"><input type="radio" name="{{ name }}" value="" {% if not selected %}checked{% endif %}>{{ all }}</label>
+    {% for key, label in options %}<label class="chip"><input type="radio" name="{{ name }}" value="{{ key }}" {% if key|string == selected|string %}checked{% endif %}>{{ label }}</label>{% endfor %}
+  </div>
+</div>
+{%- endmacro %}

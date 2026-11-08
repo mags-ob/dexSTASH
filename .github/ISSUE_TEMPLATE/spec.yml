@@ -1,0 +1,47 @@
+name: Spec
+description: Write or update a spec in docs/specs/ before the issues that depend on it.
+labels: ["spec"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A spec says what one part of dexSTASH does and why. See docs/specs/README.md for what a spec holds.
+        A spec is written from the current code the first time an issue touches that part.
+  - type: input
+    id: file
+    attributes:
+      label: Spec file
+      placeholder: docs/specs/prices.md
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Capability (one thing a person does with the app)
+        - Technical (a layer many capabilities share)
+    validations:
+      required: true
+  - type: dropdown
+    id: change
+    attributes:
+      label: New or update
+      options:
+        - New, written from the current code
+        - Update to an existing spec
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why now
+      description: The issues waiting on this spec, or what changed.
+      placeholder: "Needed before #12 and #14."
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: What it covers
+      description: The pages, routes, tables, settings and outside sources in scope, and what is left out.

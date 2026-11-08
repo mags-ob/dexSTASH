@@ -1,0 +1,58 @@
+  .binder-spots { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+  .binder-chip { min-height:28px; padding:2px 10px; font-size:12px; border-radius:8px; background:var(--bar); color:inherit; border:1px solid var(--line); }
+  .binder-move { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:0 0 12px; font-size:14px; }
+  .binder-move[hidden] { display:none; }
+  .binder-move select, .binder-move input[name=new_binder] { min-height:38px; max-width:100%; }
+  /* Card page, Option D. */
+  .cv-chip { display:inline-block; margin-top:6px; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:500;
+             background:var(--bar); color:var(--muted); }
+  .cv-chip[hidden] { display:none; }
+  .cv-links { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 0; }
+  .cv-link { display:inline-flex; align-items:center; min-height:36px; padding:4px 12px; border-radius:16px; font-size:14px; font-weight:600;
+             background:var(--surface); color:var(--fg); border:1px solid var(--line); text-decoration:none; }
+  .cv-link.add { border-style:dashed; color:var(--muted); background:transparent; }
+  .cv-check { margin-top:12px; padding:12px 14px; border-radius:var(--radius); background:var(--danger-soft, var(--accent-soft)); border:1px solid var(--line); }
+  .cv-check b { display:flex; gap:6px; align-items:center; font-size:14px; }
+  .cv-check-acts { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .cv-tabs { margin:14px 0 4px; }
+  .cv-tabs button { flex:1; padding:7px 0; border:0; border-radius:8px; background:none; font:inherit; font-size:14px; font-weight:500; color:var(--muted); min-height:0; }
+  .cv-sub { font-size:17px; margin:16px 0 4px; }
+  .cv-prints { margin-top:6px; }
+  .pr-row { display:flex; flex-wrap:wrap; gap:6px; }
+  .pr-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:8px; font-size:13px; font-weight:500;
+             border:1.5px solid var(--line); color:var(--fg); }
+  .pr-chip.have { background:var(--accent); border-color:var(--accent); color:var(--on, #fff); }
+  .pr-chip small { font-weight:500; color:var(--muted); }
+  .pr-chip .ic { width:13px; height:13px; }
+  .copies { display:grid; gap:10px; margin-top:12px; }
+  .copy { border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); overflow:hidden; }
+  .copy-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 14px; font-size:15px;
+               background:color-mix(in srgb, var(--accent) 5%, var(--surface)); border-bottom:1px solid var(--line); }
+  .copy-body { padding:10px 14px 12px; font-size:14px; display:grid; gap:4px; }
+  .copy-body .muted { font-size:13px; }
+  .copy-note { margin:2px 0 0; padding:6px 10px; border-radius:8px; background:var(--accent-soft); font-size:13px; }
+  .copy-acts { display:flex; gap:8px; margin-top:6px; }
+  .copy-acts form { margin:0; }
+  .copy-acts button { min-height:38px; min-width:44px; padding:4px 12px; }
+  .copy-acts > button { margin-right:auto; display:inline-flex; gap:6px; align-items:center; }
+  .chase-card { margin-top:12px; border-color:color-mix(in srgb, var(--chase) 25%, var(--line)); }
+  .chase-head { background:color-mix(in srgb, var(--chase) 5%, var(--surface)); color:var(--fg); border-bottom:1px solid var(--line); }
+  .chase-head .ic { color:var(--chase); }
+  .chase-head b { display:inline-flex; gap:6px; align-items:center; }
+  .chase-head span { font-size:12px; color:var(--muted); }
+  .chase-card h3 { margin:6px 0 2px; font-size:13px; font-weight:500; color:var(--muted); }
+  .copy-sheet form { display:grid; }
+  .copy-line { border:0; padding:0; margin:0; min-width:0; }
+  .copy-line:disabled { opacity:.55; }
+  .copy-same { font-size:13px; margin:12px 0 0; }
+  .copy-scope { margin-top:4px; }
+  .copy-sheet-acts { display:flex; gap:8px; margin-top:16px; }
+  .copy-sheet-acts button { flex:1; min-height:46px; }
+  .copy-sheet-acts .danger { color:var(--danger-text); }
+  .cv-cards { display:grid; gap:10px; margin-top:12px; }
+  .cv-cards > .copies { margin-top:0; }
+  .cv-cards > .chase-card { margin-top:0; }
+  @media (min-width: 820px) {  /* iPad and PC: the phone's one column, centred; copy cards two across in it; the chase under them */
+    .cv-left, .cv-right > :not([data-tab]), .cv-right > [data-tab] > * { max-width:600px; margin-left:auto; margin-right:auto; }
+    .cv-cards > .copies { grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); align-items:start; }
+  }

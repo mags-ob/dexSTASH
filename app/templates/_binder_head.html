@@ -1,0 +1,109 @@
+{# A binder's header, in Pages and Grid view: what's in it, the Pages / Grid toggle, Share and the gear.
+   Needs in_binder, binder_view, binder_set ({layout, sort}), binder_count, binder_value, share, share_open, new_code. #}
+{% set bhere = "/collection/binders/" ~ (in_binder.id if in_binder.id else "none") %}
+<div class="binder-head bh">
+  <p class="bh-info muted">{{ binder_count }} card{{ "s" if binder_count != 1 }} &middot; {{ binder_value | money }} &middot; {{ binder_sorted_by[binder_set.sort] }}</p>
+  <div class="bh-acts">
+    <nav class="seg bh-view" aria-label="View">
+      <a href="{{ bhere }}?view=pages"{% if binder_view == "pages" %} class="on" aria-current="page"{% endif %}>Pages</a>
+      <a href="{{ bhere }}?view=grid"{% if binder_view == "grid" %} class="on" aria-current="page"{% endif %}>Grid</a>
+    </nav>
+    {% if binder_view == "pages" %}<button type="button" class="head-btn" aria-label="Find a card in this binder" data-bp-find-open>{{ icon("search", 18) }}</button>{% endif %}
+    {% if in_binder.id and share %}<button type="button" class="head-btn share-btn{% if share.on %} on{% endif %}" data-show="share-sheet">{{ "Shared" if share.on else "Share" }}</button>{% endif %}
+    <button type="button" class="head-btn" aria-label="Binder settings" data-show="binder-gear">{{ icon("gear", 18) }}</button>
+  </div>
+</div>
+{% if binder_view == "pages" %}
+<form method="get" action="{{ bhere }}" class="bp-find" data-bp-find{% if not find %} hidden{% endif %}>
+  <label class="sbox small">{{ icon("search", 18) }}<input type="search" name="find" value="{{ find }}" placeholder="Find a card by name or number" aria-label="Find a card"></label>
+  <button>Find</button>
+</form>
+{% if find and not find_page %}<p class="muted bp-miss" role="status">No card matching "{{ find }}" in {{ in_binder.name }}.</p>{% endif %}
+{% endif %}
+{% if in_binder.id and share %}
+  <dialog id="share-sheet" class="share-sheet" aria-label="Share this binder"{% if share_open %} data-open{% endif %}>
+    <div class="sh-in">
+      <div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Share {{ in_binder.name }}</h2>
+        <button type="button" class="x-close" aria-label="Close" data-dialog-close>{{ icon("x", 14) }}</button></div>
+      {% set link = (request.base_url ~ "b/" ~ share.token) if share.token else "" %}
+      {% if new_code %}
+      {% set message = in_binder.name ~ ": " ~ link ~ "\nAccess code: " ~ new_code.code %}
+      <div class="panel sh-new" role="status">
+        <b>Code for {{ new_code.name }}</b>
+        <code id="new-code" style="display:block;font-size:24px;letter-spacing:2px;margin:4px 0">{{ new_code.code }}</code>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          {% if share.on and link %}
+          <button type="button" data-copy="{{ message }}">Copy link + code</button>
+          <button type="button" class="quiet" data-share-native hidden data-share-text="{{ message }}">Share&hellip;</button>
+          {% endif %}
+          <button type="button" class="quiet" data-copy="{{ new_code.code }}">Copy code</button>
+        </div>
+        <span class="muted" style="font-size:12px;display:block;margin-top:6px">Copy it now: it's shown only this once.{% if not (share.on and link) %} Turn sharing on above, then send it with the link.{% endif %}</span>
+      </div>
+      {% endif %}
+      <form method="post" action="/collection/binders/{{ in_binder.id }}/share" class="sh-row">
+        <input type="hidden" name="on" value="{{ '' if share.on else '1' }}">
+        <span><b>Share this binder</b><br><span class="muted" style="font-size:13px">{{ "On: people with the link and a code can look." if share.on else "Off. Nobody can see it." }}</span></span>
+        <button class="{{ 'quiet' if share.on else '' }}">{{ "Turn off" if share.on else "Turn on" }}</button>
+      </form>
+      {% if share.on and share.token %}
+      <div class="sh-row" style="flex-wrap:wrap">
+        <input id="share-link" readonly value="{{ link }}" style="flex:1;min-width:0;font-size:13px" data-select-text>
+        <button type="button" data-copy="{{ link }}">Copy</button>
+        <button type="button" class="quiet" data-share-native hidden data-share-url="{{ link }}">Share&hellip;</button>
+      </div>
+      <form method="post" action="/collection/binders/{{ in_binder.id }}/share/new" data-confirm="Make a new link? The old one stops working at once. Codes keep working with the new link."
+           ><button class="quiet" style="font-size:13px">New link</button></form>
+      {% endif %}
+      <h3 style="margin:14px 0 4px">Access codes</h3>
+      <p class="muted" style="font-size:13px;margin:0 0 8px">The link alone shows only "Enter your access code". Make a code for each person; Revoke stops it at once on every device that used it. A device that entered a code is remembered for 30 days.</p>
+      {% for c in share.codes %}
+      <div class="sh-row">
+        <span><b>{{ c.name }}</b><br>
+          <span class="muted" style="font-size:12px">Added{% if c.added_by %} by {{ c.added_by }}{% endif %} {{ c.created_at | when }} · {% if c.last_used_at %}Last used {{ c.last_used_at | when }}{% else %}Not used yet{% endif %}</span></span>
+        <form method="post" action="/collection/binders/{{ in_binder.id }}/codes/{{ c.id }}/revoke" data-confirm="Revoke {{ c.name }}'s code? It stops working at once."
+             ><button class="quiet">Revoke</button></form>
+      </div>
+      {% endfor %}
+      <form method="post" action="/collection/binders/{{ in_binder.id }}/codes" class="sh-row" data-native>
+        <input name="name" maxlength="40" placeholder="Who it's for, e.g. Mike" aria-label="Who the code is for" required style="flex:1;min-width:0">
+        <button>Add code</button>
+      </form>
+      {% if share.history %}
+      <h3 style="margin:14px 0 4px">Code history</h3>
+      {% for h in share.history %}
+      <div class="sh-row" style="font-size:13px"><span>Code for <b>{{ h.name }}</b> {{ h.action }}{% if h.by_name %} by {{ h.by_name }}{% endif %}</span>
+        <span class="muted" style="white-space:nowrap">{{ h.at | when }}</span></div>
+      {% endfor %}
+      <form method="post" action="/collection/binders/{{ in_binder.id }}/codes/history/clear" data-confirm="Clear the code history? Codes that still work stay."
+           ><button class="quiet" style="font-size:13px">Clear history</button></form>
+      {% endif %}
+      <p class="muted" style="font-size:12px;margin-bottom:0">Visitors see each card's picture, name, set, number, rarity, printing, copies and price, and the binder's total. Never condition, notes, who added it, what you paid, where it came from, other binders, chases, or your photos.</p>
+    </div>
+  </dialog>
+  <script src="{{ asset("js/collection.js") }}"></script>
+{% endif %}
+<dialog id="binder-gear" class="sheet bgear" aria-labelledby="binder-gear-h">
+  <div class="sheet-head"><h2 id="binder-gear-h">{{ in_binder.name }}</h2>
+    <button type="button" class="x-close" aria-label="Close" data-dialog-close>{{ icon("x", 14) }}</button></div>
+  <form method="post" action="{{ bhere }}/settings" class="sheet-body bgear-form">
+    {% if in_binder.id %}<label>Name <input name="name" value="{{ in_binder.name }}" maxlength="40" required></label>{% endif %}
+    <div class="fgroup"><b>Pockets a page</b>
+      <div class="chips">{% for n in binder_layouts %}<label class="chip"><input type="radio" name="layout" value="{{ n }}"{% if n == binder_set.layout %} checked{% endif %}>{{ n }}</label>{% endfor %}</div></div>
+    <div class="fgroup"><b>Order</b>
+      <div class="chips">{% for k, label in binder_sorts.items() %}<label class="chip"><input type="radio" name="sort" value="{{ k }}"{% if k == binder_set.sort %} checked{% endif %}>{{ label }}</label>{% endfor %}</div></div>
+    <button>Save</button>
+  </form>
+  <div class="sheet-body bgear-download">
+    <b>Download this binder</b>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <a class="button quiet" href="/collection/binders/{{ in_binder.id if in_binder.id else 'none' }}/export.csv" download>CSV</a>
+      <a class="button quiet" href="/collection/binders/{{ in_binder.id if in_binder.id else 'none' }}/export.csv?format=collectr" download>Collectr format</a>
+    </div>
+  </div>
+  {% if in_binder.id %}
+  <form method="post" action="/collection/binders/{{ in_binder.id }}/delete" class="sheet-body" data-confirm="Delete {{ in_binder.name }}? Its cards stay in your stash, Not in a binder."
+       ><button class="quiet danger">Delete binder</button>
+    <p class="muted" style="font-size:13px;margin:6px 0 0">The cards stay in your stash, Not in a binder.</p></form>
+  {% endif %}
+</dialog>

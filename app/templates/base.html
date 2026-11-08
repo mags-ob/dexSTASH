@@ -1,0 +1,112 @@
+{% from "_macros.html" import x_close %}{#- the Filter sheet's close button -#}
+{#- Each person picks Light or Dark (Account › Theme); Dark by default. The phone's own setting isn't followed. -#}
+{%- set mode = user.mode if user is defined and user and user.mode in ("light", "dark") else "dark" -%}
+<!doctype html>
+<html lang="en" data-mode="{{ mode }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  {% set theme = theme_for(user) if user is defined and user else none %}
+  {#- The status bar is the header's own solid colour (--surface), so the two meet without a seam. -#}
+  <meta name="theme-color" content="{{ '#1c1c1f' if mode == 'dark' else '#ffffff' }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="{{ app_name }}">
+  {#- The page paints under the clock in both looks, so switching Light / Dark never shows the wrong bar. -#}
+  {# Round 27: Light gets iOS's light status bar (dark clock on white); Dark keeps the see-through one (white clock).
+     iOS reads this when the app is added to the Home Screen, so after switching looks, add it again. #}
+  <meta name="apple-mobile-web-app-status-bar-style" content="{{ 'default' if mode == 'light' else 'black-translucent' }}">
+  <link rel="manifest" href="/manifest.webmanifest?v={{ asset_version("icon-512.png") }}{% if mode == 'light' %}&amp;mode=light{% endif %}">
+  <link rel="preload" href="/static/fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="{{ asset("favicon-32.png") }}" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="{{ asset("icon-180.png") }}">
+  <link rel="apple-touch-icon" sizes="152x152" href="{{ asset("icon-152.png") }}">
+  <link rel="apple-touch-icon" sizes="167x167" href="{{ asset("icon-167.png") }}">
+  {% for s in splash_links() %}<link rel="apple-touch-startup-image" media="{{ s.media }}" href="{{ s.href }}">
+  {% endfor %}
+  <script src="/static/htmx-2.0.4.min.js"></script>{# Shipped with the app (BSD licence, static/htmx-LICENSE.txt) #}
+  <script src="{{ asset("js/base.js") }}"></script>
+  <script src="{{ asset("js/actions.js") }}"></script>
+  <link rel="stylesheet" href="{{ asset("css/base.css") }}">
+  {% if theme %}
+  <style id="theme-style">
+    /* The signed-in login's Pokémon colours (app/themes.py). */
+    {%- set role_vars = {"dark": "c-dark", "on_dark": "on-dark", "second_bg": "c-second", "on_second": "on-second", "light": "c-light",
+                         "chip": "c-chip", "pop": "c-pop", "on_pop": "on-pop", "page": "bg"} %}
+    :root { {% for k in ("accent", "on", "ink", "tint", "own", "own_on") %}{% if theme.light[k] %}--{{ k | replace("_", "-") }}:{{ theme.light[k] }}; {% endif %}{% endfor %}--accent-soft:{{ theme.light.soft }};
+            {% for k, v in role_vars.items() %}{% if theme.light[k] %}--{{ v }}:{{ theme.light[k] }}; {% endif %}{% endfor %}}
+    :root[data-mode=dark] { {% for k in ("accent", "on", "ink", "tint", "own", "own_on") %}{% if theme.dark[k] %}--{{ k | replace("_", "-") }}:{{ theme.dark[k] }}; {% endif %}{% endfor %}--accent-soft:{{ theme.dark.soft }};
+              {% for k, v in role_vars.items() %}{% if theme.dark[k] %}--{{ v }}:{{ theme.dark[k] }}; {% endif %}{% endfor %}}
+  </style>
+  {% endif %}
+</head>
+{%- set path = request.url.path if request else "" -%}
+{%- set home_paths = ["/"] + ([] if from_find else ["/sets"]) -%}
+{%- set find_paths = ["/search", "/preview", "/set-preview"] + (["/cards", "/sets"] if from_find else []) -%}
+{%- set mycards_paths = ["/collection", "/chases", "/wants", "/spending", "/purchases"] + ([] if from_find else ["/cards"]) -%}
+{%- macro on(prefixes) -%}{% if lit(prefixes) == "1" %} class="on"{% endif %}{%- endmacro -%}
+{%- macro lit(prefixes) -%}{%- set ns = namespace(hit=false) -%}{%- for p in prefixes -%}{%- if path == p or (p != "/" and path.startswith(p)) -%}{%- set ns.hit = true -%}{%- endif -%}{%- endfor -%}{%- if ns.hit %}1{% endif -%}{%- endmacro -%}
+{#- Tapping Find while on Find starts over, in English. -#}
+{%- set find_href = "/search?lang=en" if lit(find_paths) == "1" else "/search" -%}
+{#- Generic titles (the four places) show only on phones; a title that names a thing shows everywhere. -#}
+{%- set heading_html = self.heading() -%}
+{%- set generic = (heading_html | striptags | trim) in ["Home", "Find", "Scan", "My Stash", app_name] -%}
+{%- set back_html = self.back() | trim -%}
+<body class="{% if user %}has-tabs{% endif %}{% if generic %} generic-title{% endif %}"{% if keep_place %} data-keep-place{% endif %}>
+  <div class="ds-load" aria-hidden="true"></div>
+  <header class="top">
+    {% if user %}<a class="brand" href="/" aria-label="{{ app_name }} home"><img src="{{ asset("logo.svg") }}" alt="" width="32" height="32"><span>{{ app_name }}</span></a>{% endif %}
+    {% if back_html %}{{ back_html }}{% endif %}
+    <h1>{% block heading %}<a href="/">{{ app_name }}</a>{% endblock %}</h1>
+    {% if user %}
+    <nav aria-label="Main">
+      <a href="/"{{ on(home_paths) }}>{{ icon("home", 18) }}Home</a>
+      <a href="{{ find_href }}"{{ on(find_paths) }}>{{ icon("search", 18) }}Find</a>
+      {% if scanning_on() %}<a href="/scans"{{ on(["/scans"]) }}>{{ icon("camera", 18) }}Scan</a>{% endif %}{# No Scan tab with scanning off #}
+      <a href="/collection"{{ on(mycards_paths) }}>{{ icon("cards", 18) }}My Stash</a>{# The box logo is the brand; the tab has a line icon like the others #}
+    </nav>
+    {% block header_actions %}{% endblock %}
+    {%- set filter_panel = self.filters() -%}
+    <button type="button" class="head-btn head-refresh" aria-label="Refresh this page" title="Refresh" data-reload>{{ icon("refresh", 18) }}</button>
+    <details class="me">
+      <summary aria-label="Your profile menu" title="Your profile"><span class="avatar">{{ user.username[:1] }}</span></summary>
+      <div class="profile-menu">
+        <div class="who">Signed in as {{ user.username }}</div>
+        <a href="/account"{{ on(["/account"]) if not path.startswith("/account/data") }}>Account</a>
+        <a href="/imports"{{ on(["/imports"]) }}>Import from CSV</a>
+        {% if user.owner %}<a href="/account/data"{{ on(["/account/data"]) }}>Data sources <small>admin</small></a>{% endif %}
+        <form method="post" action="/logout"><button>Sign out</button></form>
+      </div>
+    </details>
+    {% endif %}
+  </header>
+  {% if user and (back_html or not generic) %}<div class="page-head">{% if back_html %}{{ back_html }}{% endif %}{% if not generic %}<h1 aria-hidden="true">{{ heading_html }}</h1>{% endif %}</div>{% endif %}
+  {% if user and filter_panel | trim %}
+  <button type="button" class="fab-filter" data-filter-toggle aria-expanded="false" aria-controls="filters"
+          aria-label="Filter{% if filter_count %}, {{ filter_count }} on{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>{% if filter_count %}<span class="badge">{{ filter_count }}</span>{% endif %}</button>
+  <div class="filters-scrim" hidden data-filter-close></div>
+  <div class="filters" id="filters" role="dialog" aria-label="Filters" hidden><span class="sheet-x">{{ x_close("", "Close filters", "data-filter-close") }}</span>{{ filter_panel }}</div>
+  {% endif %}
+  {% if user and upgrade_finishing() %}<p class="muted upgrade-note" role="status">Finishing the upgrade: prices may be out of date for a few minutes.</p>{% endif %}
+  <main{% if wide %} class="wide"{% endif %}>{% block content %}{% endblock %}</main>
+  <div class="ds-over" id="ds-over" role="alertdialog" aria-modal="true" aria-live="polite" aria-labelledby="ds-over-text" hidden>
+    <div class="ds-over-card"><div class="ds-spin" aria-hidden="true"></div><b id="ds-over-text"></b>
+      <div class="bar loose" data-over-bar><span></span></div><span class="muted" data-over-note>Please stay on this page.</span>
+      <button type="button" data-over-act hidden></button><button type="button" class="quiet" data-over-act2 hidden></button></div></div>
+  {% if user and got_waiting(user) %}<div data-got hidden></div>{% endif %}{# "You got it!" (_got.html) #}
+  <script src="{{ asset("js/base-2.js") }}"></script>
+  <script src="{{ asset("js/base-nav.js") }}" data-close-icon="{{ icon("x", 22) | forceescape }}"></script>
+  {%- if false %}{% block filters %}{% endblock %}{% block back %}{% endblock %}{% endif %}
+  {% if user %}
+  <nav class="tabs" aria-label="Main">
+    <a href="/"{{ on(home_paths) }}>{{ icon("home", 24) }}Home</a>
+    <a href="{{ find_href }}"{{ on(find_paths) }} data-find-tab>{{ icon("search", 24) }}Find</a>
+    {% if scanning_on() %}<a href="/scans"{{ on(["/scans"]) }}>{{ icon("camera", 24) }}Scan</a>{% endif %}
+    <a href="/collection"{{ on(mycards_paths) }}>{{ icon("cards", 24) }}My Stash</a>
+  </nav>
+  <script src="{{ asset("js/base-3.js") }}"></script>
+  {% endif %}
+</body>
+</html>

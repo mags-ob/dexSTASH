@@ -1,0 +1,26 @@
+{# Find's "Don't know the name?": describe a Pokémon in words, pick a colour or type, tap its sprite. #}
+{% from "_macros.html" import x_close %}
+<dialog class="sheet describe" id="describe" aria-labelledby="describe-h">
+  <div class="sheet-head"><h2 id="describe-h">Describe the Pokémon</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+  <form class="sheet-body" hx-get="/describe" hx-target="#describe-results" hx-trigger="input changed delay:400ms from:[name=words], change, submit"
+        data-no-submit>
+    <input type="hidden" name="lang" value="{{ lang }}">
+    <span class="find-q sbox">{{ icon("search", 20) }}
+      <input name="words" type="search" placeholder="e.g. blue turtle with cannons" aria-label="Describe it in words" {{ no_correct }} autocomplete="off" enterkeyhint="search" data-words>
+      <button type="button" class="find-x sbox-x" aria-label="Clear the words" title="Clear" data-words-x hidden>{{ icon("x", 14) }}</button>
+    </span>
+    <div class="fgroup"><b>Colour</b>
+      <div class="chips">
+        <label class="chip"><input type="radio" name="colour" value="" checked>Any</label>
+        {% for c in describe_colours %}<label class="chip"><input type="radio" name="colour" value="{{ c }}"><i class="sw-dot sw-{{ c }}" aria-hidden="true"></i>{{ c | capitalize }}</label>{% endfor %}
+      </div>
+    </div>
+    <div class="fgroup"><b>Pokémon type (up to two)</b>
+      <div class="chips" data-two-kinds>
+        {% for t in describe_types %}<label class="chip"><input type="checkbox" name="kind" value="{{ t }}">{{ t | capitalize }}</label>{% endfor %}
+      </div>
+    </div>
+    <div id="describe-results"><p class="muted">Type what it looks like, or pick a colour or type.</p></div>
+  </form>
+</dialog>
+<script src="{{ asset("js/describe.js") }}"{% if describe_word %} data-word="{{ describe_word }}"{% endif %}></script>
