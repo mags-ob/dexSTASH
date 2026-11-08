@@ -6,8 +6,9 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 
 ### Changed
 - Release images are also pushed to the container registry, so `docker compose pull` updates (#1).
+- `docker-compose.yml` runs the release image (`ghcr.io/obiehq/dexstash`); `DEXSTASH_VERSION` in `.env` pins a version and `--build` builds from source. `DEXSTASH_IMAGE` and `DEXSTASH_PULL_POLICY` are gone (#39).
 - **Pillow 13.0.0** (from 12.3.0) and **certifi 2026.10.18**, which fix known vulnerabilities pip-audit reported. Photo reading, pictures and thumbnails were checked with the new Pillow.
-- **Images built on GitHub.** Each release carries the image ready-built (amd64 and arm64) to load with `docker load`, and every pull request gets a test image (`pr-<number>`) a host can try before it's merged. `DEXSTASH_IMAGE` in `.env` runs one instead of building on the server. See DEPLOY.md › Using a release image.
+- **Images built on GitHub.** Each release carries the image ready-built (amd64 and arm64) to load with `docker load`, and every pull request gets a test image (`pr-<number>`) a host can try before it's merged. See DEPLOY.md › Using a release image.
 - **New checks on every pull request** (the Checks workflow): lint, the core rules, secret scanning and known-vulnerable packages. Contributors see what each one wants in AGENTS.md and the rules folder.
 
 ## 0.28.0

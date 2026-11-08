@@ -11,8 +11,8 @@ APP_NAME_DEFAULT = "dexSTASH"
 # Every DEXSTASH_ setting the app or docker-compose.yml reads, for the check below.
 # (tests/test_round26.py checks the code and docker-compose.yml against it.)
 KNOWN = ("ADMIN_PASSWORD", "ADMIN_USER", "APP_MEMORY", "CARD_INDEX", "CARDTRADER_TOKEN", "DB", "DOMAIN", "EURO_RATE",
-         "HTTPS_ONLY", "IMAGE", "NETWORK", "NETWORK_EXTERNAL", "PICTURE_CHECK", "PICTURE_MODEL_URL", "PROXY_IPS",
-         "PULL_POLICY", "SCANNER", "SECRET_KEY", "TCGCSV", "TCGDEX_CACHE")
+         "HTTPS_ONLY", "NETWORK", "NETWORK_EXTERNAL", "PICTURE_CHECK", "PICTURE_MODEL_URL", "PROXY_IPS",
+         "SCANNER", "SECRET_KEY", "TCGCSV", "TCGDEX_CACHE", "VERSION")
 _OFF = {"0", "false", "no", "off"}
 _OTHER_PREFIX = re.compile(r"^([A-Z][A-Z0-9]*)_(" + "|".join(sorted(KNOWN, key=len, reverse=True)) + r")$")
 

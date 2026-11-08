@@ -49,10 +49,9 @@ jobs:
             echo "### Test image"
             echo "In \`.env\` on your server:"
             echo '```'
-            echo "DEXSTASH_IMAGE=${{ steps.meta.outputs.tags }}"
-            echo "DEXSTASH_PULL_POLICY=always"
+            echo "DEXSTASH_VERSION=pr-${{ github.event.pull_request.number }}"
             echo '```'
-            echo "then \`docker compose up -d\`. A pull request with a database step upgrades your database: see DEPLOY.md › Trying a pull request."
+            echo "then \`docker compose pull && docker compose up -d\`. A pull request with a database step upgrades your database: see DEPLOY.md › Trying a pull request."
           } >> "$GITHUB_STEP_SUMMARY"
 
   remove:
