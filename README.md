@@ -27,7 +27,7 @@
 - **Prices** from TCGplayer (through TCGCSV), CardTrader and PriceCharting (with your own API keys) and your own, averaged, with history and top movers.
 - **Your collection, your way:** printings, conditions, binders you can share, chases, spending and pack pulls.
 - **Shared logins** on one collection, with who added what.
-- **Import and export:** Collectr CSV import, and CSV downloads of your stash, binders and chases.
+- **Import and export:** CSV import, and CSV downloads of your stash, binders and chases.
 - **Looks after itself:** nightly backups and price updates, and an activity log you can read on your phone.
 - **Your currency and time zone,** and Pokémon colour themes in light and dark.
 
