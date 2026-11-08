@@ -40,7 +40,7 @@
 
 ## Quick start
 
-dexSTASH runs in Docker. It comes as a ready-built image (`ghcr.io/obiehq/dexstash`, amd64 and arm64), so you only need the compose file and, if you want to change a setting, a `.env` file:
+dexSTASH is a Docker app. Download the compose file and settings, then start it:
 
 ```sh
 mkdir dexstash && cd dexstash
@@ -49,11 +49,7 @@ curl -fsSL -o .env https://raw.githubusercontent.com/obiehq/dexSTASH/main/.env.e
 docker compose up -d
 ```
 
-[Configuration](docs/configuration.md) lists every setting in `.env`.
-
-The app doesn't publish a port of its own. It's meant to sit behind a reverse proxy that serves HTTPS, such as [Caddy](https://caddyserver.com), because a phone's camera only works on an HTTPS page. [DEPLOY.md](DEPLOY.md) has the full steps: the proxy, trying it on your own computer first, and the first sign-in, after which a short wizard sets the rest.
-
-To build the image yourself instead, see [Building from source](#building-from-source).
+[DEPLOY.md](DEPLOY.md) has the full setup, [Configuration](docs/configuration.md) every setting, and [Building from source](#building-from-source) how to build it yourself.
 
 ## Where data comes from
 
@@ -178,9 +174,9 @@ dexSTASH is a fan project. It is not affiliated with, endorsed by or sponsored b
 
 ## Use of AI
 
-dexSTASH is built with Anthropic's Claude, the only AI used in this project.
+dexSTASH is built and maintained with Anthropic's Claude.
 
-- **Code:** most of the code, tests and documentation is written by Claude, working from a GitHub issue and the spec for that part of the app. The project's designer reviews every pull request before it's merged, and the test suite, lint, rules check and secret scan run on each one.
-- **Other work:** the project is run with a software development life cycle (SDLC) to keep the app accurate and stable. Each change starts as an issue with acceptance criteria and a spec, gets a written plan, is built and tested on its own branch, and is approved by the designer at each step. Claude helps turn requests into issues, write specs and plans, review changes, draft release notes, and make the screenshots and diagrams.
-- **Rules:** [AGENTS.md](AGENTS.md) and [rules/](rules/) are the rules Claude follows here. They exist so AI-written work stays safe to publish and consistent with the rest of the app: they keep personal details and secrets out of the repository, allow only data sources whose terms permit it, and set how code is built, tested and documented. Some are checked automatically on every pull request.
-- **In the app:** dexSTASH doesn't send anything to an AI service. Scanning reads photos with models that run on your own server (RapidOCR and the optional CLIP picture model).
+- **Code:** Claude writes most of the code, tests and docs; the designer reviews every change before it's merged.
+- **Process:** each change goes from issue to spec, plan, build and tests, with the designer's approval at each step, to keep the app accurate and stable.
+- **Rules:** [AGENTS.md](AGENTS.md) and [rules/](rules/) keep personal details, secrets and unlicensed data out, and keep the code consistent.
+- **In the app:** nothing is sent to an AI service; scanning runs on your own server.
