@@ -34,11 +34,22 @@ def test_the_spec_rule_reads_the_pull_request_from_the_event_file(tmp_path, monk
     assert check_rules.pull_request() == ([], "Spec: none", "chore/local-checks")
 
 
-def test_checks_only_stand_for_the_pull_request_s_own_commit(monkeypatch):
-    head = local_checks.run(["git", "rev-parse", "HEAD"]).stdout.strip()
-    assert "checked out" in local_checks.problem_before_running({"headRefOid": "0" * 40})
-    clean = local_checks.run(["git", "status", "--porcelain", "--untracked-files=no"]).stdout.strip() == ""
-    assert (local_checks.problem_before_running({"headRefOid": head}) is None) == clean
+def test_checks_run_on_the_pull_request_s_commit_in_its_own_folder(monkeypatch):
+    sha = local_checks.run(["git", "rev-parse", "HEAD"]).stdout.strip()
+    pr = {"number": 1, "headRefOid": sha, "baseRefOid": sha, "headRefName": "chore/x", "body": "", "url": "u"}
+    reports = []
+    monkeypatch.setattr(local_checks, "pull_request", lambda n: pr)
+    monkeypatch.setattr(local_checks, "fetch", lambda pr: None)  # no network
+    monkeypatch.setattr(local_checks, "gh", lambda *a: json.dumps({"nameWithOwner": "o/r"}))
+    monkeypatch.setattr(local_checks, "report", lambda repo, sha, name, state, note: reports.append((name, state, sha)))
+    probe = ("import os, subprocess, sys; head = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, "
+             f"text=True).stdout.strip(); sys.exit(head != {sha!r} or os.getcwd() == {str(ROOT)!r})")
+    monkeypatch.setattr(local_checks, "CHECKS", {"Lint (ruff)": [sys.executable, "-c", probe]})
+    worktrees = local_checks.run(["git", "worktree", "list"]).stdout
+    assert local_checks.main(["1"]) == 0
+    assert reports[-1] == ("Lint (ruff)", "success", sha)
+    assert local_checks.WORK == ROOT
+    assert local_checks.run(["git", "worktree", "list"]).stdout == worktrees  # the copy is removed again
 
 
 def test_a_check_that_cannot_run_is_reported_as_failed(monkeypatch, capsys):
@@ -46,8 +57,7 @@ def test_a_check_that_cannot_run_is_reported_as_failed(monkeypatch, capsys):
     pr = {"number": 1, "headRefOid": head, "baseRefOid": head, "headRefName": "chore/x", "body": "", "url": "u"}
     reports = []
     monkeypatch.setattr(local_checks, "pull_request", lambda n: pr)
-    monkeypatch.setattr(local_checks, "problem_before_running", lambda pr: None)
-    monkeypatch.setattr(local_checks, "fetch_base", lambda pr: None)  # no network
+    monkeypatch.setattr(local_checks, "fetch", lambda pr: None)  # no network
     monkeypatch.setattr(local_checks, "gh", lambda *a: json.dumps({"nameWithOwner": "o/r"}))
     monkeypatch.setattr(local_checks, "report", lambda repo, sha, name, state, note: reports.append((name, state)))
     monkeypatch.setattr(local_checks, "CHECKS", {"Secrets (gitleaks)": ["no-such-tool-xyz"],
