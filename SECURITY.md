@@ -8,7 +8,7 @@ You'll get a reply as soon as the maintainer can look at it. Once a fix is relea
 
 ## Supported versions
 
-Only the latest release gets security fixes. Update with the steps under "Updating" in the README.
+Only the latest release gets security fixes. Update with the steps in [docs/updating.md](docs/updating.md).
 
 ## Running it safely
 

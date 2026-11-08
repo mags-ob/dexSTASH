@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 if not os.environ.get("DEXSTASH_DB"):
     sys.exit("Set DEXSTASH_DB to a new, empty folder's dexstash.db first.")
 
-from app import auth, catalog, card_pictures, db, inventory, prices, sites, spending, web  # noqa: E402
+from app import auth, catalog, card_pictures, db, inventory, prices, sites, spending, web, welcome  # noqa: E402
 
 SET_ID = "demo"
 # (name, type colour, rarity, market price)
@@ -112,6 +112,9 @@ def main() -> None:
         spending.create_purchase(conn, user, "Demo Waves booster box", 129.99, packs=36)
     except Exception as e:  # the demo works without it
         print("no purchase:", e)
+    with db.transaction(conn):
+        welcome.finish(conn)  # past the first-run wizard, so every page opens as usual
+        conn.execute("UPDATE app_meta SET value = 'hidden' WHERE key = 'getting_started'")
     conn.commit()
     print(f"Demo collection ready: {len(OWNED)} cards owned. Sign in as misty / pikachu123.")
 

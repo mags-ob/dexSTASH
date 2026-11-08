@@ -83,7 +83,7 @@ each site's terms. A new source, or a new use of an old one, starts here.
 - Data with personal-use terms (PTCG-CHS-Datasets, Pokémon sprites, Bulbapedia text) is downloaded on the
   host's own server and never committed or put in an image.
 - A new site that isn't needed for the app to work gets a switch, off on a new install.
-- A new outgoing host is added to DEPLOY.md's firewall list and the README's "Where your data comes from".
+- A new outgoing host is added to DEPLOY.md's firewall list and the README's "Where data comes from".
 - Tests never contact a real site.
 
 ## Interfaces

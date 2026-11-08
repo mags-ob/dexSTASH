@@ -269,7 +269,8 @@ def test_workflows_run_only_when_asked():
 
 # --- Item 4: docs for strangers -------------------------------------------------------------------------------
 
-DOCS = ["README.md", "DEPLOY.md", "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md", "NOTICE.md", "docs/architecture.md"]
+DOCS = ["README.md", "DEPLOY.md", "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md", "NOTICE.md", "docs/architecture.md",
+        "docs/configuration.md", "docs/updating.md", "docs/backups.md", "docs/scanning.md"]
 
 
 def test_every_link_and_picture_in_the_docs_is_there():
