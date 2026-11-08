@@ -1,16 +1,29 @@
-# The test suite: on every push, on pull requests, when started by hand
+# The test suite: on pushes to main, on pull requests, when started by hand
 # (Actions > Tests > Run workflow), and before a release image is built (image.yml calls it).
+# A pull request that only changes files no test reads (specs, rules, assistant notes, templates) skips it.
 name: Tests
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
+    paths-ignore:
+      - "docs/specs/**"
+      - "rules/**"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/pull_request_template.md"
   workflow_dispatch:
   workflow_call:
 
 permissions:
   contents: read
+
+# A newer push to a pull request stops its older run. Runs on main and before a release always finish.
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   tests:
