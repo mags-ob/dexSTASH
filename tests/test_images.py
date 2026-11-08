@@ -19,10 +19,12 @@ def _build_step(job: dict) -> dict:
     return next(s for s in job["steps"] if s.get("uses", "").startswith("docker/build-push-action"))
 
 
-def test_every_pull_request_gets_a_test_image_for_both_platforms():
+def test_a_labelled_pull_request_gets_a_test_image_for_both_platforms():
     flow = _yaml(WORKFLOWS / "pr-image.yml")
-    assert flow[True] == {"pull_request": {"types": ["opened", "synchronize", "reopened", "closed"]}}  # yaml reads "on" as True
+    assert flow[True] == {"pull_request": {"types": ["opened", "synchronize", "reopened", "labeled", "closed"]}}  # yaml reads "on" as True
     job = flow["jobs"]["image"]
+    assert "contains(github.event.pull_request.labels.*.name, 'test image')" in job["if"]  # issue #49
+    assert "github.event.label.name == 'test image'" in job["if"]  # some other label builds nothing
     meta = next(s for s in job["steps"] if s.get("id") == "meta")
     assert meta["with"]["images"] == "ghcr.io/${{ github.repository_owner }}/dexstash"
     assert meta["with"]["tags"].startswith("type=ref,event=pr")  # tagged pr-<number>
@@ -107,5 +109,6 @@ def test_deploy_explains_published_and_test_images():
         assert heading in deploy
     assert "docker load -i dexstash-" in deploy and "DEXSTASH_VERSION=0.28.0" in deploy
     assert "DEXSTASH_VERSION=pr-<number>" in deploy and "docker compose pull" in deploy
+    assert "`test image` label" in deploy
     assert "raw.githubusercontent.com/obiehq/dexSTASH/main/.env.example" in deploy
     assert "DEXSTASH_IMAGE" not in deploy and "DEXSTASH_PULL_POLICY" not in deploy

@@ -1,0 +1,30 @@
+# When a pull request's description is edited, checks the spec rule again: a "Spec:" line can be what makes a
+# pull request pass (rules/project.md › Specs). The other checks don't read the description, so they don't rerun.
+name: Description
+
+on:
+  pull_request:
+    types: [edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: description-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    name: Core rules and spec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the spec check compares the pull request with its base
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Personal details, files never committed, and the spec rule
+        env:
+          DEXSTASH_PRIVATE_WORDS: ${{ secrets.DEXSTASH_PRIVATE_WORDS }}
+        run: python tools/check_rules.py --spec

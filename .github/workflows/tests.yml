@@ -1,10 +1,12 @@
-# The test suite: on every push, on pull requests, when started by hand
+# The test suite: on pushes to main, on pull requests, when started by hand
 # (Actions > Tests > Run workflow), and before a release image is built (image.yml calls it).
+# A pull request that only changes files no test reads (specs, rules, assistant notes, templates) skips the
+# suite. The tests job is then "skipped", which a required check counts as passed.
 name: Tests
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
   workflow_call:
@@ -12,8 +14,37 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request stops its older run. Runs on main and before a release always finish.
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.files.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 0  # to compare the pull request with its base
+      - id: files
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then echo "code=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          files=$(git diff --name-only "$BASE...$HEAD")
+          echo "$files"
+          # Files no test reads. Anything else runs the suite.
+          others=$(echo "$files" | grep -Ev '^(docs/specs/|rules/|\.github/ISSUE_TEMPLATE/)|^(AGENTS\.md|CLAUDE\.md|\.github/pull_request_template\.md)$' || true)
+          if [ -n "$others" ]; then echo "code=true" >> "$GITHUB_OUTPUT"; else echo "code=false" >> "$GITHUB_OUTPUT"; fi
+
   tests:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
