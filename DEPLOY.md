@@ -156,7 +156,18 @@ With a release image (below), updating is loading the new release's image file a
 
 ### Using a release image
 
-Each release on GitHub (the repository's Releases page) carries the image ready-built, so your server doesn't have to build it: `dexstash-<version>-amd64.tar.gz` for most servers and NAS boxes, or `-arm64` for ARM ones (a Raspberry Pi, say). Download the one for your server, copy it into the app's folder, and load it:
+Each release is built on GitHub, so your server doesn't have to build it. There are two ways to get it.
+
+**Pull it** from GitHub's container registry. In `.env`:
+
+```sh
+DEXSTASH_IMAGE=ghcr.io/obiehq/dexstash:0.28
+DEXSTASH_PULL_POLICY=always
+```
+
+and `sudo docker compose up -d`. To update within 0.28, run `sudo docker compose pull && sudo docker compose up -d`; for a new minor version, change the tag (`0.28.0` stays on one release, `latest` follows every release). While the repository is private, sign in once first with a GitHub token that can only read packages (Settings › Developer settings › Personal access tokens › Tokens (classic), with just `read:packages`): `sudo docker login ghcr.io -u <your GitHub username>`, pasting the token as the password.
+
+**Or load the file** attached to the release (the repository's Releases page): `dexstash-<version>-amd64.tar.gz` for most servers and NAS boxes, or `-arm64` for ARM ones (a Raspberry Pi, say). Download the one for your server, copy it into the app's folder, and load it:
 
 ```sh
 sudo docker load -i dexstash-0.28.0-amd64.tar.gz      # prints: Loaded image: dexstash:0.28.0
@@ -169,7 +180,7 @@ DEXSTASH_IMAGE=dexstash:0.28.0
 DEXSTASH_PULL_POLICY=never
 ```
 
-and `sudo docker compose up -d` (without `--build`) starts both containers from it. To update, load the next release's file, change the version in `.env` and run `sudo docker compose up -d` again. You still need `docker-compose.yml` and `.env` in the folder (and `deploy/Caddyfile` for the bundled Caddy), from the release's source or a clone. Remove both lines to build on your server again. `sudo docker image prune` removes old versions once you no longer need to go back to them.
+and `sudo docker compose up -d` (without `--build`) starts both containers from it, without reaching a registry. To update, load the next release's file, change the version in `.env` and run `sudo docker compose up -d` again. You still need `docker-compose.yml` and `.env` in the folder (and `deploy/Caddyfile` for the bundled Caddy), from the release's source or a clone. Remove both lines to build on your server again. `sudo docker image prune` removes old versions once you no longer need to go back to them.
 
 ### Trying a pull request
 
