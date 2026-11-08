@@ -139,7 +139,7 @@ guide; this spec holds the statements a change must keep true.
   `app/backup.py`, `app/reset.py`, `app/keys.py`, `app/activity.py`.
 - Pages: Account › Backups, Account › Data sources (Settings, Scanning, Prices › API keys, Activity log,
   Running now), `/healthz`.
-- Guides: [DEPLOY.md](../../DEPLOY.md), [README.md](../../README.md) › Configuration,
+- Guides: [DEPLOY.md](../../DEPLOY.md), [docs/configuration.md](../configuration.md),
   [CHANGELOG.md](../../CHANGELOG.md).
 - Related specs: [overview](overview.md), [architecture](architecture.md), [prices](prices.md).
 

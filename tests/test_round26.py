@@ -174,7 +174,7 @@ def test_ebay_site_setting_and_card_page_link(client):
 def test_scanning_languages_said_and_preview_line_gone(client):
     _setup_with_set(client)
     assert "For Korean cards, tap the photo's language tag and pick KO." in client.get("/account/data").text
-    assert "For Korean cards" in (ROOT / "README.md").read_text()
+    assert "For Korean cards" in (ROOT / "docs/scanning.md").read_text()
     assert "Preview only" not in (ROOT / "app/templates/card.html").read_text()
 
 
