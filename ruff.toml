@@ -1,0 +1,18 @@
+# Lint settings for `ruff check` (run in GitHub Actions on every push and pull request).
+# The code uses long lines on purpose and is not auto-formatted, so the checks look for real mistakes:
+# undefined or unused names, imports that do nothing, and syntax problems.
+target-version = "py313"
+line-length = 120
+
+[lint]
+select = ["E", "F", "W"]
+ignore = [
+    "E501",  # long lines are the house style
+    "E731",  # small named lambdas are used on purpose
+    "E741",  # short names like l are used in a few tight loops
+]
+
+[lint.per-file-ignores]
+# Tests import each other's helpers and fixtures by name (read as redefinitions), set things up before importing
+# the app, and name values they set up for readability even when a test doesn't read them back.
+"tests/*" = ["F811", "F401", "F841", "E402"]

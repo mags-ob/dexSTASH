@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% set wide = true %}
+{% from "_mycards.html" import switcher %}
+{% from "_binder_pages.html" import binder_pages %}
+{% block title %}{{ in_binder.name }} · {{ app_name }}{% endblock %}
+{% block heading %}<span data-heading data-name="{{ in_binder.name }}">{{ in_binder.name }}</span>{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/collection/binders", "Binders") }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/collection.css") }}">
+<link rel="stylesheet" href="{{ asset("css/binder-pages.css") }}">
+{{ switcher("binders") }}
+{% include "_binder_head.html" %}
+{% if done %}<p role="status">{{ done }}</p>{% endif %}
+{{ binder_pages(pages, layout, page, hit, pics) }}
+{% if not binder_count %}<p class="muted" style="text-align:center">Nothing here yet. Use Select on Cards, or a scan's Put in binder, to move cards in.</p>{% endif %}
+<script src="{{ asset("js/binder-pages.js") }}"></script>
+{% endblock %}

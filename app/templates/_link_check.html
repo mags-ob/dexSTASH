@@ -1,0 +1,25 @@
+{# A card with no link asks for one after you tap Search; Not now saves nothing and asks again
+   only after the next Search tap. Also on the Find preview (saving keeps the card). The links the app
+   used to find are gone; a PriceCharting link can come with the price you saw there.
+   Needs: card, site_labels, searched (sites whose link is a search), preview, tcgdex_card_id, tcgdex_set;
+   on the card page also offered, variants and typed_default for the PriceCharting price's printing. #}
+{% from "_macros.html" import x_close %}
+{% set asked = request.query_params.get("ask") %}
+{% for site in searched %}
+<dialog class="link-check ds-dialog" id="search-{{ site }}" data-card="{{ card.id }}"{% if asked == site %} data-open{% endif %} aria-labelledby="search-{{ site }}-h">
+  <div class="lc-head"><h2 id="search-{{ site }}-h">Found it on {{ site_labels[site] }}?</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+  {% if asked == site and request.query_params.get("paste_error") %}<p class="error" role="status">{{ request.query_params.get("paste_error") }}</p>{% endif %}
+  <form method="post" action="{{ ('/preview/' ~ lang ~ '/' ~ (tcgdex_card_id | urlencode)) if preview else ('/cards/' ~ (card.id | urlencode)) }}/link/{{ site }}">
+    {% if preview %}<input type="hidden" name="set_id" value="{{ tcgdex_set }}">{% endif %}
+    <label class="cv-label" for="search-{{ site }}-url">Paste a price link for this card</label>
+    <div style="margin:6px 0 16px;display:flex"><input name="url" id="search-{{ site }}-url" placeholder="https://…" inputmode="url" autocomplete="off" required style="flex:1;min-width:0"></div>
+    {% if site == "pricecharting" %}<label class="cv-label" for="search-{{ site }}-price">Price on PriceCharting (optional)</label>
+    <div style="margin:6px 0 16px;display:flex"><input name="pc_price" id="search-{{ site }}-price" placeholder="{{ currency_symbol() }} 0.00" inputmode="decimal" autocomplete="off" style="max-width:160px"></div>
+    {% if not preview and offered and offered | length > 1 %}<label class="cv-label" for="search-{{ site }}-variant">For which printing</label>
+    <div style="margin:6px 0 16px;display:flex"><select name="variant" id="search-{{ site }}-variant" style="max-width:220px">{% for v in offered %}<option value="{{ v }}"{% if v == typed_default %} selected{% endif %}>{{ variants[v] }}</option>{% endfor %}</select></div>{% endif %}{% endif %}
+    <div class="lc-answer"><button>Save</button><button type="button" class="quiet" data-dialog-close>Not now</button></div>
+  </form>
+</dialog>
+{% endfor %}
+<link rel="stylesheet" href="{{ asset("css/link-check.css") }}">
+<script src="{{ asset("js/link-check.js") }}" data-card="{{ card.id }}"></script>

@@ -1,0 +1,21 @@
+{% if state == "loading" %}
+<p class="muted" hx-get="/describe" hx-include="closest form" hx-trigger="load delay:2s" hx-target="#describe-results">
+  <span class="spin"></span> Getting the Pokédex. This happens once and takes a few seconds.</p>
+{% elif state == "failed" %}
+<p class="error">The Pokédex couldn't be downloaded, so this can't search yet. An admin can try again from Data sources.</p>
+{% elif not asked %}
+<p class="muted">Type what it looks like, or pick a colour or type.</p>
+{% elif not results %}
+{% if used %}<div class="chips" style="margin:0 0 8px">{% for label, rest in used %}<a class="chip on" href="#" data-describe-words="{{ rest }}" aria-label="Stop using {{ label }}">{{ label }} {{ icon("x", 14) }}</a>{% endfor %}</div>{% endif %}
+<p class="muted">No Pokémon fit that. Try fewer or other words.</p>
+{% else %}
+{% if used %}<div class="chips" style="margin:0 0 8px">{% for label, rest in used %}<a class="chip on" href="#" data-describe-words="{{ rest }}" aria-label="Stop using {{ label }}">{{ label }} {{ icon("x", 14) }}</a>{% endfor %}</div>{% endif %}
+<div class="spr-grid">
+  {% for r in results %}
+  <a href="/search?{{ {'q': r.name, 'lang': lang} | urlencode }}" title="#{{ '%03d' % r.dex }} {{ r.name }}">
+    {% if r.sprite %}<img src="{{ r.sprite }}" alt="" loading="lazy">{% else %}<span class="no-spr">#{{ '%03d' % r.dex }}</span>{% endif %}
+    <span>{{ r.name }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}

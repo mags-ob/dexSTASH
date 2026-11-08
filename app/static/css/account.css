@@ -1,0 +1,4 @@
+  .theme-now { display:flex; align-items:center; gap:14px; max-width:520px; }
+  .theme-now img { image-rendering:pixelated; flex:none; }
+  .theme-now b { font-size:18px; }
+  .theme-now button { display:inline-flex; gap:6px; align-items:center; }

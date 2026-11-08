@@ -1,0 +1,80 @@
+{# One photo in a scan batch. In the grid it's a tile that never moves: the match's picture with the
+   Pokémon's name on top, the price bottom left and ✓ once it's saved in the card view; a photo being read
+   or with no match shows the photo itself. Added cards and deleted scans are rows in the folded lines.
+   The batch page swaps in only tiles that changed and puts each where data-section says. #}
+{% from "_macros.html" import card_picture, condition_badge %}
+{% set reading_states = ("waiting", "reading", "picture_waiting", "picture_searching") %}
+{% set open = s.status in ("ready", "nomatch", "failed", "picture_ready") %}
+{% set g = s.guesses[0] if s.guesses else None %}
+{% set section = "grid" if (open or s.status in reading_states) else ("added" if s.status == "added" else ("deleted" if s.status == "skipped" else "gone")) %}
+{% set details = "/scans/item/" ~ s.id ~ "/details?open=1" %}
+{% set tile = scan_tile(s, batch) %}
+{% if section == "grid" %}
+{% set matched = open and g %}
+{% set word = scan_word(g) if matched else None %}
+{% set edge = "edge-none" if open and not g else ("edge-" ~ word_classes[word] if word and word_classes[word] != "close" else "") %}
+<div id="scan-{{ s.id }}" class="bt{% if matched %} bt-matched{% endif %}" data-rev="{{ s.rev }}" data-section="grid"
+     {%- if matched %} data-matched="1"{% if s.checked %} data-checked="1"{% endif %}{% endif %}>
+  {% if open or s.status in ("picture_waiting", "picture_searching") %}
+  <a class="bt-tap" href="{{ details }}" hx-get="{{ details }}" hx-target="#ts" hx-swap="innerHTML"
+     aria-label="{{ ('Open ' ~ en_name(g.name, g.lang).en) if matched else 'Open this photo' }}">
+  {% else %}
+  <div class="bt-tap">
+  {% endif %}
+    <span class="bt-pic {{ edge }}">
+      {% if matched %}
+        {{ card_picture(card_pics(our_card_id(g.id, g.lang or s.language or "en"), g.image), g.name, g.number, small=True, caption=False) }}
+        <span class="bt-name one">{{ en_name(g.name, g.lang or s.language or "en").en }}</span>
+        <span class="bt-price">{% if not tile or not tile.known %}&hellip;{% elif tile.price is not none %}{{ tile.price | money }}{% else %}No price{% endif %}</span>
+        {% if s.checked %}<span class="bt-ok" title="Checked">{{ icon("check", 14) }}</span>{% endif %}
+      {% else %}
+        {% if s.photo %}<img src="/scans/photo/{{ s.id }}?v={{ s.photo[:12] }}" alt="Your photo" data-fail="retry">{% endif %}
+        {% if open %}<span class="bt-q" aria-hidden="true">?</span>{% else %}<span class="bt-spin"><span class="spin"></span></span>{% endif %}
+      {% endif %}
+    </span>
+    {% if matched %}
+      <span class="bt-sub one">{{ g.set_name }} &middot; <span class="cno">#{{ g.number }}</span></span>
+      <span class="bt-sub one">{% if tile and tile.label %}{{ tile.label }}{% else %}&hellip;{% endif %} &middot; {% if tile.condition != "NM" %}<b>{{ tile.condition }}</b>{% else %}NM{% endif %} &middot; {% if tile.quantity != 1 %}<b>&times;{{ tile.quantity }}</b>{% else %}&times;1{% endif %}</span>
+    {% elif open %}
+      <span class="bt-sub one amber"><b>No match yet</b></span>
+      <span class="bt-sub one">Tap to find it</span>
+    {% else %}
+      <span class="bt-sub one">{% if s.status == "picture_searching" %}Enhanced Search is looking&hellip;{% elif s.status == "picture_waiting" %}Waiting for Enhanced Search&hellip;{% elif s.status == "reading" %}Reading&hellip;{% else %}Waiting to be read&hellip;{% endif %}{% if scanner_off() %} &middot; Scanner is off{% endif %}</span>
+      <span class="bt-sub one">&nbsp;</span>
+    {% endif %}
+    {% if message %}<span class="error bt-sub">{{ message }}</span>{% endif %}
+  {% if open or s.status in ("picture_waiting", "picture_searching") %}</a>{% else %}</div>{% endif %}
+  {# The photo's language, worked out as it was read; picking another looks the card up again. #}
+  {% if s.language and s.status not in reading_states %}
+  <select class="bt-lang{% if not s.language_sure %} unsure{% endif %}" name="lang" aria-label="Card language"
+          hx-post="/scans/item/{{ s.id }}/language" hx-trigger="change" hx-target="#scan-{{ s.id }}" hx-swap="outerHTML" data-no-busy>
+    {% for code, tag in scan_tags.items() %}<option value="{{ code }}"{% if code == s.language %} selected{% endif %}>{{ tag }}{% if code == s.language and not s.language_sure %} ?{% endif %}</option>{% endfor %}
+  </select>
+  {% endif %}
+</div>
+{% elif section == "added" %}
+<div id="scan-{{ s.id }}" class="scan-row" data-rev="{{ s.rev }}" data-section="added">
+  <div class="scan-tap">
+    <span class="st st-done" title="Added">{{ icon("check", 14) }}</span>
+    <span class="scan-pic match">{% if s.card %}{{ card_picture(card_pics(s.card.id, s.card.image_url), s.card.name, s.card.number, small=True, caption=False) }}{% endif %}</span>
+    <span class="scan-main">
+      <span class="one">{% if s.card %}{{ en_name(s.card.name, s.card.id if ":" in s.card.id else "en").en }}{% endif %}</span>
+      {% if s.card %}<span class="muted one"><span class="cno">#{{ s.card.number }}</span> &middot; {{ s.card.set_name }}</span>{% endif %}
+      <span class="muted one">{{ s.variant_label }} {{ condition_badge(s.condition) }}{% if s.quantity and s.quantity > 1 %} &times;{{ s.quantity }}{% endif %}</span>
+    </span>
+  </div>
+</div>
+{% elif section == "deleted" %}
+<div id="scan-{{ s.id }}" class="scan-row" data-rev="{{ s.rev }}" data-section="deleted">
+  <div class="scan-tap">
+    <span class="st" aria-hidden="true"></span>
+    <span class="scan-pic">{% if s.photo %}<img src="/scans/photo/{{ s.id }}?v={{ s.photo[:12] }}" alt="Your photo" data-fail="retry">{% endif %}</span>
+    <span class="scan-main">
+      <span class="muted one">Deleted scan</span>
+      {% if s.photo %}<span class="one"><button type="button" class="linkish" hx-post="/scans/item/{{ s.id }}/put-back" hx-target="#scan-{{ s.id }}" hx-swap="outerHTML">Put back</button></span>{% endif %}
+    </span>
+  </div>
+</div>
+{% else %}
+<div id="scan-{{ s.id }}" data-rev="{{ s.rev }}" data-section="gone" hidden></div>
+{% endif %}

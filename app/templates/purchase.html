@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cname, card_image, card_picture, condition_badge, condition_picker %}
+{% block title %}{{ purchase.label }} · {{ app_name }}{% endblock %}
+{% block heading %}{{ purchase.label }}{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/spending", "Spending") }}{% endblock %}
+{% block content %}
+<p class="muted" style="margin-top:0">{% if purchase.purchased_on %}{{ purchase.purchased_on }} &middot; {% endif %}{{ purchase.packs }} pack{{ "s" if purchase.packs != 1 }} &middot; paid {{ purchase.cost | money(purchase.currency) }}{% if purchase.created_by_name %} &middot; logged by {{ purchase.created_by_name }}{% endif %}</p>
+<p>{{ pulled }} card{{ "s" if pulled != 1 }} pulled, worth <strong>{{ value | money }}</strong>
+  {% set cost_usd = purchase.cost | to_usd(purchase.currency) %}
+  {% if pulled %}({{ "up" if value >= cost_usd else "down" }} {{ (value - cost_usd) | abs | money }} on what you paid){% endif %}.</p>
+
+<form method="post" action="/purchases/{{ purchase.id }}/pulls" style="display:grid;grid-template-columns:1fr auto;gap:8px;margin:12px 0">
+  <input name="entry" placeholder="Card number pulled, e.g. 123 or 123 x2" autofocus autocomplete="off" autocapitalize="characters" enterkeyhint="done">
+  <button>Add</button>
+  <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap">
+    <select name="set_id" aria-label="Set" style="flex:1 1 160px;min-width:0">
+      <option value="">Pick the set</option>
+      {% for s in sets %}<option value="{{ s.set_id }}" {% if s.set_id == entry_set %}selected{% endif %}>{{ s.name }}{% if s.language != "en" %} ({{ languages[s.language] }}){% endif %}</option>{% endfor %}
+    </select>
+    <select name="variant" aria-label="Printing">
+      {% for key, label in variants.items() %}<option value="{{ key }}" {% if key == variant %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    {{ condition_picker(conditions, condition) }}
+  </div>
+  <div class="muted" style="grid-column:1/-1;font-size:13px">Pulled cards go into your collection too. Type <b>-123</b> to take one back out.</div>
+</form>
+{% if message %}<p class="{{ 'error' if error else '' }}">{{ message }}</p>{% endif %}
+
+<table class="list">
+  {% for r in pulls %}
+  <tr>
+    <td style="width:44px"><a href="/cards/{{ r.card_id }}">{{ card_picture(card_pics(r.card_id, r.image_url), r.name, r.number, r.logo_url, small=True, caption=False) }}</a></td>
+    <td><a href="/cards/{{ r.card_id }}" style="color:inherit"><strong>{{ cname(r.name, r.card_id) }}</strong></a>
+      <div class="muted" style="font-size:12px"><span class="cno">#{{ r.number }}</span> &middot; {{ r.variant_label }} {{ condition_badge(r.condition) }}{% if r.quantity > 1 %} &times;{{ r.quantity }}{% endif %}</div>
+      <div class="muted" style="font-size:12px">worth {{ r.price | money if r.price is not none else "no price" }}</div></td>
+    <td class="num">
+      <form method="post" action="/purchases/{{ purchase.id }}/pulls/{{ r.id }}/cost" style="display:flex;gap:4px;justify-content:flex-end">
+        <input name="cost_each" value="{{ '%.2f' % r.cost_each if r.set_by_hand else '' }}" placeholder="{{ '%.2f' % r.cost_each }}" inputmode="decimal"
+               style="width:76px;padding:6px 8px;text-align:right" aria-label="Cost each, in dollars">
+        <button class="quiet" style="padding:6px 8px">Set</button>
+      </form>
+      <div class="muted" style="font-size:12px">{{ "set by you" if r.set_by_hand else "even share" }}</div>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td class="muted">No cards logged for this purchase yet.</td></tr>
+  {% endfor %}
+</table>
+
+<form method="post" action="/purchases/{{ purchase.id }}/delete" style="margin-top:24px"
+      data-confirm="Delete this purchase? The cards stay in your collection.">
+  <button class="quiet">Delete purchase</button>
+</form>
+{% endblock %}

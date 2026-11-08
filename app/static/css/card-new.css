@@ -1,0 +1,1 @@
+.hand-form{grid-template-columns:minmax(0,1fr)}.hand-form label{display:grid;gap:4px;grid-template-columns:minmax(0,1fr)}.hand-form label>input,.hand-form label>select{width:100%;box-sizing:border-box;min-width:0}.hand-form input[type=file]{max-width:100%}.hand-form label span{font-size:13px}

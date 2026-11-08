@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cname, card_image, card_picture, condition_badge, printing_chips, condition_chips, origin_chips, condition_picker, origin_picker, qty_stepper, rarity_line, type_line, x_close, paste_input %}
+{% macro where() %}{{ card.id if ":" in (card.id or "") else (card.language or lang) }}{% endmacro %}
+{% block title %}{{ en_name(card.name, where(), card.twin_name).en }} · {{ app_name }}{% endblock %}
+{% block heading %}{{ cname(card.name, where(), card.twin_name) }}{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}
+{%- if fix_row %}{{ back_to("/imports/" ~ fix_row.batch_id ~ "#row-" ~ fix_row.id, "the import") }}
+{%- elif scan_fix %}{{ back_to("/scans/" ~ scan_fix.batch_id ~ "#scan-" ~ scan_fix.id, "the batch") }}
+{%- elif preview or from_find %}{{ back_to(request.session.get('find_url') or '/search', "Find") }}
+{%- else %}{{ back_to("/sets/" ~ card.set_id, set_label(card.set_id, card.set_name)) }}{% endif %}
+{%- endblock %}
+
+{% block content %}
+{% set shown = en_name(card.name, where(), card.twin_name) %}
+{% if added %}<p>Added to your stash.</p>{% endif %}
+{% if scan_fix %}
+<div class="banner">
+  {% if scan_fix.photo %}<img src="/scans/photo/{{ scan_fix.id }}?v={{ scan_fix.photo[:12] }}" alt="Your photo" style="width:56px;float:right;border-radius:4px;margin-left:8px">{% endif %}
+  Is this the card in your photo? If it is, tap "Use for this photo".
+  <form id="cv-use" method="post" action="/scans/item/{{ scan_fix.id }}/use" hidden>
+    <input type="hidden" name="card_id" value="{{ tcgdex_card_id }}"><input type="hidden" name="set_id" value="{{ tcgdex_set }}"><input type="hidden" name="lang" value="{{ lang }}">
+  </form>
+  <div style="clear:both"></div>
+</div>
+{% endif %}
+{% if fix_row %}
+<div class="banner">
+  Import row {{ fix_row.line }}: <strong>{{ fix_row.raw["Product Name"] }}</strong> #{{ fix_row.raw["Card Number"] }} ({{ fix_row.raw["Set"] }}, {{ fix_row.raw["Variance"] }}).
+  If this is the card, tap "Use for this import row".
+  <form id="cv-use" method="post" action="/imports/rows/{{ fix_row.id }}/match" hidden>
+    <input type="hidden" name="card_id" value="{{ tcgdex_card_id }}"><input type="hidden" name="set_id" value="{{ tcgdex_set }}"><input type="hidden" name="lang" value="{{ lang }}">
+  </form>
+</div>
+{% endif %}
+{% set selected_price = price_map.get(variant) %}
+{% set owned_variants = holdings | map(attribute="variant") | list %}
+<link rel="stylesheet" href="{{ asset("css/card.css") }}">
+<div class="cv-cols">{# one column everywhere; on iPad and PC the copy cards sit side by side #}
+<div class="cv-left">
+<section class="panel cv-top">
+  <details class="cv-menu">
+    <summary aria-label="Modify this card" title="Modify this card">{{ icon("more", 22) }}</summary>
+    <div class="cv-menu-list">
+      {% if preview %}
+      {% for key, label in [("mod-price", "Modify price"), ("mod-links", "Modify links"), ("mod-picture", "Modify picture")] + ([("mod-pokemon", "Add to a Pokémon set…")] if pokemon_sets else []) %}
+      <form method="post" action="/preview/{{ lang }}/{{ tcgdex_card_id | urlencode }}/modify">
+        <input type="hidden" name="set_id" value="{{ tcgdex_set }}"><input type="hidden" name="open" value="{{ key }}">
+        <button>{{ label }}</button>
+      </form>
+      {% endfor %}
+      {% else %}
+      <button type="button" data-open="mod-price">Modify price</button>
+      <button type="button" data-open="mod-links">Modify links</button>
+      <button type="button" data-open="mod-picture">Modify picture</button>
+      {% if pokemon_sets %}<button type="button" data-open="mod-pokemon">Add to a Pokémon set&hellip;</button>{% endif %}
+      {% endif %}
+      {% if extra %}
+      <form method="post" action="/cards/{{ card.id }}/extras/reset" data-confirm="Undo your changes to this card? Your links, price and photo are removed and it goes back to what TCGdex has.">
+        <button>Undo customization</button>
+      </form>
+      {% endif %}
+    </div>
+  </details>
+  <button type="button" class="cv-pic" aria-label="Show the card bigger" data-show="cv-big">
+    {{ card_picture(pics, card.name, card.number, card.logo_url) }}
+  </button>
+  {% if picture_waiting %}{# A picture is being looked up; it swaps in when found #}
+  <script src="{{ asset("js/card-picture.js") }}" data-id="{{ picture_id if picture_id is defined else card.id }}"></script>
+  {% endif %}
+  <div class="cv-info">
+    <div class="cv-name">
+      <div style="margin:0;font-size:22px;font-weight:600;line-height:1.2;flex:1;min-width:0">{{ card.name }}{% if shown.translated %}{# The English name on its own line under it #}<div class="muted cv-en" style="font-weight:400;font-size:16px">{{ shown.en }}</div>{% endif %}</div>
+    </div>
+    {# The set name opens the set. #}
+    <div class="muted" style="font-size:14px"><a class="muted" href="{{ ('/set-preview/' ~ lang ~ '/' ~ (tcgdex_set | urlencode)) if preview else ('/sets/' ~ card.set_id) }}">{{ set_label(card.set_id, card.set_name) }}</a> &middot; <span class="cno">#{{ card.number }}</span></div>
+    {% if card.rarity or card_types(card.types) %}<div class="cv-kind">{{ rarity_line(card.rarity) }}{% if card.rarity and card_types(card.types) %} &middot; {% endif %}{{ type_line(card.types) }}</div>{% endif %}
+    {# One card's price: the first printing you own, else the printing picked for adding. #}
+    {% macro source_text(label, src) -%}
+      {{ label }}{% if src %} &middot; {% if src.short in ("Your link", "Found") and src.url %}<a href="{{ src.url }}" target="_blank" rel="noopener">{{ src.label }}</a>{% else %}{{ src.label }}{% if src.label == "TCGplayer" %} price{% endif %}{% endif %}{% endif %}
+    {%- endmacro %}
+    <div class="cv-pricebox">
+    {% if owned_count %}
+    {% set first = (holdings | selectattr("price", "ne", none) | list or holdings)[0] %}
+    <div class="cv-price{% if first.chip and '–' in first.chip.big %} is-range{% endif %}{% if first.price is none %} none{% endif %}">{{ (first.chip.big if first.chip else first.price | money) if first.price is not none else "No price yet" }}</div>
+    {% if first.price is not none and first.chip %}<span class="cv-chip">{{ first.chip.text }}</span>{% endif %}
+    {% else %}
+    {% set chip = price_chips.get(variant) %}
+    <div class="cv-price{% if chip and '–' in chip.big %} is-range{% endif %}{% if selected_price is none %} none{% endif %}" id="cv-price">{{ (chip.big if chip else selected_price | money) if selected_price is not none else "No price yet" }}</div>
+    <span class="cv-chip" id="cv-price-line"{% if selected_price is none or not chip %} hidden{% endif %}>{{ chip.text if chip else "" }}</span>
+    <script type="application/json" id="cv-chips">{{ price_chips | tojson }}</script>
+    {% endif %}
+    {# Every source the range and average come from, each with its saved amount and date. #}
+    {% set pm = price_more %}
+    {% if pm.lines %}
+    <details class="cv-more">
+      <summary><span>Every price</span><span class="cv-more-ic" aria-hidden="true">&rsaquo;</span></summary>
+      <table class="list cv-sources">
+        {% for v, ls in pm.lines.items() %}
+        <tbody data-variant="{{ v }}"{% if v != pm.shown %} hidden{% endif %}>
+          {% if pm.lines | length > 1 %}<tr><th colspan="2" class="muted">{{ variants.get(v, v) }}</th></tr>{% endif %}
+          {% for l in ls %}<tr{% if l.left_out %} class="is-left-out"{% endif %}><td>{% if l.url %}<a href="{{ l.url }}" target="_blank" rel="noopener">{{ l.name }}</a>{% else %}{{ l.name }}{% endif %}<br><span class="muted">{{ l.note }}</span></td>
+            <td class="num">{{ l.amount }}{% if l.at %}<br><span class="muted">{{ l.at | short_date }}</span>{% endif %}</td></tr>{% endfor %}
+        </tbody>
+        {% endfor %}
+      </table>
+    </details>
+    {% endif %}
+    </div>
+    {% if not (fix_row or scan_fix) %}
+    {# Add and Chase, in a row under the price. Chase is filled when it's on your chases. #}
+    <div class="cv-acts">
+      <button type="button" class="cv-act add pop" data-show="cv-add-dialog"
+              title="{{ 'Add another' if holdings else 'Add to My Stash' }}">{{ icon("plus", 18) }}{{ "Add another" if holdings else "Add" }}</button>
+      {% if chase %}<button form="cv-unchase" class="cv-act chase on" title="On your chases list. Tap to remove.">{{ icon("heart-on", 18) }}Chasing</button>
+      {% else %}<button form="cv-add" formaction="/wants/add" class="cv-act chase" title="Chase this card">{{ icon("heart", 18) }}Chase</button>{% endif %}
+    </div>
+    {% endif %}
+    {% if pokemon %}<a class="pkline" href="/pokemon/{{ pokemon.dex }}">{% if pokemon.sprite %}<img src="{{ pokemon.sprite }}" alt="">{% endif %}{{ pokemon.name }}'s set &rsaquo;</a>{% endif %}
+  </div>
+</section>
+</div>
+<div class="cv-right">
+{# The links as buttons, in this order, then + Link. #}
+{% set searched = ([] if tcg_exact else ["tcgplayer"]) + ([] if pc_exact else ["pricecharting"]) + ([] if cm_exact or not cm_url else ["cardmarket"]) %}
+<div id="links" class="cv-links">
+  {# Links only open the site; nothing is read from them. A search asks for the link you found. #}
+  <a class="cv-link" href="{{ tcg_url }}" target="_blank" rel="noopener"{% if not tcg_exact %} data-search-site="tcgplayer"{% endif %}>{{ "TCGplayer" if tcg_exact else "Search TCGplayer" }} &#8599;</a>
+  <a class="cv-link" href="{{ pc_url }}" target="_blank" rel="noopener"{% if not pc_exact %} data-search-site="pricecharting"{% endif %}>{{ "PriceCharting" if pc_exact else "Search PriceCharting" }} &#8599;</a>
+  {% if cm_url %}<a class="cv-link" href="{{ cm_url }}" target="_blank" rel="noopener"{% if not cm_exact %} data-search-site="cardmarket"{% endif %}>{{ "Cardmarket" if cm_exact else "Search Cardmarket" }} &#8599;</a>{% endif %}
+  {% if extra and extra.other_url and not cm_exact %}<a class="cv-link" href="{{ extra.other_url }}" target="_blank" rel="noopener">{{ other_site(extra.other_url) }} &#8599;</a>{% endif %}
+  {% if ct_url is defined and ct_url %}<a class="cv-link" href="{{ ct_url }}" target="_blank" rel="noopener">{{ "CardTrader" if ct_exact else "Search CardTrader" }} &#8599;</a>{% endif %}
+  {% if tcgdex_links %}<a class="cv-link" href="{{ tcgdex_links.card }}" target="_blank" rel="noopener">TCGdex &#8599;</a>{% endif %}
+  {% if ebay_url %}<a class="cv-link" href="{{ ebay_url }}" target="_blank" rel="noopener" title="Sold listings, most recent first">Search eBay sold &#8599;</a>{% endif %}
+  {% if not preview %}<button type="button" class="cv-link add" data-open="mod-links">+ Link</button>{% endif %}
+</div>
+{% if searched %}{% include "_link_check.html" %}{% endif %}
+{% if not preview and (no_price or extra_error or extra_saved) %}
+<div class="cv-check" id="fix">{# Things to check (owned cards) #}
+  {% if extra_error %}<p class="error" role="status" style="margin:0 0 6px">{{ extra_error }}</p>{% endif %}
+  {% if extra_saved %}<p role="status" style="margin:0 0 6px">{{ extra_saved }}</p>{% endif %}
+  {% if no_price %}
+  <b>{{ icon("warning", 16) }} This card has no price for any printing</b>
+  <div class="cv-check-acts"><button type="button" class="quiet" data-open="mod-links">Paste a link</button>
+    <button type="button" class="quiet" data-open="mod-price">Type a price</button></div>
+  {% endif %}
+</div>
+{% endif %}
+{% if not owned_count %}<div class="cv-have none"><span>Not in your stash</span></div>{% endif %}
+
+{% if not preview %}
+<nav class="seg cv-tabs" role="tablist" aria-label="Card and notes">
+  <button type="button" role="tab" id="tab-card" aria-controls="cv-card" aria-selected="true" class="on" data-tab-btn="card">Card</button>
+  <button type="button" role="tab" id="tab-notes" aria-controls="cv-notes" aria-selected="false" data-tab-btn="notes">Notes &amp; history &middot; {{ notes | length }}</button>
+</nav>
+{% endif %}
+<div id="cv-card" role="tabpanel" aria-labelledby="tab-card" data-tab="card">
+{% if hand_by %}
+<p class="muted" style="font-size:13px">Added by hand by {{ hand_by }}, because TCGdex doesn't have this card.</p>
+{% if hand_error %}<p class="error">{{ hand_error }}</p>{% endif %}
+<details style="font-size:14px;margin-bottom:8px"><summary>Edit this card</summary>
+  <form method="post" action="/cards/{{ card.id }}/hand" enctype="multipart/form-data" style="display:grid;gap:8px;margin-top:8px;max-width:420px">
+    <label>Name <input name="name" value="{{ card.name }}" required></label>
+    <label>Rarity <input name="rarity" value="{{ card.rarity or '' }}"></label>
+    <label>New picture <input type="file" name="photo" accept="image/*"></label>
+    <button>Save</button>
+  </form>
+  <form method="post" action="/cards/{{ card.id }}/hand/delete" style="margin-top:8px"
+        data-confirm="Delete this card? Only possible when nobody has or chases it.">
+    <button class="quiet">Delete card</button>
+  </form>
+</details>
+{% endif %}
+{% if price_chart %}{% with card_id=price_chart.card_id, variant=price_chart.variant, data=price_chart.data, chart=price_chart.chart, ranges=price_chart.ranges, variant_label=price_chart.variant_label %}{% include "_price_chart.html" %}{% endwith %}{% endif %}
+{% if offered %}
+<section class="cv-prints" aria-label="Printings">{# Every printing, ✓ the ones you have #}
+  <h2 class="cv-label">Printings</h2>
+  <div class="pr-row">
+    {% for v in offered %}{% set have = v in owned_variants %}{% set src = price_sources.get(v) %}
+    <span class="pr-chip{% if have %} have{% endif %}">{% if have %}{{ icon("check", 13) }}{% elif chase %}{{ icon("heart-on", 13) }}{% endif %}{{ variants[v] }}
+      {%- if not owned_count %} <small>{% if v in price_map %}{% if src and src.label.startswith("≈") %}&asymp;&#8202;{% endif %}{{ price_map[v] | money }}{% else %}no price{% endif %}</small>{% endif %}</span>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% if binder_error %}<p class="error">{{ binder_error }}</p>{% endif %}
+<div class="cv-cards">{# your copies (side by side when there's room), then the chase in its own section #}
+{% if holdings %}
+<script src="{{ asset("js/card.js") }}"></script>
+<div class="copies" id="inventory">
+  {% for h in holdings %}
+  <article class="copy">
+    <div class="copy-head"><b>{{ h.variant_label }} &times; {{ h.quantity }}</b>{{ condition_badge(h.condition) }}</div>
+    <div class="copy-body">
+      <div>{% if h.price is not none %}{% if h.chip and h.chip.approx %}&asymp; {{ h.price | money }} each &middot; {{ h.chip.text[2:] }}{% else %}{{ h.price | money }} each{% endif %}{% if not h.counted %} (damaged, not counted){% endif %}{% else %}No price{% endif %}
+        {%- if h.origin_label %} &middot; {{ h.origin_label }}{% endif %} &middot; {{ h.where }}</div>
+      {% if h.acquired_price is not none %}<div class="muted">paid {{ h.acquired_price | money(h.acquired_currency) }} each</div>{% endif %}
+      {% if h.methods or h.first_added %}<div class="muted">{{ h.methods | map(attribute="label") | join(" · ") }}{% if h.methods and h.first_added %} &middot; {% endif %}{% if h.first_added %}{{ h.first_added | short_date }}{% endif %}</div>{% endif %}
+      {% if h.note %}<p class="copy-note">{{ h.note }}</p>{% endif %}
+      <div class="copy-acts">
+        <button type="button" class="quiet" data-open="edit-{{ h.id }}">{{ icon("pencil", 15) }} Edit</button>
+        <form method="post" action="/cards/{{ card.id }}/adjust"><input type="hidden" name="variant" value="{{ h.variant }}"><input type="hidden" name="condition" value="{{ h.condition }}">
+          <input type="hidden" name="delta" value="-1"><button class="quiet" aria-label="Remove one">&minus;</button></form>
+        <form method="post" action="/cards/{{ card.id }}/adjust"><input type="hidden" name="variant" value="{{ h.variant }}"><input type="hidden" name="condition" value="{{ h.condition }}">
+          <input type="hidden" name="delta" value="1"><button class="quiet" aria-label="Add one">+</button></form>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% endif %}
+{% if chase and not preview %}
+<section class="copy chase-card" id="chase">{# The chase is a card; ♥ instead of ★ #}
+  <div class="copy-head chase-head"><b>{{ icon("heart-on", 15) }} Chasing &middot; any printing</b>{% if chase.created_at %}<span>since {{ chase.created_at | short_date }}</span>{% endif %}</div>
+  <div class="copy-body">
+    {% if chase_error %}<p class="error" role="status">{{ chase_error }}</p>{% endif %}
+    <h3>Where to buy</h3>
+    <div class="chase-links">
+      {% for l in chase_links %}
+      <div class="chase-row"><a href="{{ l.url }}" target="_blank" rel="noopener">{{ l.label }} &#8599;</a>
+        <form method="post" action="/cards/{{ card.id }}/chase/links/{{ l.id }}/delete"><button class="quiet" style="padding:4px 10px" aria-label="Remove link" title="Remove link">{{ icon("x", 16) }}</button></form></div>
+      {% endfor %}
+      <form method="post" action="/cards/{{ card.id }}/chase/links" style="display:flex;gap:8px;margin-top:6px">
+        <input name="url" type="url" inputmode="url" placeholder="Paste a shop link" aria-label="Shop link" required {{ no_correct }} style="flex:1;min-width:0">
+        <button class="quiet">Add</button>
+      </form>
+    </div>
+    <h3>Photos</h3>
+    <div class="chase-photos">
+      {% for p in chase_photos %}
+      <figure><a href="{{ p.photo }}" target="_blank"><img src="{{ p.photo }}" alt="Chase photo" loading="lazy"></a>
+        <form method="post" action="/cards/{{ card.id }}/chase/photos/{{ p.id }}/delete" data-confirm="Delete this photo?">
+          <button class="quiet" aria-label="Delete photo" title="Delete photo">{{ icon("x", 14) }}</button></form></figure>
+      {% endfor %}
+    </div>
+    <form method="post" action="/cards/{{ card.id }}/chase/photos" enctype="multipart/form-data" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <input type="file" name="photo" accept="image/*" required aria-label="Photo" style="flex:1;min-width:0"><button class="quiet">Add photo</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+</div>
+{% if card_tags is defined %}<section class="cv-tagrow" aria-label="Tags"><h2>Tags</h2>{% include "_card_tags.html" %}</section>{% endif %}
+</div>
+{% if not preview %}
+{# A typed price is for one printing: the one you own by default. Each saved one is listed with Remove. #}
+{% macro printing_pick(field_id) %}{% if offered | length > 1 %}
+    <label class="fgroup" for="{{ field_id }}"><b>For which printing</b>
+      <select name="variant" id="{{ field_id }}" style="max-width:220px">{% for v in offered %}<option value="{{ v }}"{% if v == typed_default %} selected{% endif %}>{{ variants[v] }}</option>{% endfor %}</select></label>
+    {% else %}<input type="hidden" name="variant" value="{{ offered[0] if offered else typed_default }}">{% endif %}{% endmacro %}
+{% macro typed_list(kind, field) %}{% if typed[kind] %}
+    <div class="ml-saved">{% for v, t in typed[kind].items() %}
+      <form method="post" action="/cards/{{ card.id }}/extras" class="ml-link">
+        {% if kind == "pricecharting" %}<input type="hidden" name="pc_form" value="1">{% endif %}
+        <input type="hidden" name="{{ field }}" value=""><input type="hidden" name="variant" value="{{ v }}">
+        <span>{{ variants.get(v, v) }}: {{ t.price | money(t.currency) }} <span class="muted" style="font-size:12px">{{ "last read" if t.was_read else "typed" }} {{ t.typed_at | short_date }}</span></span>
+        <button class="quiet">Remove</button></form>{% endfor %}
+    </div>{% endif %}{% endmacro %}
+<dialog id="mod-price" class="cv-add">
+  <div class="cv-add-head"><h2>Modify price</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+  <form method="post" action="/cards/{{ card.id }}/extras">
+    <p class="muted" style="font-size:13px">Your price for one printing. It counts in that printing's average with TCGplayer and CardTrader, and stays with this card until "Back to what TCGdex has", even if you don't have the card.</p>
+    {{ printing_pick("mp-variant") }}
+    {% set mine = typed.manual.get(typed_default) %}
+    <label class="fgroup"><b>Your price (each)</b><input name="manual_price" value="{{ '%.2f' % mine.price if mine else '' }}" placeholder="{{ currency_symbol() }} 0.00" inputmode="decimal" style="max-width:220px"></label>
+    <p class="muted" style="font-size:12px">Leave it empty to remove your price for that printing.</p>
+    <button style="width:100%;margin-top:6px">Save price</button>
+  </form>
+  {{ typed_list("manual", "manual_price") }}
+</dialog>
+
+<dialog id="mod-links" class="cv-add">
+  <div class="cv-add-head"><h2>Modify links</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+  <form method="post" action="/cards/{{ card.id }}/extras" style="display:grid;gap:10px">
+    <p class="muted" style="font-size:13px;margin:0">Paste the card's own page on any site. Links are saved for you to open; dexSTASH never reads the page.</p>
+    <label class="fgroup"><b>Paste a price link for this card</b>{{ paste_input("link", "", "https://…") }}</label>
+    <button style="width:100%">Save link</button>
+    {% set saved_links = [("tcgplayer", "TCGplayer", extra.tcgplayer_url if extra else None), ("pricecharting", "PriceCharting", extra.pricecharting_url if extra else None),
+                          ("other", other_site(extra.other_url) if extra else "", extra.other_url if extra else None)] | selectattr(2) | list %}
+    {% if saved_links %}
+    <div class="ml-saved">{# Each saved link by its site's name, to open or remove #}
+      {% for site, label, url in saved_links %}
+      <div class="ml-link"><a href="{{ url }}" target="_blank" rel="noopener">{{ label }} &#8599;</a>
+        <button name="remove" value="{{ site }}" class="quiet" formnovalidate>Remove</button></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </form>
+  {% if extra and extra.pricecharting_url %}{% set pct = typed.pricecharting.get(typed_default) %}
+  <form method="post" action="/cards/{{ card.id }}/extras" style="display:grid;gap:8px;margin-top:14px">
+    <input type="hidden" name="pc_form" value="1">
+    {{ printing_pick("pc-variant") }}
+    <label class="fgroup"><b>Price on PriceCharting (optional)</b>
+      <input name="pc_price" value="{{ '%.2f' % pct.price if pct else '' }}" placeholder="{{ currency_symbol() }} 0.00" inputmode="decimal" style="max-width:220px"></label>
+    <p class="muted" style="font-size:12px;margin:0">It doesn&#39;t update by itself; leave it empty to remove it for that printing.</p>
+    <button style="width:100%">Save PriceCharting price</button>
+  </form>
+  {{ typed_list("pricecharting", "pc_price") }}
+  {% endif %}
+</dialog>
+
+{% if pokemon_sets %}
+<dialog id="mod-pokemon" class="cv-add">
+  <div class="cv-add-head"><h2>Add to a Pokémon set</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+  <form method="post" action="/cards/{{ card.id }}/pokemon-sets" style="display:grid;gap:4px">
+    <p class="muted" style="font-size:13px;margin:0 0 4px">Tick the Pokémon sets this card belongs in, for example a Trainer that shows the Pokémon. Unticking takes it out.</p>
+    {% for f in pokemon_sets %}
+    <label class="pk-pick"><img src="/sprites/{{ f.dex_id }}.png" alt="" data-fail="hide"><span>{{ f.name }} <span class="muted">#{{ "%03d" % f.dex_id }}</span></span>
+      <input type="checkbox" name="dex" value="{{ f.dex_id }}" {% if f.ticked %}checked{% endif %}></label>
+    {% endfor %}
+    <button style="width:100%;margin-top:8px">Save</button>
+  </form>
+</dialog>
+{% endif %}
+
+<dialog id="mod-picture" class="cv-add">
+  <div class="cv-add-head"><h2>Modify picture</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+  <form method="post" action="/cards/{{ card.id }}/extras" enctype="multipart/form-data" style="display:grid;gap:10px">
+    <p class="muted" style="font-size:13px;margin:0">Your photo is shown when there's no picture from TCGdex, TCGplayer or your link.</p>
+    <label class="fgroup"><b>Your photo</b><input type="file" name="photo" accept="image/*"></label>
+    {% if extra and extra.photo %}<label class="muted" style="font-size:13px"><input type="checkbox" name="remove_photo" value="1"> Remove your photo</label>{% endif %}
+    <button style="width:100%">Save picture</button>
+  </form>
+</dialog>
+{% endif %}
+
+<dialog id="cv-add-dialog" class="cv-add">
+<div class="cv-add-head"><h2>Add card</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+<p class="muted" style="margin:0 0 4px;font-size:14px">{{ card.name }} &middot; {{ card.set_name }} <span class="cno">#{{ card.number }}</span></p>
+<form id="cv-add" method="post" action="{{ '/search/add' if preview else '/cards/' ~ card.id ~ '/adjust' }}">
+  <input type="hidden" name="card_id" value="{{ tcgdex_card_id }}"><input type="hidden" name="set_id" value="{{ tcgdex_set }}"><input type="hidden" name="lang" value="{{ lang }}">
+  <div class="cv-label">Printing</div>
+  {{ printing_chips(variants, offered, variant, price_map, sources=price_sources) }}
+  <div class="cv-add-grid">
+    <label><span class="cv-label">Condition</span>{{ condition_picker(conditions, condition) }}</label>
+    <label><span class="cv-label">Got it from</span>{{ origin_picker(origins, origin, blank="Not set") }}</label>
+    <div><span class="cv-label">How many</span>{{ qty_stepper("quantity" if preview else "delta") }}</div>
+    <label><span class="cv-label">Paid each</span><input name="paid" placeholder="{{ currency_symbol() }} 0.00" inputmode="decimal"></label>
+  </div>
+  <label><span class="cv-label">Note</span><input name="note" placeholder="Optional, e.g. from the Costco bundle" maxlength="200" style="width:100%"></label>
+  <div style="margin-top:14px"><button style="width:100%">&#65291; Add to My Stash</button></div>
+</form>
+</dialog>
+
+{% if not preview %}
+<div id="cv-notes" role="tabpanel" aria-labelledby="tab-notes" data-tab="notes" hidden>
+  <h2 class="cv-sub" id="notes">Notes</h2>
+  {% for n in notes %}
+  <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--line)">
+    <div style="flex:1">{{ n.text }}
+      <div class="muted" style="font-size:12px">{{ n.author or "Unknown" }} &middot; {{ n.created_at | short_date }}</div></div>
+    {% if n.author_id == user.id or user.is_admin %}
+    <form method="post" action="/notes/{{ n.id }}/delete" data-confirm="Delete this note?">
+      <input type="hidden" name="card_id" value="{{ card.id }}"><button class="quiet" style="padding:6px 10px" aria-label="Delete note" title="Delete note">{{ icon("x", 16) }}</button>
+    </form>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="muted" style="margin:4px 0">No notes yet.</p>
+  {% endfor %}
+  <form method="post" action="/cards/{{ card.id }}/notes" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+    <input name="text" placeholder="Add a note, e.g. PSA 9 or staff stamp" maxlength="500" required style="flex:2 1 200px;min-width:0">
+    <button class="quiet">Add note</button>
+  </form>
+  <h2 class="cv-sub" id="history">History</h2>
+  {% for h in history %}
+  <div class="muted" style="font-size:12px;padding:2px 0">{{ h.at | when }} &middot; {{ "%+d" % h.delta }} {{ h.variant_label }}, {{ condition_labels.get(h.condition, h.condition) }} &middot; {{ h.source_label }}{% if h.origin_label %} ({{ h.origin_label }}){% endif %}{% if h.name %} &middot; {{ h.name }}{% endif %}</div>
+  {% else %}<p class="muted" style="margin:4px 0">Nothing yet.</p>
+  {% endfor %}
+</div>
+{% endif %}
+</div>{# .cv-right #}
+</div>{# .cv-cols #}
+
+{% if holdings %}
+{# One Edit sheet per copy card: All or One, printing, condition, binder, got it from, paid, copy note. #}
+{% for h in holdings %}
+<dialog id="edit-{{ h.id }}" class="cv-add copy-sheet" aria-labelledby="edit-{{ h.id }}-h">
+  <div class="cv-add-head"><h2 id="edit-{{ h.id }}-h">{{ h.variant_label }} &middot; {{ condition_labels.get(h.condition, h.condition) }}</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+  <form method="post" action="/cards/{{ card.id }}/copy" data-copy-form data-qty="{{ h.quantity }}" data-label="{{ h.variant_label }}"
+        data-variant="{{ h.variant }}" data-condition="{{ h.condition }}">
+    <input type="hidden" name="inventory_id" value="{{ h.id }}">
+    <input type="hidden" name="from_binder" value="{{ h.spots[0].binder_id if h.spots and h.spots[0].binder_id is not none else 'none' }}">
+    {% if h.quantity > 1 %}
+    <div class="chips copy-scope"><label class="chip"><input type="radio" name="scope" value="all" checked>All {{ h.quantity }}</label>
+      <label class="chip"><input type="radio" name="scope" value="one">One</label></div>
+    {% endif %}
+    <div class="cv-label">Printing</div>
+    {{ printing_chips(variants, offered, h.variant, price_map, name="to_variant", sources=price_sources) }}
+    <div class="cv-label">Condition</div>
+    {{ condition_chips(conditions, h.condition, name="to_condition") }}
+    <div class="cv-label">Binder</div>
+    {% set only = h.spots[0].binder_id if h.spots | length == 1 else "" %}
+    <select name="binder" aria-label="Binder" data-binder-pick style="width:100%;max-width:320px">
+      {% if h.spots | length > 1 %}<option value="" selected>Where they are now ({{ h.where }})</option>{% endif %}
+      {% for b in binders %}<option value="{{ b.id }}"{% if h.spots | length == 1 and only == b.id %} selected{% endif %}>{{ b.name }}</option>{% endfor %}
+      <option value="none"{% if h.spots | length == 1 and only is none %} selected{% endif %}>Not in a binder</option>
+      <option value="new">New binder&hellip;</option>
+    </select>
+    <input name="new_binder" maxlength="40" placeholder="New binder name" aria-label="New binder name" hidden style="margin-top:6px;width:100%;max-width:320px">
+    <fieldset class="copy-line" data-line-fields>
+      <p class="muted copy-same" data-same hidden>Same for all {{ h.variant_label }} {{ h.condition }} copies.</p>
+      <div class="cv-label">Got it from</div>
+      {{ origin_chips(origins, h.origin) }}
+      <div class="cv-label">Paid each</div>
+      <input name="paid" value="{{ '%.2f' % h.acquired_price if h.acquired_price is not none else '' }}" placeholder="{{ currency_symbol() }} 0.00" inputmode="decimal" style="width:100%;max-width:220px">
+      <div class="cv-label">Copy note</div>
+      <input name="note" value="{{ h.note or '' }}" maxlength="200" placeholder="e.g. PSA 9 or staff stamp" style="width:100%">
+    </fieldset>
+    <div class="copy-sheet-acts">
+      <button name="action" value="save">Save</button>
+      <button name="action" value="remove" class="quiet danger" formnovalidate data-remove>Remove</button>
+    </div>
+  </form>
+</dialog>
+{% endfor %}
+{% endif %}
+
+{% if fix_row or scan_fix %}
+<div class="cv-bar">
+  <button form="cv-use" style="flex:1">{{ "Use for this import row" if fix_row else "Use for this photo" }}</button>
+</div>
+{% endif %}
+
+{% if chase %}<form id="cv-unchase" method="post" action="/wants/{{ chase.id }}/remove" hidden data-replace
+  {% if chase_links or chase_photos %}data-confirm="Stop chasing this card? Its shop links and photos are deleted too."{% endif %}></form>{% endif %}
+<dialog id="cv-big" class="cv-big" data-backdrop-close="any">
+  {{ card_picture(pics, card.name, card.number, card.logo_url, big=True) }}
+</dialog>
+<script src="{{ asset("js/card-2.js") }}"></script>
+{% if not owned_count %}
+<script src="{{ asset("js/card-3.js") }}"></script>
+{% endif %}
+{% endblock %}

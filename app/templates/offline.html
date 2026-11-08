@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1c1c1f">
+  <title>Can't reach your server · {{ app_name }}</title>
+  <link rel="stylesheet" href="{{ asset("css/offline.css") }}">
+</head>
+<body>
+  {#- Saved on the phone by the service worker (app/pwa.py) and shown when a page can't load. -#}
+  <main>
+    <img src="{{ asset("icon-192.png") }}" alt="" width="96" height="96">
+    <h1>Can't reach your {{ app_name }} server</h1>
+    <p>Your stash is safe on the server; this device just can't reach it right now. Check your connection, if the server is on, and try again.</p>
+    <p class="photos" data-photos hidden></p>
+    <button type="button" data-retry>Try again</button>
+    <p class="muted" data-status>Trying again every 10 seconds.</p>
+  </main>
+  <script src="{{ asset("js/offline.js") }}"></script>
+</body>
+</html>

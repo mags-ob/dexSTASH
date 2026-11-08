@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% set keep_place = true %}{# Opens where you left it when you come back #}
+{% set wide = true %}
+{% from "_macros.html" import cname, set_image %}
+{% block title %}{{ set.name }} · {{ app_name }}{% endblock %}
+{% block heading %}{{ set.name }}{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to(request.session.get("find_url") or "/search", "Find") }}{% endblock %}
+{% set grid = [] %}
+{% for c in cards %}{% set _ = grid.append({
+  "href": "/preview/" ~ lang ~ "/" ~ c.id, "pics": card_pics(our_card_id(c.id, lang), c.image_url), "name": cname(c.name, lang),
+  "number": c.number, "price": none, "owned": false, "qty": 0, "star": false, "rarity": c.rarity,
+  "value": set_values.get(norm_number(c.number))}) %}{% endfor %}
+{% set view = set_grid_view(grid, request.query_params.get("rarity", ""), set_sort) %}
+{% set here = "/set-preview/" ~ lang ~ "/" ~ set.id %}
+{% set filter_count = 1 if view.rarity else 0 %}
+{% block filters %}{% if view.rarities %}{% include "_set_filters.html" %}{% endif %}{% endblock %}
+{% block content %}
+<div class="set-intro">{{ set_image(set.id, logo, None) }}
+  <div class="muted" style="font-size:13px">{{ set.id }}{% if set.serie and set.serie.name %} &middot; {{ set.serie.name }}{% endif %}{% if set.releaseDate %} &middot; {{ set.releaseDate[:4] }}{% endif %}<br>You don't have any yet.</div></div>
+{% with have=0, total=(official or cards | length), percent=0,
+        extra_line=((cards | length - official) ~ " more beyond the main set") if official and official < cards | length else "",
+        value=None %}
+{% include "_set_grid.html" %}
+{% endwith %}
+<p style="font-size:14px"><a href="{{ tcgdex_set_url }}" target="_blank" rel="noopener">TCGdex entry for this set &#8599;</a></p>
+{% endblock %}

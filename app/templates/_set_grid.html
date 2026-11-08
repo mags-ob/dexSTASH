@@ -1,0 +1,31 @@
+{# The one set layout, for a set you have and one you're only looking at from Find.
+   Needs: view (set_grid_view: cards, rarity, sort, sorts), have, total, percent, extra_line, logo, here
+   (this page's address, for Sort and the rarity chip). Each card has href, pics, name, number, price, owned,
+   qty, star, rarity, value. Rarity is in the Filter sheet (_set_filters.html). #}
+{% from "_macros.html" import tile %}
+{% set came = request.query_params.get("from", "") %}
+<div class="sticky-block set-head">
+  <div class="set-top">
+    <div class="set-count"><strong>{{ have }} of {{ total }}</strong> &middot; {{ percent }}%{% if value %}<span class="muted"> &middot; yours {{ value | money }}</span>{% endif %}</div>
+    <nav class="seg set-sort" aria-label="Sort">{% for key, label in view.sorts.items() %}<a class="chip{% if key == view.sort %} on{% endif %}"
+       href="{{ here }}?{{ qs(rarity=view.rarity, sort=key, **{'from': came}) }}"{% if key == view.sort %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+  </div>
+  {% if extra_line %}<div class="muted" style="font-size:13px">{{ extra_line }}</div>{% endif %}
+  <div class="bar big" style="margin:6px 0 8px"><span style="width:{{ percent }}%"></span></div>
+  {% if view.rarity %}
+  <div class="chips active-chips">
+    <a class="chip on" href="{{ here }}?{{ qs(**{'from': came}) }}" aria-label="Show every rarity">{{ view.rarity }} {{ icon("x", 14) }}</a>
+  </div>
+  {% endif %}
+  {% if view.from_list %}<p class="muted" style="font-size:12px;margin:0 0 6px">Prices of cards you don't have are TCGplayer's market price.</p>{% endif %}
+  {% if view.sort == "value" and not view.priced %}<p class="muted" style="font-size:12px;margin:0 0 6px">No prices for this set yet, so it's in number order. They're looked up in the background.</p>{% endif %}
+</div>
+<div class="cgrid" id="set-grid">
+  {% for c in view.cards %}
+  {% set r = rarity_of(c.rarity) %}
+  {{ tile(c.href, c.pics, c.name, c.number, logo, price=c.price, third=('<span class="cno">#%s</span>' | safe) % c.number, owned=c.owned, qty=c.qty, star=c.star,
+          title=(r.label if r else "")) }}
+  {% else %}
+  <p class="muted">{% if view.rarity %}No cards match.{% else %}TCGdex lists no cards for this set yet.{% endif %}</p>
+  {% endfor %}
+</div>

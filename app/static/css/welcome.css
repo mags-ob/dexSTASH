@@ -1,0 +1,20 @@
+/* The first-run wizard (welcome.html). */
+.wz { display:grid; gap:12px; max-width:560px; }
+.wz h2 { margin:0; font-size:20px; }
+.wz h3 { margin:8px 0 0; font-size:16px; }
+.wz label:not(.ds-site) { display:grid; gap:6px; }
+.wz-small { font-size:13px; margin:0; }
+.wz-ticks, .wz-downloads { display:grid; gap:10px; }
+.wz-size { font-size:13px; font-weight:600; }
+.wz-dl[data-here] .wz-size { font-weight:400; }
+.wz-total { margin:0; }
+.wz-acts { display:flex; gap:10px; justify-content:flex-end; align-items:center; }
+.wz-count { margin:0 0 6px; font-size:13px; }
+.wz-dots { display:flex; gap:6px; margin-bottom:14px; }
+.wz-dots i { width:28px; height:5px; border-radius:4px; background:var(--line); }
+.wz-dots i.on { background:var(--accent); }
+.wz-out { margin-top:18px; }
+.wz-acts a.btn.quiet { background:var(--surface); color:var(--fg); border:1px solid var(--line); font-weight:500; }
+.wz-ready { margin:0; padding-left:20px; display:grid; gap:8px; }
+.wz-ready li { line-height:1.4; }
+.wz-wait { margin-top:10px; }

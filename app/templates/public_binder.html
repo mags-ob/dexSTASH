@@ -1,0 +1,47 @@
+{% extends "public_base.html" %}
+{% block title %}{{ binder.name }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/public-binder.css") }}">
+<link rel="stylesheet" href="{{ asset("css/binder-pages.css") }}">
+<header>
+  <h1>{{ binder.name }}</h1>
+  <p class="muted" style="margin:0">{{ count }} card{{ "s" if count != 1 }} &middot; worth <b style="color:var(--fg)">{{ total | money }}</b>{% if updated %} &middot; prices updated {{ updated | short_date }}{% endif %}</p>
+</header>
+<div class="bh-acts" style="margin:10px 0"><nav class="seg bh-view" aria-label="View"><a href="/b/{{ token }}">Pages</a><a href="/b/{{ token }}?view=grid" class="on" aria-current="page">Grid</a></nav></div>
+<form method="get" action="/b/{{ token }}" id="pf">
+  <input type="hidden" name="view" value="grid">
+  <div class="tools">
+  <label class="sbox small">{{ icon("search", 18) }}<input type="search" name="q" value="{{ q }}" placeholder="Search name or number" aria-label="Search"><button type="button" class="sbox-x" data-sbox-x aria-label="Clear" title="Clear" hidden>{{ icon("x", 14) }}</button></label>
+    <select name="sort" aria-label="Sort" data-autosubmit>{% for k, label in sorts.items() %}<option value="{{ k }}"{% if k == sort %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  </div>
+  <details class="filters"{% if filtered %} open{% endif %}>
+    <summary>Filter{% if filtered %} (on){% endif %}</summary>
+    <div class="fg">
+      <select name="set" aria-label="Set"><option value="">Any set</option>{% for id, name, _ in set_options %}<option value="{{ id }}"{% if id == set %} selected{% endif %}>{{ set_label(id, name) }}</option>{% endfor %}</select>
+      <select name="rarity" aria-label="Rarity"><option value="">Any rarity</option>{% for x in rarity_options %}<option{% if x == rarity %} selected{% endif %}>{{ x }}</option>{% endfor %}</select>
+      {% if language_options | length > 1 %}<select name="language" aria-label="Language"><option value="">Any language</option>{% for k, label in language_options %}<option value="{{ k }}"{% if k == language %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>{% endif %}
+      <select name="printing" aria-label="Printing"><option value="">Any printing</option>{% for k, label in printing_options %}<option value="{{ k }}"{% if k == printing %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <select name="price" aria-label="Price"><option value="">Any price</option>{% for k, (label, _, _) in price_ranges.items() %}<option value="{{ k }}"{% if k == price %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      {% if tag_options %}<select name="tag" aria-label="Tag"><option value="">Any tag</option>{% for value, label in tag_options %}<option value="{{ value }}"{% if value == tag %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>{% endif %}
+      <button>Show</button>{% if filtered %} <a href="/b/{{ token }}?view=grid&amp;sort={{ sort }}" style="align-self:center">Clear filters</a>{% endif %}
+    </div>
+  </details>
+</form>
+{% if filtered or q %}<p class="muted" style="margin:0 0 8px;font-size:14px">{{ shown }} of {{ count }} cards.</p>{% endif %}
+<div class="pgrid">
+  {% for r in rows %}
+  <button type="button" class="pt" data-card="/b/{{ token }}/card/{{ r.card_id | urlencode }}?printing={{ r.variant }}" aria-label="{{ en_name(r.name, r.card_id if ':' in r.card_id else r.language, r.twin_name).en }}">
+    <span class="pic">{% if r.pics %}<img src="{{ r.pics[0][0] }}" data-pics="{{ r.pics[1:] | tojson | forceescape }}" alt="" loading="lazy" data-fail="next">{% endif %}
+      <span class="ph"{% if r.pics %} hidden{% endif %}>{{ r.name }}</span>
+      {% if r.quantity > 1 %}<span class="q">&times;{{ r.quantity }}</span>{% endif %}</span>
+    <span class="n">{{ en_name(r.name, r.card_id if ':' in r.card_id else r.language, r.twin_name).en }}</span>
+    <span class="s">{{ set_label(r.set_id, r.set_name) }} &middot; <span class="cno">#{{ r.number }}</span></span>
+    <span class="s" style="color:var(--fg)">{% if r.price is not none %}{{ r.price | money }}{% else %}<span class="muted">No price yet</span>{% endif %}</span>
+  </button>
+  {% else %}
+  <p class="muted" style="grid-column:1/-1">{% if filtered or q %}No cards match.{% else %}This binder is empty.{% endif %}</p>
+  {% endfor %}
+</div>
+<dialog class="big" id="big" aria-label="Card"></dialog>
+<script src="{{ asset("js/public-binder.js") }}"></script>
+{% endblock %}

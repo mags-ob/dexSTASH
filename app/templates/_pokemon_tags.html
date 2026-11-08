@@ -1,0 +1,20 @@
+{# A Pokémon's tags (no hidden list: type straight into the + word chip).
+   Needs dex, ptags ({tags: [(tag, kind)]}), back (where to come back to). Tapping one opens Describe with that word.
+   ✕ hides an automatic one or deletes yours; Data sources › Reset tags brings hidden ones back. #}
+{% macro pokemon_tags(dex, ptags, back, on_find=False) -%}
+<div class="ptags" id="ptags">
+  {% for t, kind in ptags.tags %}
+  <span class="chip tagc{% if kind == 'mine' %} on{% endif %}">
+    {% if on_find %}<a href="#" data-describe-word="{{ t }}" title="Describe: {{ t }}">{{ t }}</a>
+    {% else %}<a href="/search?{{ qs(describe=t) }}" title="Describe: {{ t }}">{{ t }}</a>{% endif %}
+    <form method="post" action="/pokemon/{{ dex }}/words/remove" hx-post="/pokemon/{{ dex }}/words/remove" hx-target="#ptags" hx-swap="outerHTML">
+      <input type="hidden" name="word" value="{{ t }}"><input type="hidden" name="back" value="{{ back }}">
+      <button aria-label="{% if kind == 'mine' %}Delete{% else %}Remove{% endif %} {{ t }}" title="{% if kind == 'mine' %}Delete{% else %}Remove{% endif %}">{{ icon("x", 14) }}</button></form></span>
+  {% endfor %}
+  <form class="tag-type" method="post" action="/pokemon/{{ dex }}/words/add" hx-post="/pokemon/{{ dex }}/words/add" hx-target="#ptags" hx-swap="outerHTML">
+    <input type="hidden" name="back" value="{{ back }}">
+    <datalist id="words-used">{% for w in words_used() %}<option value="{{ w }}">{% endfor %}</datalist>
+    <input class="chip" name="word" list="words-used" maxlength="40" placeholder="+ word" aria-label="A word for this Pokémon" required {{ no_correct }} autocomplete="off" data-tag-type>
+  </form>
+</div>
+{%- endmacro %}

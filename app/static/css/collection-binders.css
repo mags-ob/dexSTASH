@@ -1,0 +1,10 @@
+  .binder-list { display:grid; gap:10px; margin-top:8px; }
+  .binder-row { display:grid; grid-template-columns:56px 1fr auto; gap:12px; align-items:center; padding:10px 14px; color:inherit; text-decoration:none; }
+  .binder-row .cover { width:56px; aspect-ratio:63/88; border-radius:8px; overflow:hidden; background:color-mix(in srgb, var(--accent) 12%, var(--surface)); display:grid; place-items:center; }
+  .binder-row .cover .cpic, .binder-row .cover img { width:100%; height:100%; object-fit:cover; }
+  .binder-row .cover svg { width:28px; height:28px; color:var(--muted); }
+  .binder-row strong { display:block; font-size:16px; }
+  .binder-row .num { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  .binder-row.loose { background:transparent; border-style:dashed; }
+  .new-binder { display:flex; gap:8px; margin-top:14px; }
+  .new-binder input { flex:1; min-width:0; }

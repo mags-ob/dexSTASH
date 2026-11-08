@@ -1,0 +1,12 @@
+{% extends "public_base.html" %}
+{% block title %}Enter your access code{% endblock %}
+{% block content %}
+<form method="post" action="/b/{{ token }}/code" class="panel" style="max-width:420px;margin:12vh auto 0;display:grid;gap:12px">
+  <h1 style="margin:0;font-size:20px">Enter your access code</h1>
+  <p class="muted" style="margin:0;font-size:14px">Whoever sent you this link has a code for you, like K7QM-4ZPA.</p>
+  {% if error %}<p class="error" role="alert" style="margin:0">{{ error }}</p>{% endif %}
+  <input name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" required autofocus
+         aria-label="Access code" placeholder="XXXX-XXXX" style="font-size:20px;letter-spacing:2px;text-align:center">
+  <button>Open the binder</button>
+</form>
+{% endblock %}

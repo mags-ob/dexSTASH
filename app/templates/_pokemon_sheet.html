@@ -1,0 +1,55 @@
+{# The Pokémon sheet. Full screen, ✕ top left, a search box, chips (All · From my cards ·
+   Gen 1 … Gen 9) and a 3-column grid; each tile has the sprite, number, name and its 5-colour strip.
+   Used for the theme on Account (with the Same Pokémon / New every day switch) and for + Follow on Chases.
+   Lives inside the form it fills: picking sets [name=pokemon] and sends "pokemon-picked" {id, name};
+   the bottom bar's button sends the form. #}
+{% macro pokemon_sheet(id, title, choices, sprites, selected=None, swatches=None, owned=None, button="Save", mode=None, daily_body=None, field="pokemon", artists=False) -%}
+<dialog class="psheet" id="{{ id }}" aria-labelledby="{{ id }}-h">
+  <div class="psheet-head">
+    <div class="psheet-top"><button type="button" class="back-fab" data-psheet-close aria-label="Close" title="Close">{{ icon("x", 22) }}</button>
+      <h2 id="{{ id }}-h">{{ title }}</h2></div>
+    {% if mode %}
+    <div class="psheet-switch" role="radiogroup" aria-label="How the theme is picked">
+      <label><input type="radio" name="mode" value="fixed" {% if mode == "fixed" %}checked{% endif %}><span>Same Pokémon</span></label>
+      <label><input type="radio" name="mode" value="daily" {% if mode == "daily" %}checked{% endif %}><span>New every day</span></label>
+    </div>
+    {% endif %}
+    {% if artists %}{# + Follow offers a Pokémon or an artist. #}
+    <div class="psheet-switch" role="radiogroup" aria-label="What to follow">
+      <label><input type="radio" name="kind" value="pokemon" checked><span>Pokémon</span></label>
+      <label><input type="radio" name="kind" value="artist"><span>Artist</span></label>
+    </div>
+    <label class="sbox" data-ps-artist hidden>{{ icon("search", 20) }}<input type="search" name="artist" data-ps-artist-q placeholder="Artist name, like Mitsuhiro Arita"
+      aria-label="Artist name" autocomplete="off" enterkeyhint="search" {{ no_correct }}></label>
+    {% endif %}
+    <label class="sbox" data-ps-fixed>{{ icon("search", 20) }}<input type="search" data-ps-q placeholder="Search {{ '{:,}'.format(choices | length) }} Pokémon by name or number"
+      aria-label="Search Pokémon" autocomplete="off" enterkeyhint="search" {{ no_correct }}><button type="button" class="sbox-x" data-sbox-x aria-label="Clear" title="Clear" hidden>{{ icon("x", 14) }}</button></label>
+  </div>
+  <div class="psheet-body" data-ps-fixed>
+    <div class="chips psheet-chips" role="radiogroup" aria-label="Show">
+      <button type="button" class="chip on" data-ps-gen="all" aria-pressed="true">All</button>
+      {% if owned %}<button type="button" class="chip" data-ps-gen="mine" aria-pressed="false">From my cards</button>{% endif %}
+      {% for g in range(1, 10) %}<button type="button" class="chip" data-ps-gen="{{ g }}" aria-pressed="false">Gen {{ g }}</button>{% endfor %}
+    </div>
+    <div class="psheet-grid" data-ps-grid role="listbox" aria-label="Pokémon"></div>
+    <p class="muted" data-ps-none hidden>No Pokémon called that.</p>
+  </div>
+  {% if daily_body %}<div class="psheet-body" data-ps-daily hidden>{{ daily_body }}</div>{% endif %}
+  {% if artists %}<div class="psheet-body" data-ps-artist hidden>
+    <div class="ps-artists" data-ps-artist-list role="listbox" aria-label="Artists"></div>
+    <p class="muted" data-ps-artist-none>Type three letters or more. You can follow any name TCGdex knows.</p>
+  </div>{% endif %}
+  <div class="psheet-foot">
+    <span><span class="muted" data-ps-label>{{ "Showing on this page" if mode else "Picked" }}</span><br><b data-ps-now>{% if selected %}#{{ '%03d' | format(selected) }}{% else %}Nothing yet{% endif %}</b></span>
+    <button data-ps-go {% if not selected and not mode %}disabled{% endif %}>{{ button }}</button>
+  </div>
+  <input type="hidden" name="{{ field }}" value="{{ selected or '' }}" data-ps-pick>
+  <script type="application/json" data-ps-data>{{ {"all": choices, "sw": swatches or {}, "mine": owned or [], "sprites": sprites, "sel": selected} | tojson }}</script>
+  <script src="{{ asset("js/pokemon-sheet.js") }}"></script>
+</dialog>
+{%- endmacro %}
+
+{# The button that opens a Pokémon sheet. #}
+{% macro open_sheet(id, label, cls="quiet") -%}
+<button type="button" class="{{ cls }}" data-show="{{ id }}">{{ label }}</button>
+{%- endmacro %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cname, card_image, card_picture %}
+{% block title %}Cards to review{% endblock %}
+{% block heading %}Cards to review{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/", "Home") }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/review.css") }}">
+<p class="muted" style="margin-top:0">{{ review | length }} card{{ "s" if review | length != 1 }} with no price from any source, a price not updated for over {{ stale_days }} days, or a PriceCharting price over 90 days old, among the cards you have or chase. Add a price of your own, or the price you see on PriceCharting now.</p>
+<div class="chips" style="margin:0 0 10px;display:flex;gap:6px;flex-wrap:wrap">
+  <a class="chip{% if not show %} on{% endif %}" href="/review">All</a>
+  {% for key, label in reasons.items() %}<a class="chip{% if show == key %} on{% endif %}" href="/review?show={{ key }}">{{ label }}</a>{% endfor %}
+</div>
+{% if review %}
+<div class="panel review" style="padding:2px 14px">
+  {% for r in review %}
+  <a href="/cards/{{ r.id }}#fix">
+    <span class="pic">{{ card_picture(card_pics(r.id, r.image_url), r.name, r.number, r.logo_url, small=True, caption=False) }}</span>
+    <span style="flex:1;min-width:0"><strong>{{ cname(r.name, r.id) }}</strong><br><span class="muted" style="font-size:12px">{{ r.set_name }} <span class="cno">#{{ r.number }}</span></span></span>
+    <span class="tag">{{ r.reason }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}<p>Nothing to review.</p>{% endif %}
+{% endblock %}

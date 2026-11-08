@@ -1,0 +1,22 @@
+{# Getting your stash ready (W2): the basics downloading one at a time. Refreshes itself until they're done. #}
+<div id="wz-ready" {% if not ready %}hx-get="/welcome/ready" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <ol class="wz-ready">
+    {% for item in items %}
+    <li class="wz-ready-{{ item.state }}">
+      {% if item.state == "running" %}<span class="spin" aria-hidden="true"></span> {{ item.progress }}
+      {% elif item.state == "waiting" %}<span class="muted">{{ item.label }}: waiting its turn</span>
+      {% elif item.state == "failed" %}<span class="error">{{ icon("warning", 14) }} {{ item.label }}: {{ item.error }}</span>
+      {% else %}<span class="deal">{{ icon("check", 14) }}</span> {{ item.label }}{% endif %}
+    </li>
+    {% else %}
+    <li class="muted">Nothing to download.</li>
+    {% endfor %}
+  </ol>
+  {% if ready %}
+  {% if failed %}<p class="muted wz-small">Some downloads didn't finish. You can try them again, or continue and start them later from Account › Data sources.</p>
+  <form method="post" action="/welcome/7/again" class="wz-acts"><button class="quiet">Try again</button></form>{% endif %}
+  <form method="post" action="/welcome/7" class="wz-acts"><button>Continue</button></form>
+  {% else %}
+  <p class="muted wz-small wz-wait">Continue opens once these are done. They carry on if you close this page.</p>
+  {% endif %}
+</div>

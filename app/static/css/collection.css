@@ -1,0 +1,42 @@
+  .mc-check { display:none; position:absolute; left:5px; top:5px; z-index:2; }
+  .mc-check input { width:22px; height:22px; }
+  body.selecting .mc-check { display:block; }
+  body.selecting .ctile { cursor:pointer; }
+  body.selecting .ctile:has(.mc-check input:checked) .pic { outline:3px solid var(--accent); outline-offset:2px; border-radius:8px; }
+  body.selecting .ctile a { pointer-events:none; }
+  .printing-check { font-size:13px; padding:10px 12px; border-radius:12px; background:var(--accent-soft); margin:0 0 12px; display:grid; gap:8px; }
+  /* The selection bar: a raised surface over the docked menu bar's place, the count on top, the icon buttons. */
+  .bulk-bar { display:none; position:fixed; z-index:31; left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom)); padding:12px;
+              max-width:560px; margin:0 auto; border-radius:16px; background:var(--surface); color:var(--fg); border:1px solid var(--line); box-shadow:var(--shadow); }
+  body.selecting .bulk-bar { display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; }
+  .bulk-bar .bulk-n { grid-column:1 / -1; font-size:15px; padding:0 4px; }
+  .bulk-bar button { display:flex; flex-direction:column; align-items:center; gap:3px; min-height:58px; padding:6px 2px; border-radius:12px;
+                     font-size:12px; font-weight:500; background:var(--bar); color:var(--fg); border:none; }
+  .bulk-bar button.pop { background:var(--accent); color:var(--on); }
+  .bulk-bar button.danger, dialog.bulk button.danger { color:var(--danger-text); }
+  dialog.bulk .acts button.danger { background:var(--danger); color:#fff; }
+  :root[data-mode=dark] dialog.bulk .acts button.danger { color:#1d1d1f; }  /* dark text on the lighter red: easier to read */
+  body.has-tabs.selecting .tabs { display:none; }
+  .bulk-bar .wide { grid-column:1 / -1; }
+  .binder-head { display:flex; justify-content:space-between; align-items:center; margin:2px 2px 6px; font-size:14px; }
+  .binder-more { position:relative; }
+  .binder-more summary { list-style:none; cursor:pointer; }
+  .binder-more summary::-webkit-details-marker { display:none; }
+  .binder-more .panel { position:absolute; right:0; top:44px; z-index:20; width:min(320px, 86vw); display:grid; gap:8px; padding:12px; }
+  body.selecting main { padding-bottom:calc(var(--tabbar) + 150px); }
+  .select-line { display:none; font-size:14px; margin:4px 0 8px; }
+  body.selecting .select-line { display:block; }
+  dialog.bulk { width:min(420px, 92vw); }
+  dialog.bulk::backdrop { background:rgba(0,0,0,.4); }
+  dialog.bulk h2 { margin:0 0 10px; }
+  dialog.bulk .acts { display:grid; gap:8px; margin-top:16px; }
+  dialog.bulk .acts button { width:100%; min-height:48px; }
+  dialog.bulk .acts .quiet { order:2; }
+  .share-btn { width:auto; padding:0 12px; margin-left:auto; } .share-btn.on { color:var(--accent); font-weight:600; }
+  dialog.share-sheet { max-width:520px; width:calc(100% - 24px); max-height:calc(100% - 24px); border:0; border-radius:16px; padding:0;
+                       background:var(--surface); color:var(--fg); box-sizing:border-box; }
+  dialog.share-sheet::backdrop { background:rgba(0,0,0,.45); }
+  .share-sheet .sh-row > span { min-width:0; overflow-wrap:anywhere; }
+  .share-sheet .sh-in { padding:16px; display:grid; grid-template-columns:minmax(0, 1fr); gap:8px; }
+  .share-sheet .sh-row { display:flex; gap:8px; align-items:center; justify-content:space-between; padding:6px 0; border-top:1px solid var(--line); }
+  .share-sheet .sh-new { padding:10px 12px; background:var(--accent-soft); }

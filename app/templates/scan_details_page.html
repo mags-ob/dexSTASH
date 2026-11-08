@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Card · {{ app_name }}{% endblock %}
+{% block heading %}Scan batch{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/scans/" ~ batch.id, "the batch") }}{% endblock %}
+{% block content %}
+<div class="panel ts-page" style="padding:0;overflow:hidden">{% include "_scan_details.html" %}</div>
+<script src="{{ asset("js/scan-details-page.js") }}" data-batch="/scans/{{ batch.id }}"></script>
+{% endblock %}

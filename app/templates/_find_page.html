@@ -1,0 +1,19 @@
+{# Find's result tiles: 24 at a time; A tap opens the card, no buttons on the tile. The last tile asks for the next 24 when it comes on screen. #}
+{% from "_macros.html" import tile, cname %}
+{%- set use_for = (carry or "")[1:].split("=") if (carry or "").startswith(("?scan=", "?fix=")) else none -%}
+{% for r in rows %}
+  {%- set href = '/cards/' ~ r.id ~ (carry or '?from=find') if r.local else '/preview/' ~ (r.lang or lang) ~ '/' ~ r.id ~ carry -%}
+  {% call tile('/cards/' ~ r.id ~ (carry or '?from=find') if r.local else '/preview/' ~ (r.lang or lang) ~ '/' ~ r.id ~ carry,
+          card_pics(r.id if r.local else our_card_id(r.id, r.lang or lang), r.image_url), cname(r.name, r.id if (r.local and ":" in r.id) else (r.lang or lang), r.english),
+          r.number, r.set_logo, price=r.price, third=set_label(r.set_id, r.set_name), owned=r.owned,
+          title=r.set_name ~ " #" ~ r.number ~ (" · " ~ r.rarity if r.rarity else ""),
+          pic_id=(r.id if r.local else our_card_id(r.id, r.lang or lang)), star=r.chased,
+          pending=(r.lang or lang) ~ "|" ~ r.id if r.price_pending else none) %}
+  {%- if use_for %}{# Finding the card for a photo or an import row: only "Use this" #}
+  <form method="post" action="/find/use" class="use-this"><input type="hidden" name="ref" value="{{ href.split('?')[0] }}">
+    <input type="hidden" name="{{ use_for[0] }}" value="{{ use_for[1] }}"><button>{{ icon("check", 16) }} Use this</button></form>
+  {%- endif %}
+  {% endcall %}
+{% endfor %}
+{% if token and next < total %}<div class="find-more" data-more hx-get="/search/more?t={{ token }}&amp;offset={{ next }}" hx-trigger="revealed" hx-swap="outerHTML" aria-hidden="true"><span class="spin"></span></div>{% endif %}
+{% if more %}<span id="find-count" hx-swap-oob="true">{% if next < total %}{{ next }} of {% endif %}{{ total }}</span>{% endif %}

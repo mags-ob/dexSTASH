@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% from "_pokemon_sheet.html" import pokemon_sheet, open_sheet %}
+{% block title %}Account · {{ app_name }}{% endblock %}
+{% block heading %}Account{% endblock %}
+{% block content %}
+<form method="post" action="/logout" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+  <p class="muted" style="margin:0">Signed in as <strong>{{ user.username }}</strong>{% if user.is_admin %} (admin){% endif %}.</p>
+  <button class="quiet">Log out</button>
+</form>
+{% if message %}<p class="{{ 'error' if error else '' }}" role="status">{{ message }}</p>{% endif %}
+
+<h2 style="font-size:16px">Change your password</h2>
+<form method="post" action="/account/password" style="display:grid;gap:8px;max-width:320px">
+  <input name="current" type="password" placeholder="Current password" autocomplete="current-password" required>
+  <input name="new" type="password" placeholder="New password" autocomplete="new-password" minlength="{{ min_password }}" required>
+  <input name="again" type="password" placeholder="New password again" autocomplete="new-password" minlength="{{ min_password }}" required>
+  <button>Change password</button>
+  <span class="muted" style="font-size:13px">At least {{ min_password }} characters. Other devices you're signed in on are signed out.</span>
+</form>
+
+<h2 style="font-size:16px;margin-top:28px">Sign out everywhere</h2>
+<form method="post" action="/logout/everywhere" style="display:grid;gap:8px;max-width:420px"
+      data-confirm="Sign out on every phone and computer, this one too?">
+  <span class="muted" style="font-size:13px">Signs out every phone and computer signed in as {{ user.username }}, this one too. Use it if a device was lost or someone else used it. Sign-ins otherwise last {{ session_days }} days.</span>
+  <button class="quiet" style="justify-self:start">Sign out everywhere</button>
+</form>
+
+<h2 style="font-size:16px;margin-top:28px" id="theme">Theme</h2>
+{% if theme_saved %}<p role="status">Theme saved.</p>{% endif %}
+{# Light or Dark per person; Dark unless you change it. #}
+<form method="post" action="/account/mode" class="mode-form seg" role="radiogroup" aria-label="Light or dark">
+  {% set m = user.mode if user.mode in ("light", "dark") else "dark" %}
+  <button name="mode" value="light" class="btn{% if m == 'light' %} on{% endif %}" aria-pressed="{{ 'true' if m == 'light' else 'false' }}">{{ icon("sun", 16) }} Light</button>
+  <button name="mode" value="dark" class="btn{% if m == 'dark' %} on{% endif %}" aria-pressed="{{ 'true' if m == 'dark' else 'false' }}">{{ icon("moon", 16) }} Dark</button>
+</form>
+{# The theme is picked on a full-screen sheet; this shows what you have now. #}
+<form method="post" action="/account/theme" class="theme-form">
+  <div class="theme-now panel">
+    {% if theme_now.sprite %}<img src="{{ theme_now.sprite }}" alt="" width="72" height="72">{% endif %}
+    <div style="flex:1;min-width:0"><span class="muted" style="font-size:13px">{{ "A new Pokémon every day, today's is" if theme_setting.mode == "daily" else "Always the same Pokémon" }}</span><br>
+      <b>#{{ '%03d' | format(theme_now.species_id) }} {{ theme_now.name }}</b>
+      <span class="ps-strip">{% for c in theme_now.swatches[:5] %}<i style="background:{{ c }}"></i>{% endfor %}</span></div>
+    {{ open_sheet("theme-sheet", icon("palette", 18) ~ " Change", "") }}
+  </div>
+  {% set daily_body %}
+    <p class="muted" style="margin-top:0">Everyone on this setting gets the same one, and it changes at midnight. It's never the same two days in a row.</p>
+    <label class="cv-switch"><input type="checkbox" name="only_owned" value="1" {% if theme_shared.only_owned %}checked{% endif %}> Only Pokémon from My Stash</label>
+    <label class="cv-switch"><input type="checkbox" name="shiny_sometimes" value="1" {% if theme_shared.shiny_sometimes %}checked{% endif %}> Shiny colors now and then</label>
+    <p class="muted" style="font-size:13px">These two are shared by everyone.{% if theme_shared.updated_by_name %} Last changed by {{ theme_shared.updated_by_name }}.{% endif %}</p>
+  {% endset %}
+  {{ pokemon_sheet("theme-sheet", "Choose a theme", species_choices, sprites_ready, theme_setting.species_id, species_swatches, owned_species,
+                   "Save", mode=theme_setting.mode, daily_body=daily_body) }}
+  {% if not sprites_ready %}<p class="muted" style="font-size:13px">The sprites haven't been downloaded yet, so you'll have Bulbasaur's colours until {{ 'you download them from Data sources' if owner else 'an admin downloads them' }}.</p>{% endif %}
+</form>
+<script src="{{ asset("js/account.js") }}"></script>
+<link rel="stylesheet" href="{{ asset("css/account.css") }}">
+
+{% if user.is_admin %}
+<h2 style="font-size:16px;margin-top:28px">People</h2>
+<p class="muted" style="font-size:13px;margin-top:0">Everyone here shares one collection. Cards, notes, chases and spending show who added them.</p>
+<table class="list">
+  {% for u in users %}
+  <tr>
+    <td><strong>{{ u.username }}</strong>{% if u.id == user.id %} <span class="muted">(you)</span>{% endif %}
+      <div class="muted" style="font-size:12px">{{ "Admin" if u.is_admin else "Member" }} &middot; since {{ u.created_at | long_date }}</div></td>
+    <td class="num">
+      <details>
+        <summary class="muted" style="font-size:13px">Manage</summary>
+        <div style="display:grid;gap:6px;justify-items:end;padding:6px 0">
+          <form method="post" action="/account/users/{{ u.id }}/password" style="display:flex;gap:6px">
+            <input name="password" type="password" placeholder="New password" autocomplete="new-password" minlength="{{ min_password }}" required style="width:150px;padding:6px 8px">
+            <button class="quiet" style="padding:6px 10px">Set</button>
+          </form>
+          {% if u.id != user.id %}
+          <form method="post" action="/account/users/{{ u.id }}/admin">
+            <input type="hidden" name="is_admin" value="{{ '' if u.is_admin else '1' }}">
+            <button class="quiet" style="padding:6px 10px">{{ "Make member" if u.is_admin else "Make admin" }}</button>
+          </form>
+          {% if u.id != u.collection_id %}
+          <form method="post" action="/account/users/{{ u.id }}/remove" data-confirm="Remove {{ u.username }}? What they added stays.">
+            <button class="quiet" style="padding:6px 10px">Remove</button>
+          </form>
+          {% endif %}
+          {% endif %}
+        </div>
+      </details>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<form method="post" action="/account/users" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+  <input name="username" placeholder="Username" autocomplete="off" required style="flex:1 1 140px;min-width:0">
+  <input name="password" type="password" placeholder="Password" autocomplete="new-password" minlength="{{ min_password }}" required style="flex:1 1 140px;min-width:0">
+  <label class="muted" style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" name="is_admin" value="1" style="padding:0"> Admin</label>
+  <button>Add person</button>
+</form>
+<p class="muted" style="font-size:12px">Locked out? On the computer running the app: <code>python -m app.auth reset-password &lt;username&gt;</code>. After 5 wrong passwords, a username has to wait 10 minutes.</p>
+
+<section class="a2hs">
+<h2 id="home-screen" style="font-size:16px;margin-top:28px">Add to your Home Screen</h2>
+<p class="muted" style="font-size:13px;margin-top:0">{{ app_name }} works like an app from your Home Screen: no browser bars, its own icon, and a page that says so when the server can't be reached.</p>
+<ul class="muted" style="font-size:13px;padding-left:18px;margin:0">
+  <li><b>iPhone and iPad:</b> open this page in Safari, tap Share, then <b>Add to Home Screen</b>.</li>
+  <li><b>Android:</b> open it in Chrome, tap the &#8942; menu, then <b>Add to Home screen</b> (or <b>Install app</b>).</li>
+</ul>
+<p class="muted" style="font-size:12px">The offline page needs the app on https, like your own domain. After the icon changes, remove the app from your Home Screen and add it again.</p>
+</section>
+
+<h2 id="download" style="font-size:16px;margin-top:28px">Download your stash</h2>
+<p class="muted" style="font-size:13px;margin-top:0">A spreadsheet of every card you have, one row per printing and condition, with what you paid and today's price. It opens in Excel and Numbers. Collectr format uses Collectr's own columns, so the file can go into Collectr or be imported here again.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+  <a class="button" href="/collection/export.csv" download>Download my stash (CSV)</a>
+  <a class="button quiet" href="/collection/export.csv?format=collectr" download>Collectr format</a>
+  <a class="button quiet" href="/chases/export.csv" download>Download my chases</a>
+</div>
+
+{% if owner %}
+<h2 style="font-size:16px;margin-top:28px">Data sources</h2>
+<p class="muted" style="font-size:13px;margin-top:0">Chinese sets, stored TCGdex sets, card pictures and prices: <a href="/account/data">Data sources</a>.</p>
+<h2 id="backups" style="font-size:16px;margin-top:28px">Backups</h2>
+<p class="muted" style="font-size:13px;margin-top:0">A copy of everything (cards, accounts, notes, imports, prices) is made automatically every night after the price update, and each time the app starts after an upgrade. The last 7 nightly copies, the last 5 upgrade copies and the last 10 made by hand are kept, in <code>data/backups</code>. Restoring makes a copy of what's there first, so it can be undone.</p>
+<p class="muted" style="font-size:13px">Your own card and chase photos aren't in these copies: Download photos saves them all in one zip.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+  <form method="post" action="/account/backups"><button>Back up now</button></form>
+  <a class="button quiet" href="/account/photos.zip">Download photos</a>
+</div>
+{% if request.query_params.get("photos") == "none" %}<p class="muted" style="font-size:13px">There are no photos of your own yet.</p>{% endif %}
+{% if backups %}
+<table class="list" style="margin-top:10px">
+  {% for b in backups %}
+  <tr>
+    <td>{{ b.at | when }}<div class="muted" style="font-size:12px">{{ b.label }} &middot; {{ (b.size / 1048576) | round(1) }} MB</div></td>
+    <td class="num">
+      <details>
+        <summary class="muted" style="font-size:13px">Use</summary>
+        <div style="display:grid;gap:6px;justify-items:end;padding:6px 0">
+          <a href="/account/backups/{{ b.name }}" download>Download</a>
+          <form method="post" action="/account/backups/{{ b.name }}/restore" data-heavy="Restoring the backup…" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:end"
+                data-confirm="Put everything back the way it was at {{ b.at | when }}? Everyone gets logged out.">
+            <input name="confirm" placeholder="Type RESTORE" autocomplete="off" autocapitalize="characters" required pattern="RESTORE" style="width:150px;padding:6px 8px">
+            <button class="quiet" style="padding:6px 10px">Restore</button>
+          </form>
+          <form method="post" action="/account/backups/{{ b.name }}/delete" data-confirm="Delete this backup?">
+            <button class="quiet" style="padding:6px 10px">Delete</button>
+          </form>
+        </div>
+      </details>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}<p class="muted" style="font-size:13px">No backups yet.</p>{% endif %}
+{% endif %}
+
+<h2 style="font-size:16px;margin-top:28px">Clear collection</h2>
+<p class="muted" style="font-size:13px;margin-top:0">Empties every card, chase, spending entry, note, history entry and import. Accounts and the downloaded card data and prices stay, so nothing needs reinstalling. This can't be undone.</p>
+<form method="post" action="/account/clear" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"
+      data-confirm="Clear the whole collection? This can't be undone.">
+  <input name="confirm" placeholder="Type CLEAR to confirm" autocomplete="off" autocapitalize="characters" required pattern="CLEAR" style="flex:1 1 180px;min-width:0">
+  <label class="muted" style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" name="forget_matches" value="1" style="padding:0"> Also forget import matches</label>
+  <button>Clear collection</button>
+</form>
+{% endif %}
+
+<h2 id="about" style="font-size:16px;margin-top:28px">About</h2>
+<div class="about-head"><img src="{{ asset("logo.svg") }}" alt="" width="64" height="64"><div><b>dexSTASH {{ app_version }}</b>
+  <div class="muted" style="font-size:13px">Free software under the GNU Affero General Public License v3.0 &middot; <a href="{{ repo_url }}" target="_blank" rel="noopener">Source code &#8599;</a></div></div></div>
+<p class="muted" style="font-size:13px">Where the data comes from, each under its own terms:</p>
+<ul class="muted about-sources">
+  <li>TCGdex: sets, cards, pictures and TCGplayer prices. The set codes the scanner reads are made from TCGdex's cards database.</li>
+  <li>TCGCSV: TCGplayer's daily prices and product pictures.</li>
+  <li>CardTrader's API, when the host added a token: Near Mint prices.</li>
+  <li>PokéAPI: Pokémon names, the Pokédex and sprites.</li>
+  <li>European Central Bank: exchange rates.</li>
+  <li>Only while an admin has them switched on: Limitless TCG (Japanese pictures), PTCG-CHS-Datasets and PTCG-card-data (mainland Chinese cards) and Bulbapedia (descriptions, CC BY-NC-SA).</li>
+  <li>Picture matching: OpenAI's CLIP model, from Jina's clip-as-service.</li>
+  <li>The Nunito font (SIL Open Font License) and htmx (Zero-Clause BSD).</li>
+</ul>
+<p class="muted" style="font-size:13px">See NOTICE.md with the source code for the details.</p>
+<p class="muted" style="font-size:13px">A fan project, not affiliated with, endorsed by or sponsored by Nintendo, Creatures Inc., GAME FREAK inc. or The Pokémon Company.</p>
+{% endblock %}

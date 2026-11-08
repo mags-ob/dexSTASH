@@ -1,0 +1,24 @@
+{% extends "public_base.html" %}
+{% from "_binder_pages.html" import binder_pages %}
+{% block title %}{{ binder.name }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/public-binder.css") }}">
+<link rel="stylesheet" href="{{ asset("css/binder-pages.css") }}">
+<header>
+  <h1>{{ binder.name }}</h1>
+  <p class="muted" style="margin:0">{{ count }} card{{ "s" if count != 1 }} &middot; worth <b style="color:var(--fg)">{{ total | money }}</b> &middot; {{ sorted_by }}{% if updated %} &middot; prices updated {{ updated | short_date }}{% endif %}</p>
+</header>
+<div class="bh-acts" style="margin:10px 0">
+  <nav class="seg bh-view" aria-label="View"><a href="/b/{{ token }}" class="on" aria-current="page">Pages</a><a href="/b/{{ token }}?view=grid">Grid</a></nav>
+  <button type="button" class="head-btn" aria-label="Find a card in this binder" data-bp-find-open>{{ icon("search", 18) }}</button>
+</div>
+<form method="get" action="/b/{{ token }}" class="bp-find" data-bp-find{% if not find %} hidden{% endif %}>
+  <label class="sbox small">{{ icon("search", 18) }}<input type="search" name="find" value="{{ find }}" placeholder="Find a card by name or number" aria-label="Find a card"><button type="button" class="sbox-x" data-sbox-x aria-label="Clear" title="Clear" hidden>{{ icon("x", 14) }}</button></label>
+  <button>Find</button>
+</form>
+{% if find and not find_page %}<p class="muted bp-miss" role="status">No card matching "{{ find }}" here.</p>{% endif %}
+{{ binder_pages(pages, layout, page, hit, pics, token=token) }}
+<dialog class="big" id="big" aria-label="Card"></dialog>
+<script src="{{ asset("js/public-binder.js") }}"></script>
+<script src="{{ asset("js/binder-pages.js") }}"></script>
+{% endblock %}

@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block title %}Data sources · {{ app_name }}<script src="{{ asset("js/data-sources.js") }}"></script>
+{% endblock %}
+{% block heading %}Data sources<script src="{{ asset("js/data-sources.js") }}"></script>
+{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/account", "Account") }}<script src="{{ asset("js/data-sources.js") }}"></script>
+{% endblock %}
+{% block content %}
+{# Nine sections under five tabs, each a status line, its buttons and a folded About. Removing or clearing
+   never deletes a card someone has or chases. #}
+{% if message %}<p class="{{ 'error' if error else '' }}" role="status">{{ message }}</p>{% endif %}
+
+{% include "_running.html" %}
+
+<nav class="seg ds-tabs" role="tablist" aria-label="Data sources">
+  <button type="button" role="tab" id="ds-tab-cards" aria-controls="ds-cards" aria-selected="true" class="on" data-ds-tab="cards">Cards</button>
+  <button type="button" role="tab" id="ds-tab-prices" aria-controls="ds-prices" aria-selected="false" data-ds-tab="prices">Prices</button>
+  <button type="button" role="tab" id="ds-tab-pictures" aria-controls="ds-pictures" aria-selected="false" data-ds-tab="pictures">Pictures &amp; scanning</button>
+  <button type="button" role="tab" id="ds-tab-settings" aria-controls="ds-settings" aria-selected="false" data-ds-tab="settings">Settings</button>
+  <button type="button" role="tab" id="ds-tab-log" aria-controls="ds-log" aria-selected="false" data-ds-tab="log">Activity log</button>
+</nav>
+
+<div class="ds-pane" id="ds-cards" role="tabpanel" aria-labelledby="ds-tab-cards" data-ds-pane="cards">
+<h2 id="update">Update everything</h2>
+<div class="panel ds">
+  <p class="ds-line">{% if updates_checked_at %}Last checked {{ updates_checked_at[0] | when }}.{% else %}Not checked yet.{% endif %}</p>
+  <div class="ds-acts"><form method="post" action="/account/data/check" data-heavy="Checking for updates…"><button>Check for updates</button></form></div>
+  <details class="ds-about"><summary>About</summary>
+    <p class="muted">Looks for new and changed sets on TCGdex and in the Chinese sets, new cards of the Pokémon you follow, new sprites, and adds new sets to Enhanced Search. Missing and borrowed card pictures are looked for again. Nothing else checks for updates; prices have their own nightly update, below.</p>
+  </details>
+</div>
+
+<h2 id="sets">Card sets</h2>
+<div class="panel ds">
+  <table class="list">
+    {% for l in languages_stored %}<tr><td>{{ language_names.get(l.language, l.language) }}</td><td class="num">{{ l.sets }} set{{ "s" if l.sets != 1 }} &middot; {{ l.cards }} card{{ "s" if l.cards != 1 }}</td></tr>{% endfor %}
+    {% if chs.sets %}<tr><td>Chinese (mainland)</td><td class="num">{{ chs.sets }} sets &middot; {{ chs.cards }} cards{% if chs.owned %} &middot; {{ chs.owned }} you have{% endif %}</td></tr>{% endif %}
+    {% if not languages_stored and not chs.sets %}<tr><td class="muted">Nothing stored yet.</td></tr>{% endif %}
+  </table>
+  {% if card_index is not none %}<p class="muted ds-sub" id="card-catalog">Card catalog for Find: {% for c in card_index %}{{ language_names.get(c.lang, c.lang) }} {{ c.sets }} sets, {{ c.cards }} cards{{ ", " if not loop.last }}{% else %}fetched from TCGdex the first time you search in a language{% endfor %}{% if card_index %} &middot; updated {{ card_index | map(attribute="at") | max | when }}{% endif %}.</p>{% endif %}
+  <div class="ds-acts">
+    {% if not chs.sets and site_on.chinese %}<form method="post" action="/account/data/chs/all"><button>Load all Chinese sets</button></form>{% endif %}
+    <details class="ds-more"><summary aria-label="More">&#8943;</summary>
+      <form method="post" action="/account/data/tcgdex/clear" data-confirm="Forget stored sets nobody has cards from? They load again when you use them."><button class="quiet">Clear cache</button></form>
+    </details>
+  </div>
+  <details class="ds-about"><summary>About</summary>
+    <p class="muted">Sets and cards from TCGdex, free with no account, stored when a set is first used. Mainland Simplified Chinese sets come from PTCG-CHS-Datasets, so Find and Scan know all their cards. {{ catalog_terms }}
+      {% if chs.sets %}Loaded {{ chs.loaded_at | short_date }}{% if chs.checked_at %}, checked {{ chs.checked_at | short_date }}{% endif %}. Check for updates downloads about 26 MB from GitHub only when they've changed.{% else %}Loading downloads about 26 MB from GitHub once, keeps the sets (about 2 MB) and deletes the rest.{% endif %}</p>
+    <p class="muted">Find keeps its own copy of TCGdex's card list, one language at a time: the first search in a language fetches every set in the background, one a second, and the nightly price update fetches new and grown sets. Once a language has every set, Find and the scanner's close matches search that copy instead of asking TCGdex. It's in the downloaded data, not in backups.</p>
+    <p class="muted">The {{ set_codes }} printed set codes the scanner reads (like POR or SVI) are made from the TCGdex card database. They're part of the app and update with it.</p>
+  </details>
+</div>
+
+<h2 id="descriptions">Pokémon data</h2>
+<div class="panel ds">
+  {% set all_here = describe_ready and sprite_counts.normal >= species_total and descriptions_count >= species_total %}
+  <p class="ds-line">Pokédex {{ "&#10003;" | safe if describe_ready else "not here" }} &middot; descriptions {{ descriptions_count }}/{{ species_total }} &middot; sprites {% if sprite_counts.normal >= species_total %}&#10003;{% else %}{{ sprite_counts.normal }}/{{ species_total }}{% endif %}</p>
+  <div class="ds-acts"><form method="post" action="/account/data/pokemon-missing"><button{% if all_here %} class="quiet"{% endif %}{% if describe_running or descriptions_running or sprites_running %} disabled{% endif %}>Download missing</button></form>
+    <details class="ds-more"><summary aria-label="More">&#8943;</summary>
+      <form method="post" action="/account/data/describe"><button class="quiet"{% if describe_running %} disabled{% endif %}>Download the Pokédex again</button></form>
+      <form method="post" action="/account/data/sprites"><button class="quiet"{% if sprites_running %} disabled{% endif %}>Check sprites</button></form>
+      {% if site_on.bulbapedia %}<form method="post" action="/account/data/descriptions"><button class="quiet"{% if descriptions_running %} disabled{% endif %}>Download descriptions</button></form>{% endif %}
+    </details>
+  </div>
+  <details class="ds-about"><summary>About</summary>
+    <p class="muted">The Pokédex: Find's "Don't know the name?" and the evolution lines on Pokémon sets use PokéAPI's free Pokédex files on GitHub (about 9 MB, kept in data/pokeapi). {% if describe_ready %}Describe a Pokémon is ready.{% endif %}{% if evolution_ready %} Evolution lines are here.{% endif %}</p>
+    <p class="muted">Descriptions: each Pokémon's "Origin" from Bulbapedia, which says what it's based on, so Describe can find it by more words (a sea bird, a teapot…). Optional. It fetches about one page a second (around 20 minutes for every Pokémon), picks up where it stopped, and is kept on your server only. {{ bulbapedia_credit }}</p>
+    <p class="muted">Sprites: the app's colours come from a Pokémon's sprite, and Home shows it. Each login picks its Pokémon under Account &rsaquo; Theme. They come from PokeAPI's free sprite collection on GitHub ({{ species_total }} Pokémon plus their shiny versions, about 4 MB), each downloaded once and kept on your server{% if sprite_counts.at %}, last checked {{ sprite_counts.at | when }}{% endif %}. They're Nintendo and Game Freak artwork, so they never go in a public repo.</p>
+    <p class="muted">Download missing fetches only what isn't here; nothing updates by itself.</p>
+  </details>
+</div>
+</div>
+
+<div class="ds-pane" id="ds-prices" role="tabpanel" aria-labelledby="ds-tab-prices" data-ds-pane="prices" hidden>
+<h2 id="prices">Prices</h2>
+<div class="panel ds">
+  <p class="ds-line">{{ priced }} cards priced{% if prices_updated %} &middot; updated {{ prices_updated | when }}{% endif %}.</p>
+  {% if tcgcsv_on %}<p class="muted ds-sub">TCGCSV: {{ tcgcsv.matched }} sets matched{% if tcgcsv.unmatched and tcgcsv.groups_at %}, {{ tcgcsv.unmatched }} not matched{% endif %}{% if tcgcsv.last %} &middot; {{ tcgcsv.priced }} cards &middot; last run {{ tcgcsv.last.at | when }}{% if tcgcsv.last.errors %}, {{ tcgcsv.last.errors }} problem{{ "s" if tcgcsv.last.errors != 1 }}{% endif %}{% else %} &middot; first run with the next price update{% endif %}.</p>{% endif %}
+  {% if tcgcsv_on and tcgcsv_unmatched and tcgcsv.groups_at %}
+  <details class="ds-sub" id="tcgcsv" style="margin:4px 0 8px"><summary>{{ tcgcsv_unmatched | length }} of your set{{ "s" if tcgcsv_unmatched | length != 1 }} not matched on TCGplayer</summary>
+    {% for u in tcgcsv_unmatched %}
+    <form method="post" action="/account/data/tcgcsv/pick" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px">
+      <input type="hidden" name="set_id" value="{{ u.set_id }}"><span style="min-width:0;flex:1 1 140px">{{ set_label(u.set_id, u.name) }} <span class="muted">{{ language_names.get(u.language, u.language) }}</span></span>
+      <select name="group" style="max-width:220px"><option value="">Pick TCGplayer's set</option>
+        {% for g in tcgcsv_groups.get(u.language, []) %}<option value="{{ g.group_id }}">{{ g.name }}</option>{% endfor %}</select>
+      <button class="quiet">Save</button></form>
+    {% endfor %}
+  </details>
+  {% endif %}
+  {% set ct = cardtrader %}
+  <p class="muted ds-sub" id="cardtrader">CardTrader: {% if not ct.token %}no key. Add one under <a href="#keys">API keys</a> for CardTrader's Near Mint prices.
+    {%- elif ct.refused %}<span class="error">CardTrader refused your token. Make a new one on CardTrader (Settings › API) and save it under <a href="#keys">API keys</a>.</span>
+    {%- elif ct.last and ct.last.token %}{{ ct.priced }} cards &middot; {{ ct.matched }} sets matched &middot; last run {{ ct.last.at | when }}{% if ct.last.errors %}, {{ ct.last.errors }} problem{{ "s" if ct.last.errors != 1 }}{% endif %}.
+    {%- else %}token set &middot; first run with the next price update.{% endif %}</p>
+  {% if pc.token %}<p class="muted ds-sub" id="pricecharting">PriceCharting: {{ pc.matched }} cards found &middot; {{ pc.priced }} priced, with each price update.</p>{% endif %}
+  {% if ct.token and ct.unmatched and ct_expansions %}
+  <details class="ds-sub" style="margin:4px 0 8px"><summary>{{ ct.unmatched | length }} set{{ "s" if ct.unmatched | length != 1 }} not matched on CardTrader</summary>
+    {% for u in ct.unmatched %}
+    <form method="post" action="/account/data/cardtrader/pick" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px">
+      <input type="hidden" name="set_id" value="{{ u.set_id }}"><span style="min-width:0;flex:1 1 140px">{{ u.name }} <span class="muted">{{ language_names.get(u.language, u.language) }}</span></span>
+      <select name="expansion" style="max-width:220px"><option value="">Not on CardTrader</option>
+        {% for e in ct_expansions %}<option value="{{ e.id }}">{{ e.name }} ({{ e.code }})</option>{% endfor %}</select>
+      <button class="quiet">Save</button></form>
+    {% endfor %}
+  </details>
+  {% endif %}
+  {% if no_source %}
+  <details class="ds-sub" style="margin:4px 0 8px"><summary>{{ no_source | length }} of your set{{ "s" if no_source | length != 1 }} with no price source</summary>
+    <p class="muted" style="margin:6px 0">Neither TCGplayer nor CardTrader lists {{ "it" if no_source | length == 1 else "these" }}, so {{ "its" if no_source | length == 1 else "their" }} cards get no downloaded price. Search a site, or type a price on the card.</p>
+    {% for u in no_source %}
+    <div class="ns-row" style="margin-top:6px">{{ set_label(u.set_id, u.name) }} <span class="muted">{{ language_names.get(u.language, u.language) }}</span>
+      {% if u.tcgplayer %}<span class="muted" style="font-size:12px"> &middot; <a href="{{ u.tcgplayer }}" target="_blank" rel="noopener">TCGplayer</a> &middot; <a href="{{ u.cardtrader }}" target="_blank" rel="noopener">CardTrader</a> &middot; <a href="{{ u.pricecharting }}" target="_blank" rel="noopener">PriceCharting</a></span>{% endif %}</div>
+    {% endfor %}
+  </details>
+  {% endif %}
+  <div class="ds-acts">
+    <form method="post" action="/account/data/prices"><button{% if prices_running %} disabled{% endif %}>Update prices</button></form>
+    <details class="ds-more"><summary aria-label="More">&#8943;</summary>
+      <form method="post" action="/account/data/catalog/rebuild" data-confirm="Download the card data and prices from TCGCSV, TCGdex and CardTrader again? Your cards, prices you typed and history stay."><button class="quiet"{% if prices_running %} disabled{% endif %}>Rebuild downloaded data</button></form>
+    </details>
+  </div>
+  {% if coverage %}{# 0.20.1: how the printings you have and chase are priced, each count a list #}
+  <p class="ds-coverage" style="margin:10px 0 0">Your {{ coverage.total }} printing{{ "" if coverage.total == 1 else "s" }}:
+    {% set shown = coverage.parts | selectattr(2) | list %}{% for key, label, n in shown %}{% if key in ("no_price", "stale") %}<a href="/review?show={{ key }}">{{ n }} {{ label }}</a>{% else %}{{ n }} {{ label }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+  {% endif %}
+  {% if price_runs or short_run %}
+  <details class="ds-runs" style="margin-top:10px"{% if price_runs and price_runs[0].status != "ok" %} open{% endif %}>
+    <summary>Last price updates{% if price_runs %}: {{ run_words[price_runs[0].status] }}, {{ price_runs[0].ran_at | when }}{% endif %}</summary>
+    {% for r in price_runs %}
+    <div class="ds-run" style="margin:8px 0">
+      <b>{{ r.ran_at | when }}</b> <span class="muted">· {{ run_words[r.status] }}{% if r.fx_date %} · rates of {{ r.fx_date | short_date }}{% endif %}</span>
+      {% if r.error %}<div class="error" style="font-size:13px">{{ r.error }}</div>{% endif %}
+      <ul class="muted" style="margin:2px 0 0;padding-left:18px;font-size:13px">{% for name, s in (r.sources or {}).items() %}
+        <li>{{ source_names.get(name, name) }}: {% if s.sets is defined %}{{ s.sets }} sets read{% elif s.cards is defined %}{{ s.cards }} cards{% elif not s.errors %}done{% endif %}{% if s.skipped %}, {{ s.skipped }} TCGCSV already priced (asked weekly){% endif %}{% if s.slowed %}, slowed down {{ s.slowed }}×{% endif %}{% if s.no_language %}, {{ s.no_language }} listings with no language left out{% endif %}{% if s.too_high %}, {{ s.too_high }} far too high left out{% endif %}{% if s.errors %}{{ ", " if s.sets is defined or s.cards is defined }}{{ s.errors }} problem{{ "" if s.errors == 1 else "s" }}{% for e in s.first_errors %}<br><span style="font-size:12px">{{ e }}</span>{% endfor %}{% endif %}</li>{% endfor %}{% if r.other_errors %}
+        <li>{{ r.other_errors }} other problem{{ "" if r.other_errors == 1 else "s" }} (see the activity log)</li>{% endif %}
+      </ul>
+    </div>
+    {% endfor %}
+    {% if short_run %}<p class="muted" style="font-size:13px">Last update for cards just added: {{ short_run.ran_at | when }}, {{ short_run.sets }} set{{ "" if short_run.sets == 1 else "s" }}, {{ run_words[short_run.status] }}{% if short_run.errors %} ({{ short_run.first_errors | join("; ") }}){% endif %}.</p>{% endif %}
+  </details>
+  {% endif %}
+  <form method="post" action="/account/data/nightly" class="ds-nightly">
+    <b>Nightly price update</b>
+    <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="on" value="1" {% if nightly.on %}checked{% endif %}> Update prices by itself every night</label>
+    <label style="display:flex;gap:8px;align-items:center">At <input type="time" name="at" value="{{ nightly.time }}" style="width:170px" required> <span class="muted" style="font-size:13px">{{ zone }} time</span></label>
+    <p class="muted" style="font-size:13px;margin:0">{% if nightly.last %}Last run {{ nightly.last }}{% else %}It hasn't run yet.{% endif %}</p>
+    {% if nightly.error %}<p class="error" style="margin:0">The last nightly update failed: {{ nightly.error }} It tries again the next night.</p>{% endif %}
+    <div><button class="quiet">Save</button></div>
+  </form>
+  <form method="post" action="/account/data/history" class="ds-nightly" id="history"
+        data-keep="{{ keep.daily }} {{ keep.weekly }} {{ keep.monthly or 999999 }}">
+    <b>Price history</b>
+    <p class="muted" style="font-size:13px;margin:0">{% if history.rows %}{{ "{:,}".format(history.rows) }} rows &middot; {{ history.bytes | filesizeformat }} &middot; from {{ history.oldest | short_date }}{% else %}None stored yet: it starts with the next price update.{% endif %}</p>
+    {% for part, label in (("daily", "Keep daily prices for"), ("weekly", "then weekly averages for"), ("monthly", "then monthly averages for")) %}
+    <label style="display:flex;gap:8px;align-items:center;justify-content:space-between">{{ label }}
+      <select name="{{ part }}" style="width:150px">{% for days, name in keep_choices[part].items() %}<option value="{{ days }}"{% if keep[part] == days %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+    {% endfor %}
+    <p class="muted" style="font-size:13px;margin:0">Prices are saved every night. Shorter settings turn older history into averages straight away, which can't be undone; longer ones apply from now on.</p>
+    <div><button class="quiet">Save</button></div>
+  </form>
+  <form method="post" action="/account/data/history/clear" class="ds-nightly" style="margin-top:8px"
+        data-type-clear>
+    <label style="display:flex;gap:8px;align-items:center">Type CLEAR <input name="confirm" autocomplete="off" style="width:110px"></label>
+    <div><button class="quiet">Clear price history</button> <span class="muted" style="font-size:13px">Deletes all of it. Today's prices stay.</span></div>
+  </form>
+  {% if typed_guessed %}
+  <div class="ds-guessed" style="margin-top:12px">
+    <p style="margin:0 0 6px"><b>Typed prices to check</b></p>
+    <p class="muted" style="font-size:13px;margin:0 0 6px">A typed price is now for one printing. These cards had a price typed before, and you had several printings or none, so it went on the one shown. Open a card's Modify price to move it.</p>
+    <ul style="margin:0;padding-left:18px">{% for c in typed_guessed %}
+      <li><a href="/cards/{{ c.id | urlencode }}?open=mod-price">{{ c.name }} <span class="cno">#{{ c.number }}</span></a> <span class="muted">{{ c.set_name }} · {{ (c.variants or "").split(",") | map("replace", "_", " ") | join(", ") }}</span></li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  <details class="ds-about"><summary>About</summary>
+    <p class="muted">Prices are kept for the cards you have, chase, follow or added a link or price to. Each printing's price is the average of every source that has one for that printing: TCGplayer's market price (else its mid) from TCGCSV, a free daily copy of TCGplayer's prices, or from TCGdex for printings TCGCSV doesn't have; CardTrader's Near Mint median with a token; and a price you typed for that printing. The range shows the lowest and highest. Cardmarket's prices aren't used; Search Cardmarket still opens its page.</p>
+    <p class="muted">CardTrader's price is the median of the Near Mint listings in the card's language (of the cheapest 25 or so its API sends); a printing with no Near Mint listing gets none, and a listing that doesn't say its language is left out. A listing for the whole card counts only for the card's one Normal or Holo printing. One request a second, through CardTrader's own API.</p>
+    <p class="muted">A downloaded price far above the others (over 20 times and over $20 more than TCGplayer's) is left out. A printing you have or chase with no price of its own uses &asymp; its closest printing's, marked wherever it shows. A card you add or import is priced straight away from its set. Links you paste are saved for you to open: dexSTASH never reads TCGplayer's or PriceCharting's pages.</p>
+  </details>
+</div>
+
+<h2 id="keys">API keys</h2>
+<div class="panel ds ds-keys">
+  {% for k in api_keys %}
+  <div class="ds-key{% if k.soon %} soon{% endif %}" id="key-{{ k.site }}">
+    <div class="ds-key-head"><b>{{ k.label }}</b>
+      {% if k.soon %}<span class="badge">Coming soon</span>
+      {% elif k.set %}<span class="muted">{% if k.from_env %}from .env{% else %}&bull;&bull;&bull;&bull;{{ k.last4 }}{% endif %}{% if k.used_at %} &middot; used {{ k.used_at | when }}{% endif %}</span>{% endif %}</div>
+    <p class="muted" style="margin:2px 0 6px;font-size:13px">{{ k.what }}{% if k.how %} {{ k.how }}{% endif %}</p>
+    {% if not k.soon %}
+      {% if k.unreadable %}<p class="error" style="font-size:13px">The saved key can't be read (the app's secret key changed). Enter it again.</p>{% endif %}
+      {% if k.tested_at %}<p class="{{ 'ok' if k.test_ok else 'error' }}" style="font-size:13px;margin:0 0 6px">Test {{ k.tested_at | when }}: {{ k.test_message }}</p>{% endif %}
+      <form method="post" action="/account/data/keys/{{ k.site }}" class="ds-key-form" autocomplete="off">
+        <input type="password" name="key" placeholder="{{ 'Paste a new key to replace it' if k.set else 'Paste your key' }}" aria-label="{{ k.label }} key" autocomplete="off" spellcheck="false">
+        <button class="quiet">Save</button></form>
+      {% if k.set %}<div class="ds-key-acts">
+        <form method="post" action="/account/data/keys/{{ k.site }}/test"><button class="quiet">Test</button></form>
+        {% if not k.from_env %}<form method="post" action="/account/data/keys/{{ k.site }}/remove" data-confirm="Remove the {{ k.label }} key? Its prices stop updating; the ones you have stay."><button class="quiet">Remove</button></form>{% endif %}
+      </div>{% endif %}
+    {% else %}
+      <input type="password" disabled placeholder="Not available yet" aria-label="{{ k.label }} key">
+    {% endif %}
+  </div>
+  {% endfor %}
+  <details class="ds-about"><summary>About</summary>
+    <p class="muted">Keys are for sites' official APIs, so dexSTASH can read their prices without reading their pages. A key is stored encrypted with this install's secret key, in data/api_keys.json next to the database but not in it: backups, restores and exports never hold one, and it's never shown again after you save it, only its last 4 characters. Only the person who set up dexSTASH sees this section.</p>
+    <p class="muted">TCGplayer isn't issuing new API keys, and its prices already come from TCGCSV, so it has no row here.</p>
+  </details>
+</div>
+
+<h2 id="sites">Price and picture sites</h2>
+<div class="panel ds">
+  <form method="post" action="/account/data/sites" class="ds-sites">
+    {% for key, label, use in sites %}
+    <label class="ds-site"><input type="checkbox" name="{{ key }}" value="1"{% if site_on[key] %} checked{% endif %}>
+      <span><b>{{ label }}</b><span class="muted">{{ use }}</span></span></label>
+    {% endfor %}
+    <div><button class="quiet">Save</button></div>
+  </form>
+  <details class="ds-about"><summary>About</summary>
+    <p class="muted">The app only contacts a site here while it's on. Off, nothing is sent to it, not even from your phone: its pictures aren't shown. Turning a site off deletes nothing. Pictures, Chinese sets and descriptions you already have stay as they are, and are read again once you turn it back on.</p>
+    <p class="muted">Always on: TCGdex (sets, cards and pictures), TCGCSV (TCGplayer's daily prices and product pictures), PokéAPI (Pokémon names, the Pokédex and sprites), the European Central Bank (exchange rates) and, with a token, CardTrader's API. A new install starts with the sites here off. TCGplayer and PriceCharting links only open in your browser.</p>
+  </details>
+</div>
+</div>
+
+<div class="ds-pane" id="ds-pictures" role="tabpanel" aria-labelledby="ds-tab-pictures" data-ds-pane="pictures" hidden>
+<h2 id="pictures">Pictures</h2>
+<div class="panel ds">
+  {% set ps = picture_count %}
+  <p class="ds-line" id="picture-count"><a href="/account/data/no-pictures">Pictures: {{ ps.have }} of {{ ps.total }} cards{% if ps.total %} ({{ ps.percent }}%){% endif %} &rsaquo;</a></p>
+  {% if no_picture %}<p class="muted ds-sub"><strong>{{ no_picture }}</strong> of your cards {{ "has" if no_picture == 1 else "have" }} no picture.</p>{% endif %}
+  {% if ps.langs | length > 1 %}<p class="muted ds-sub">{% for lang, have, total in ps.langs %}{{ language_names.get(lang, lang) }} {{ have }}/{{ total }}{% if not loop.last %} &middot; {% endif %}{% endfor %}</p>{% endif %}
+  <details class="ds-about"><summary>About</summary>
+    <p class="muted">Counts the cards you have or chase that have any picture. A small copy of each is kept here ({{ saved_pictures }} so far{% if picture_check_running %}, checking now{% endif %}), so grids load fast, and the cards of Pokémon and artists you follow get one too, a few at a time. A card with no picture of its own borrows TCGplayer's, your link's, the same art in another language, your photo, or your scan. Check for updates and the nightly update look again once a week. This runs by itself.</p>
+    <p class="muted">Chinese card pictures come from GitHub once: full size for cards you have ({{ pictures }}, {{ (picture_bytes / 1048576) | round(1) }} MB with small copies of ones you've viewed). Photos you added yourself ({{ hand_photos }}) are always kept.</p>
+  </details>
+</div>
+
+<h2 id="scanner">Scanning</h2>
+<div class="panel ds">
+  {# The switch, when .env doesn't set DEXSTASH_SCANNER #}
+  <form method="post" action="/account/data/scanning" class="ds-scanning">
+    <b>Scanning</b>
+    <div class="seg" role="group" aria-label="Scanning">
+      <button name="on" value="0"{% if scanner.mode == "off" %} class="on" aria-pressed="true"{% endif %}{% if scanner_locked %} disabled{% endif %}>Off</button>
+      <button name="on" value="1"{% if scanner.mode != "off" %} class="on" aria-pressed="true"{% endif %}{% if scanner_locked or (scanner_short and scanner.mode == "off") %} disabled{% endif %}>On</button>
+    </div>
+    {% if scanner_short and not scanner_locked and scanner.mode == "off" %}<p class="muted ds-sub">On isn't available: {{ scanner_short }}</p>
+    {% elif scanner_locked %}<p class="muted ds-sub">Set in .env (<code>DEXSTASH_SCANNER={{ scanner.mode }}</code>). Remove that line and restart to use this switch.</p>
+    {% else %}<p class="muted ds-sub">On reads photos inside the app's container at the lowest priority, with no restart. It needs about 2 GB of memory for the container and won't start under 1.5 GB.</p>{% endif %}
+  </form>
+  <p class="muted ds-sub">Scanning works out English, Japanese and Chinese (mainland and Taiwan) cards on its own. For Korean cards, tap the photo's language tag and pick KO.</p>
+  {% if scanner.mode == "off" %}
+  <p class="ds-line">Scanning is off on this server.</p>
+  <p class="muted ds-sub">Photos aren't read and Enhanced Search doesn't run{% if scanner_locked %}. To turn it on, set <code>DEXSTASH_SCANNER=inside</code> (about 2 GB of memory) or <code>separate</code> in <code>.env</code> and restart{% endif %}. The Scan tab is hidden.</p>
+  {% else %}
+  <p class="ds-line">{% if scanner.external %}{% if scanner.on %}{{ "Photo reader running inside the app" if scanner.mode == "inside" else "Scanner running" }}{% else %}{{ "Photo reader isn't running" if scanner.mode == "inside" else "Scanner is off" }}{% endif %} &middot; {% endif %}Enhanced Search {{ "on" if pictures_on else "off" }}{% if picture_score and picture_score.scans %} &middot; first in {{ picture_score.first }} of {{ picture_score.scans }}{% endif %}.</p>
+  {% if scanner.refused %}<p class="muted ds-sub">{{ scanner.refused }}</p>
+  {% elif scanner.external and not scanner.on and scanner.mode == "inside" %}<p class="muted ds-sub">Photos wait and are read once it runs again; it starts again by itself. Its log is in the app's: <code>sudo docker logs dexstash</code>.</p>
+  {% elif scanner.external and not scanner.on %}<p class="muted ds-sub">Photos wait and are read once it runs again. On the server: <code>sudo docker compose --profile scanner up -d</code>; its log: <code>sudo docker logs dexstash-scanner</code>.</p>{% endif %}
+  {% endif %}
+  {% if pictures_on %}
+  <table class="list">
+    {% for lang, n in picture_stats.per_lang.items() %}<tr><td>{{ language_names.get(lang, lang) }}</td><td class="num">{{ n }} pictures</td></tr>
+    {% else %}<tr><td class="muted">{% if picture_model %}Nothing fingerprinted yet.{% else %}Waiting for the model to download.{% endif %}</td></tr>{% endfor %}
+  </table>
+  {% if picture_score %}<p id="picture-score" class="muted ds-sub">{% if picture_score.scans %}Your card was first in {{ picture_score.first }} of {{ picture_score.scans }} scan{{ "s" if picture_score.scans != 1 }}, in the top 5 in {{ picture_score.top5 }}.{% else %}No scores yet: they count each scan you add after using Enhanced Search.{% endif %}
+    {% if picture_score.learned %} It learned from {{ picture_score.learned }} of your confirmed scans.{% endif %}</p>{% endif %}
+  <div class="ds-acts">
+    <form method="post" action="/account/data/pictures/off"><button class="quiet">Turn off Enhanced Search</button></form>
+    {% if picture_score and (picture_score.scans or picture_score.learned) %}
+    <details class="ds-more"><summary aria-label="More">&#8943;</summary>
+      {% if picture_score.scans %}<form method="post" action="/account/data/pictures/score/reset" data-confirm="Reset Enhanced Search's score?"><button class="quiet">Reset score</button></form>{% endif %}
+      {% if picture_score.learned %}<form method="post" action="/account/data/pictures/learned/forget" data-confirm="Forget what Enhanced Search learned from your scans?"><button class="quiet">Forget learned photos</button></form>{% endif %}
+    </details>
+    {% endif %}
+  </div>
+  {% elif pictures_possible %}
+  <div class="ds-acts"><form method="post" action="/account/data/pictures/on"><button>Turn on Enhanced Search</button></form></div>
+  {% else %}
+  <p class="banner" style="font-size:13px">Enhanced Search needs onnxruntime, numpy and Pillow, which come with the photo reader.</p>
+  {% endif %}
+  <details class="ds-about"><summary>About</summary>
+    {% if scanner.external %}<p class="muted">Scan photos are read, compared and looked up in their own container (dexstash-scanner), so the rest of the app stays quick while a batch reads.{% if scanner.seen %} Last heard from {{ scanner.seen | when_unix }}.{% endif %}</p>{% endif %}
+    <p class="muted">Enhanced Search compares a photo with fingerprints of the card pictures of every set in English, Japanese and Chinese, for photos whose text doesn't settle it. You start it on a photo with its Enhanced Search button.
+      {% if pictures_on %}{% if picture_loaded %}The model is loaded now.{% else %}The model isn't loaded; it loads when a photo is matched.{% endif %} Kept on the server: the fingerprints and the model ({{ (picture_stats.model_bytes / 1048576) | round }} MB). Check for updates adds new sets.
+      {% else %}Turning it on downloads the picture model once (about 335 MB), then fingerprints every set in the background. The first run is long: the Chinese sets take about 10 minutes, English and Japanese a couple of hours each. Pictures are downloaded one at a time (about 1 GB in all) and not kept; only the fingerprints are (about 60 MB).{% endif %}
+      The model only loads while it works and unloads after {{ picture_idle_minutes }} idle minutes. What it learns from your confirmed scans is a small fingerprint each, never the photo.</p>
+  </details>
+</div>
+</div>
+
+<div class="ds-pane" id="ds-settings" role="tabpanel" aria-labelledby="ds-tab-settings" data-ds-pane="settings" hidden>
+<div class="panel ds" id="settings">
+  <form method="post" action="/account/data/zone" id="region" style="display:grid;gap:8px">
+    <label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">Time zone
+      <input name="zone" value="{{ zone }}" list="zone-list" autocomplete="off" spellcheck="false" required style="flex:1;min-width:200px"></label>
+    <datalist id="zone-list">{% for z in zones %}<option value="{{ z }}">{% endfor %}</datalist>
+    <p class="muted" style="font-size:13px;margin:0">Dates and times show in this zone, and the nightly update runs by its clock. Type a city to search, like London or Chicago.{% if zone_note %} {{ zone_note }}{% endif %}</p>
+    <div><button class="quiet">Save</button></div>
+  </form>
+  <form method="post" action="/account/data/currency" id="currency" class="ds-split" style="display:grid;gap:8px">
+    <label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">Currency
+      <select name="currency" style="flex:1;min-width:200px">{% for code, c in currencies.items() | sort(attribute="1.0") %}<option value="{{ code }}"{% if code == currency %} selected{% endif %}>{{ c[0] }} ({{ code }})</option>{% endfor %}</select></label>
+    <p class="muted" style="font-size:13px;margin:0">Each price update converts every price at the European Central Bank's rate{% if rates_at %} of {{ rates_at | short_date }}{% endif %} and saves it in this currency, refreshed each night and when you change it here. Past prices keep the amount saved on their day. What you type (prices paid, spending) keeps the currency you typed it in.{% if currency_shown != currency %} <strong>Prices show in US dollars until there's a rate for {{ currency }}.</strong>{% endif %}</p>
+    <div><button class="quiet">Save</button></div>
+  </form>
+  <form method="post" action="/account/data/ebay" id="ebay" class="ds-split" style="display:grid;gap:8px">
+    <label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">eBay
+      <select name="site" style="flex:1;min-width:200px">{% for s in ebay_sites %}<option value="{{ s }}"{% if s == ebay_site %} selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+    <p class="muted" style="font-size:13px;margin:0">The card page's "Search eBay sold" link opens this eBay site's sold, ungraded listings of the card, most recently ended first. It's only a link: nothing is read from eBay.</p>
+    <div><button class="quiet">Save</button></div>
+  </form>
+  <form method="post" action="/account/data/stale" id="stale" class="ds-split" style="display:grid;gap:8px">
+    <label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">A price is stale after
+      <input type="number" name="days" value="{{ stale_days }}" min="1" max="365" style="width:80px" required> days</label>
+    <p class="muted" style="font-size:13px;margin:0">A card you have or chase whose newest downloaded price is older than this is listed in Cards to review.</p>
+    <div><button class="quiet">Save</button></div>
+  </form>
+  <form method="post" action="/account/data/names" id="names" class="ds-split" style="display:grid;gap:8px">
+    <label style="display:grid;gap:4px">Names on Japanese and Chinese cards
+      <select name="how">{% for key, label in names_choices.items() %}<option value="{{ key }}"{% if key == names_shown %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <p class="muted" style="font-size:13px;margin:0">How set names show: the English name with the set's own after it, or only one. English names come from TCGplayer's Japanese set list (TCGCSV) and CardTrader's set list; a set with neither shows its own name. Card names already show in English with a language mark.</p>
+    <div><button class="quiet">Save</button></div>
+  </form>
+  <form method="post" action="/account/data/vintage" id="vintage" class="ds-split" style="display:grid;gap:8px">
+    <label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">Vintage means sets older than
+      <input type="number" name="years" value="{{ vintage_years }}" min="1" max="100" style="width:80px" required> years</label>
+    <p class="muted" style="font-size:13px;margin:0">Right now that's sets from {{ vintage_year - 1 }} and earlier. Used by "vintage" in Find and the Vintage tag.</p>
+    <div><button class="quiet">Save</button></div>
+  </form>
+  <div id="reset-tags" class="ds-split">
+    <p class="muted">Tags and Pokémon words you removed with {{ icon("x", 14) }} stay off until you reset them. Your own tags stay either way.</p>
+    <form method="post" action="/account/data/reset-tags"
+        data-confirm="Bring back every automatic tag and Pokémon word you removed? Your own tags stay.">
+      <button class="quiet"{% if reset_tags_running %} disabled{% endif %}>Reset tags</button></form>
+  </div>
+  {% if unknown_rarities %}<p class="muted ds-split" style="font-size:13px">Rarities without a symbol (they show as plain text): {{ unknown_rarities | join(", ") }}.</p>{% endif %}
+</div>
+</div>
+
+<div class="ds-pane" id="ds-log" role="tabpanel" aria-labelledby="ds-tab-log" data-ds-pane="log" hidden>
+<div class="panel ds" id="log">
+  <p class="ds-line">{% if log_problems %}{{ log_problems }} problem{{ "s" if log_problems != 1 }} in the last hour.{% else %}No problems in the last hour.{% endif %}</p>
+  <div class="ds-acts"><a class="button quiet" href="/account/data/log{% if log_problems %}?only=problems{% endif %}">View log</a></div>
+  <details class="ds-about"><summary>About</summary>
+    <p class="muted">What the app and the scanner did in the background (price updates, links, pictures, scans, set loads, backups) and every warning or error, kept on your server for a few days and never with passwords or keys. Copy last hour puts it on the clipboard, ready to paste into a chat.</p>
+  </details>
+</div>
+</div>
+
+<script src="{{ asset("js/data-sources.js") }}"></script>
+{% endblock %}

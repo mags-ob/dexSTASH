@@ -1,0 +1,229 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 940" width="1400" height="940" role="img" aria-label="Every part of dexSTASH: the phone, the reverse proxy, the dexstash container with its route modules, shared web layer, feature modules grouped by area and background workers; the dexstash-scanner container; the data folder with the SQLite tables grouped by area; app/sites.py; and the outside sources, always on or behind a switch."><title>dexSTASH detailed architecture</title>
+<defs><style>
+svg{--bg:#ffffff;--fg:#1b2330;--muted:#5d6878;--line:#c7cfda;--accent:#7c4dcc;--off:#b5651d;
+--py:#2f6fb3;--py-bg:#e3edf8;--html:#c4532a;--html-bg:#fbe8df;--js:#8a6d00;--js-bg:#fbf1c9;
+--sql:#137a6b;--sql-bg:#dcf2ee;--cfg:#6a4fb0;--cfg-bg:#ece6f8;--csv:#4a7a22;--csv-bg:#e6f2da;
+font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
+@media (prefers-color-scheme: dark){svg{--bg:#0d1117;--fg:#e6eaf0;--muted:#9aa5b5;--line:#3a4453;--accent:#b99af5;--off:#f0a868;
+--py:#8cbcf0;--py-bg:#1d3047;--html:#f29a77;--html-bg:#3d2318;--js:#e8cc5c;--js-bg:#3a3214;
+--sql:#6fd6c4;--sql-bg:#143631;--cfg:#b9a3f2;--cfg-bg:#2b2443;--csv:#a5d679;--csv-bg:#22331a}}
+.bg{fill:var(--bg)}
+.box{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+.box.hot{stroke:var(--accent);stroke-width:2}
+.box.off{stroke:var(--off);stroke-width:1.5}
+.ext{stroke-dasharray:4 3}
+.ctr{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 5}
+.t{fill:var(--fg);font-weight:700;font-size:16px}
+.t2{fill:var(--fg);font-weight:700;font-size:13.5px}
+.d{fill:var(--muted);font-size:12.5px}
+.ds{fill:var(--muted);font-size:11.5px}
+.m{fill:var(--fg);font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:12px;font-weight:600}
+.lbl,.kt{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:11px}
+.lbl{fill:var(--muted)}
+.offt{fill:var(--off);font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:11px}
+.edge{stroke:var(--fg);stroke-width:1.5;fill:none}
+.edge.soft{stroke:var(--muted);stroke-dasharray:4 3}
+.ah{fill:var(--fg)}
+.k-py{fill:var(--py-bg)}.k-py+text{fill:var(--py)}
+.k-html{fill:var(--html-bg)}.k-html+text{fill:var(--html)}
+.k-js{fill:var(--js-bg)}.k-js+text{fill:var(--js)}
+.k-sql{fill:var(--sql-bg)}.k-sql+text{fill:var(--sql)}
+.k-cfg{fill:var(--cfg-bg)}.k-cfg+text{fill:var(--cfg)}
+.k-csv{fill:var(--csv-bg)}.k-csv+text{fill:var(--csv)}
+</style>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="bg" x="0" y="0" width="1400" height="940"/>
+<rect class="box " x="20" y="20" width="200" height="170" rx="18"/>
+<text class="t" x="36" y="46">Phone browser</text>
+<text class="d" x="36" y="68">Jinja pages, htmx forms</text>
+<text class="d" x="36" y="86">Camera: live or one photo</text>
+<text class="d" x="36" y="104">Add to Home Screen</text>
+<text class="d" x="36" y="122">Card pictures you don&#x27;t</text>
+<text class="d" x="36" y="140">keep load from TCGdex</text>
+<path class="edge" d="M120 190 V218" marker-end="url(#ar)"/>
+<text class="lbl" x="130" y="209" text-anchor="start">HTTPS</text>
+<rect class="box " x="20" y="220" width="200" height="90" rx="8"/>
+<text class="t" x="36" y="246">Reverse proxy</text>
+<text class="d" x="36" y="268">HTTPS, request_body 25MB</text>
+<text class="d" x="36" y="286">→ dexstash:8000</text>
+<rect class="ctr" x="250" y="20" width="760" height="640" rx="12"/>
+<text class="t" x="268" y="48">Container “dexstash” · one Uvicorn worker</text>
+<text class="lbl" x="994" y="48" text-anchor="end">version 0.28.0</text>
+<rect class="box hot" x="270" y="56" width="720" height="196" rx="8"/>
+<text class="t" x="286" y="82">Web layer</text>
+<rect class="k-html" x="929.0" y="67" width="49" height="20" rx="4"/><text class="kt" x="936.0" y="81">Jinja</text>
+<rect class="k-py" x="867.0" y="67" width="56" height="20" rx="4"/><text class="kt" x="874.0" y="81">Python</text>
+<text class="m" x="286" y="102">app/main.py</text>
+<text class="ds" x="286" y="120">start-up and shutdown, middleware</text>
+<text class="ds" x="286" y="136">(Origin check, sessions, proxy</text>
+<text class="ds" x="286" y="152">addresses), static files, routers</text>
+<text class="m" x="286" y="182">app/web.py</text>
+<text class="ds" x="286" y="200">templates and filters, sign-in</text>
+<text class="ds" x="286" y="216">checks, the workers, shared</text>
+<text class="ds" x="286" y="232">helpers for several pages</text>
+<text class="t2" x="520" y="84">app/routes/ · 216 routes in 16 modules</text>
+<text class="m" x="520" y="108">data_sources.py</text>
+<text class="lbl" x="662" y="108" text-anchor="end">35</text>
+<text class="m" x="520" y="126">scans.py</text>
+<text class="lbl" x="662" y="126" text-anchor="end">32</text>
+<text class="m" x="520" y="144">cards.py</text>
+<text class="lbl" x="662" y="144" text-anchor="end">20</text>
+<text class="m" x="520" y="162">account.py</text>
+<text class="lbl" x="662" y="162" text-anchor="end">18</text>
+<text class="m" x="520" y="180">pokemon.py</text>
+<text class="lbl" x="662" y="180" text-anchor="end">15</text>
+<text class="m" x="520" y="198">home.py</text>
+<text class="lbl" x="662" y="198" text-anchor="end">13</text>
+<text class="m" x="678" y="108">search.py</text>
+<text class="lbl" x="820" y="108" text-anchor="end">13</text>
+<text class="m" x="678" y="126">imports.py</text>
+<text class="lbl" x="820" y="126" text-anchor="end">11</text>
+<text class="m" x="678" y="144">welcome.py</text>
+<text class="lbl" x="820" y="144" text-anchor="end">11</text>
+<text class="m" x="678" y="162">collection.py</text>
+<text class="lbl" x="820" y="162" text-anchor="end">9</text>
+<text class="m" x="678" y="180">shared.py</text>
+<text class="lbl" x="820" y="180" text-anchor="end">9</text>
+<text class="m" x="678" y="198">wants.py</text>
+<text class="lbl" x="820" y="198" text-anchor="end">9</text>
+<text class="m" x="836" y="108">binders.py</text>
+<text class="lbl" x="978" y="108" text-anchor="end">6</text>
+<text class="m" x="836" y="126">pictures.py</text>
+<text class="lbl" x="978" y="126" text-anchor="end">6</text>
+<text class="m" x="836" y="144">spending.py</text>
+<text class="lbl" x="978" y="144" text-anchor="end">6</text>
+<text class="m" x="836" y="162">sets.py</text>
+<text class="lbl" x="978" y="162" text-anchor="end">3</text>
+<text class="ds" x="520" y="220">63 templates in app/templates/ · app/static/ (CSS, JS, htmx, font, logo)</text>
+<text class="ds" x="520" y="238">Each module has its own APIRouter; app/main.py includes them all.</text>
+<path class="edge" d="M630 252 V270" marker-end="url(#ar)"/>
+<rect class="box " x="270" y="272" width="232" height="114" rx="8"/>
+<text class="t2" x="286" y="298">Collection</text>
+<text class="ds" x="286" y="320">inventory · catalog · numbers</text>
+<text class="ds" x="286" y="337">collection · binders · shared</text>
+<text class="ds" x="286" y="354">chase · wants · notes · tags</text>
+<text class="ds" x="286" y="371">spending · value · home · smart</text>
+<rect class="box " x="514" y="272" width="232" height="114" rx="8"/>
+<text class="t2" x="530" y="298">Find</text>
+<text class="ds" x="530" y="320">search · describe · names</text>
+<text class="ds" x="530" y="337">spelling · looks_like · evolution</text>
+<text class="ds" x="530" y="354">handmade · pokeapi · display</text>
+<text class="ds" x="530" y="371">region · pokemon_words · card_index</text>
+<rect class="box " x="758" y="272" width="232" height="114" rx="8"/>
+<text class="t2" x="774" y="298">Prices and links</text>
+<text class="ds" x="774" y="320">prices (one rule) · sync (nightly)</text>
+<text class="ds" x="774" y="337">tcgcsv · cardtrader</text>
+<text class="ds" x="774" y="354">fx (currency)</text>
+<text class="ds" x="774" y="371">extras (your links, never read)</text>
+<rect class="box " x="270" y="396" width="232" height="114" rx="8"/>
+<text class="t2" x="286" y="422">Pictures and themes</text>
+<text class="ds" x="286" y="444">card_pictures · pictures (CLIP)</text>
+<text class="ds" x="286" y="461">themes · icons</text>
+<text class="ds" x="286" y="478">scans · scanner (queue)</text>
+<text class="ds" x="286" y="495"></text>
+<rect class="box " x="514" y="396" width="232" height="114" rx="8"/>
+<text class="t2" x="530" y="422">Data and import</text>
+<text class="ds" x="530" y="444">tcgdex · chinese · bulbapedia</text>
+<text class="ds" x="530" y="461">importer · collectr</text>
+<text class="ds" x="530" y="478">jobs (downloads)</text>
+<text class="ds" x="530" y="495"></text>
+<rect class="box " x="758" y="396" width="232" height="114" rx="8"/>
+<text class="t2" x="774" y="422">Platform</text>
+<text class="ds" x="774" y="444">db (numbered steps) · auth</text>
+<text class="ds" x="774" y="461">backup · reset · settings</text>
+<text class="ds" x="774" y="478">activity (log) · recent</text>
+<text class="ds" x="774" y="495">welcome (first-run wizard)</text>
+<text class="ds" x="270" y="532">73 Python modules in app/, each taking a database connection</text>
+<rect class="box " x="270" y="546" width="476" height="100" rx="8"/>
+<text class="t2" x="286" y="572">Background threads</text>
+<rect class="k-py" x="678.0" y="557" width="56" height="20" rx="4"/><text class="kt" x="685.0" y="571">Python</text>
+<text class="ds" x="286" y="594">PriceUpdater + Nightly: prices, new sets, backup</text>
+<text class="ds" x="286" y="612">Checker: saved pictures</text>
+<text class="ds" x="286" y="630">Matcher: Collectr · Jobs · card catalog fetch</text>
+<rect class="box hot" x="758" y="546" width="232" height="100" rx="8"/>
+<text class="t2" x="774" y="572">app/sites.py</text>
+<text class="ds" x="774" y="594">One User-Agent:</text>
+<text class="ds" x="774" y="612">dexSTASH/&lt;version&gt; (+repo)</text>
+<text class="ds" x="774" y="630">refuses switched-off sites</text>
+<rect class="ctr" x="250" y="690" width="760" height="170" rx="12"/>
+<text class="t" x="268" y="718">Container “dexstash-scanner” · low priority</text>
+<text class="lbl" x="994" y="718" text-anchor="end">python -m app.scan_worker</text>
+<rect class="box " x="270" y="726" width="232" height="118" rx="8"/>
+<text class="t2" x="286" y="752">scans.Worker</text>
+<rect class="k-py" x="448.0" y="737" width="42" height="20" rx="4"/><text class="kt" x="455.0" y="751">ONNX</text>
+<text class="ds" x="286" y="774">RapidOCR reads name,</text>
+<text class="ds" x="286" y="792">set code and number;</text>
+<text class="ds" x="286" y="810">matches to a card</text>
+<rect class="box " x="514" y="726" width="232" height="118" rx="8"/>
+<text class="t2" x="530" y="752">scans.PictureWorker</text>
+<rect class="k-py" x="692.0" y="737" width="42" height="20" rx="4"/><text class="kt" x="699.0" y="751">ONNX</text>
+<text class="ds" x="530" y="774">Enhanced Search: CLIP</text>
+<text class="ds" x="530" y="792">fingerprints, 8 closest</text>
+<text class="ds" x="530" y="810">in every language</text>
+<rect class="box " x="758" y="726" width="232" height="118" rx="8"/>
+<text class="t2" x="774" y="752">LookupWorker + jobs</text>
+<text class="ds" x="774" y="774">Picture lookups,</text>
+<text class="ds" x="774" y="792">fingerprint indexes,</text>
+<text class="ds" x="774" y="810">followed cards&#x27; art</text>
+<path class="edge soft" d="M630 690 V660" marker-end="url(#ar)"/>
+<text class="lbl" x="640" y="680" text-anchor="start">queued in the database</text>
+<path class="edge" d="M800 726 V648" marker-end="url(#ar)"/>
+<rect class="box " x="20" y="340" width="210" height="520" rx="8"/>
+<text class="t" x="36" y="366">data/</text>
+<rect class="k-sql" x="162.0" y="351" width="56" height="20" rx="4"/><text class="kt" x="169.0" y="365">SQLite</text>
+<text class="m" x="36" y="386">dexstash.db</text>
+<text class="ds" x="36" y="404">50 tables, WAL mode</text>
+<text class="ds" x="36" y="428">sets · cards · prices</text>
+<text class="ds" x="36" y="445">inventory · notes</text>
+<text class="ds" x="36" y="462">binders · wants · pulls</text>
+<text class="ds" x="36" y="479">purchases · tags</text>
+<text class="ds" x="36" y="496">scan_batches · scans</text>
+<text class="ds" x="36" y="513">price_snapshots</text>
+<text class="ds" x="36" y="530">users · app_meta</text>
+<text class="ds" x="36" y="547">jobs · datasets</text>
+<text class="ds" x="36" y="564">+ catalog: 15 tables</text>
+<text class="m" x="36" y="600">backups/</text>
+<text class="m" x="36" y="618">scans/ · card-photos/</text>
+<text class="m" x="36" y="636">card-pictures/</text>
+<text class="m" x="36" y="654">models/ · index/</text>
+<text class="m" x="36" y="672">sprites/ · pokeapi/</text>
+<text class="m" x="36" y="690">bulbapedia/ · logs/</text>
+<text class="m" x="36" y="708">secret_key</text>
+<text class="ds" x="36" y="740">Shared by both</text>
+<text class="ds" x="36" y="756">containers.</text>
+<text class="ds" x="36" y="780">Back it up with .env:</text>
+<text class="ds" x="36" y="796">it is everything the</text>
+<text class="ds" x="36" y="812">app knows.</text>
+<path class="edge" d="M250 500 H232" marker-end="url(#ar)"/>
+<path class="edge" d="M250 790 H232" marker-end="url(#ar)"/>
+<text class="t" x="1040" y="40">The internet</text>
+<rect class="box ext" x="1040" y="56" width="340" height="248" rx="8"/>
+<text class="t" x="1056" y="82">Always on</text>
+<text class="t2" x="1056" y="108">TCGdex</text>
+<text class="ds" x="1056" y="123">sets, cards, pictures, Cardmarket prices</text>
+<text class="t2" x="1056" y="142">TCGCSV</text>
+<text class="ds" x="1056" y="157">TCGplayer&#x27;s daily prices and pictures</text>
+<text class="t2" x="1056" y="176">CardTrader API</text>
+<text class="ds" x="1056" y="191">lowest listings, with the host&#x27;s token</text>
+<text class="t2" x="1056" y="210">European Central Bank</text>
+<text class="ds" x="1056" y="225">daily exchange rates</text>
+<text class="t2" x="1056" y="244">PokéAPI</text>
+<text class="ds" x="1056" y="259">names, Pokédex data, sprites</text>
+<text class="t2" x="1056" y="278">CLIP model</text>
+<text class="ds" x="1056" y="293">once, when Enhanced Search is on</text>
+<rect class="box ext off" x="1040" y="326" width="340" height="164" rx="8"/>
+<text class="t2" x="1056" y="352">Switches, off on a new install</text>
+<text class="offt" x="1056" y="370">Data sources › Price and picture sites</text>
+<text class="t2" x="1056" y="396">Limitless TCG</text>
+<text class="ds" x="1056" y="411">Japanese card pictures</text>
+<text class="t2" x="1056" y="430">Chinese card datasets</text>
+<text class="ds" x="1056" y="445">mainland sets and pictures</text>
+<text class="t2" x="1056" y="464">Bulbapedia</text>
+<text class="ds" x="1056" y="479">Pokémon descriptions</text>
+<path class="edge" d="M990 596 H1015 V180 H1038" marker-end="url(#ar)"/>
+<path class="edge" d="M1015 596 V408 H1038" marker-end="url(#ar)"/>
+<text class="ds" x="1040" y="516">Hosts each source uses are listed in the</text>
+<text class="ds" x="1040" y="532">README under “Where your data comes from”.</text>
+<text class="ds" x="20" y="900">Solid boxes run on your server; dashed boxes are on the internet. Orange boxes are switches.</text>
+<text class="ds" x="20" y="918">Colours mark each part&#x27;s language: blue Python, orange HTML and Jinja, yellow JavaScript and htmx, teal SQL, purple configuration.</text>
+</svg>

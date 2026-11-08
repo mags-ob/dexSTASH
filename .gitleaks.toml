@@ -1,0 +1,12 @@
+# gitleaks settings for the Secrets check (.github/workflows/checks.yml): the built-in rules, plus the known
+# false alarms below. Each one is matched by file and by the words on its line, never by commit id, so it
+# keeps working when history is rewritten.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "A time-zone key in a first-run wizard test, read as a generic API key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^tests/test_round16\.py$''']
+regexes = ['''web\.display\.zone\(\)\.key ==''']

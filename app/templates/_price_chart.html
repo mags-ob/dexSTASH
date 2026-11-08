@@ -1,0 +1,18 @@
+{# A card page's price chart for one printing. Range chips swap this box. #}
+<div id="price-chart" class="pchart" style="margin-top:10px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+    <b style="font-size:14px">{{ variant_label }} price</b>
+    <nav class="rchips" style="margin:0" aria-label="Range">
+      {% for key, label in ranges.items() %}<a class="chip{% if key == data.range %} on{% endif %}" href="/cards/{{ card_id | urlencode }}/history?variant={{ variant }}&range={{ key }}"
+         hx-get="/cards/{{ card_id | urlencode }}/history?variant={{ variant }}&range={{ key }}" hx-target="#price-chart" hx-swap="outerHTML">{{ label }}</a>{% endfor %}
+    </nav>
+  </div>
+  {% if data.points | length > 1 %}
+    {% with label = variant_label ~ " price history" %}{% include "_chart_svg.html" %}{% endwith %}
+    <div class="muted" style="display:flex;justify-content:space-between;font-size:12px"><span>{{ data.points[0][0] | short_date }}</span><span>{{ chart.lo | money }} – {{ chart.hi | money }}</span><span>{{ data.points[-1][0] | short_date }}</span></div>
+  {% elif data.points %}
+    <p class="muted" style="font-size:13px;margin:4px 0">{{ data.points[0][1] | money }} since {{ data.points[0][0] | short_date }}{% if data.points[0][2] %} &middot; {{ data.points[0][2] }}{% endif %}. The chart fills in as the price changes.</p>
+  {% else %}
+    <p class="muted" style="font-size:13px;margin:4px 0">No price history yet.</p>
+  {% endif %}
+</div>

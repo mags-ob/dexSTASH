@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% set keep_place = true %}{# Opens where you left it when you come back #}
+{% set wide = true %}
+{% from "_macros.html" import card_image, cname, tile %}
+{% from "_mycards.html" import switcher, active_chips, chip_group %}
+{% from "_pokemon_sheet.html" import pokemon_sheet, open_sheet %}
+{% block title %}Chases · {{ app_name }}{% endblock %}
+{% block heading %}My Stash{% endblock %}
+{% block filters %}
+<form method="get" action="/chases">
+  <h2>Filters <a href="/chases?clear=1">Clear filters</a></h2>
+  <label class="sbox small">{{ icon("search", 18) }}<input name="q" value="{{ q }}" placeholder="Name or number" aria-label="Name or number" enterkeyhint="search" {{ no_correct }}><button type="button" class="sbox-x" data-sbox-x aria-label="Clear" title="Clear" hidden>{{ icon("x", 14) }}</button></label>
+  {% if language_options | length > 1 or language %}{{ chip_group("Language", "language", language_options, language) }}{% endif %}
+  {{ chip_group("Price", "price", price_options, price, "Any price") }}
+  <button>Show chases</button>
+</form>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/chases.css") }}">
+{{ switcher("chases") }}
+{{ active_chips(active, clear) }}
+{% if error %}<p class="error" role="status">{{ error }}</p>{% endif %}
+
+<div class="chase-h"><h2>Single cards</h2><a class="muted" href="/chases/export.csv" download style="font-size:13px">Download my chases</a></div>
+<div class="cgrid">
+  {% for w in wants %}
+  {% set mv = moves.get(w.card_id) %}
+  {% set ph %}{% if w.price is not none %}{{ w.price | money }}{% else %}<span class="muted">No price</span>{% endif %}{% if mv %} <span class="{{ 'up' if mv > 0 else 'down' }}" style="font-size:11px;white-space:nowrap" title="Over {{ chase_days }} days">{{ "▲" if mv > 0 else "▼" }} {{ (mv | abs) | money }} ({{ chase_days }} days)</span>{% endif %}{% endset %}
+  {{ tile("/cards/" ~ w.card_id, card_pics(w.card_id, w.image_url), cname(w.name, w.card_id, w.twin_name), w.number, w.logo_url,
+          price=w.price, price_html=ph, third=set_where(w.set_id, w.set_name, w.number if ":" in w.set_id else None), owned=w.owned > 0,
+          title=w.name ~ " · " ~ set_where(w.set_id, w.set_name, w.number) ~ (" · added by " ~ w.added_by_name if w.added_by_name else "")) }}
+  {% else %}
+  <p class="muted" style="grid-column:1/-1">{% if active %}No chases match these filters.{% else %}No single cards. Chase one with the {{ icon("star-on", 14) }} Chase button on any card.{% endif %}</p>
+  {% endfor %}
+</div>
+
+<div class="chase-h"><h2>Pokémon</h2>
+  {{ open_sheet("follow-sheet", icon("plus", 18) ~ " Follow") }}</div>
+{# + Follow opens the same Pokémon sheet as the theme, with Follow instead of Save. #}
+<form method="post" action="/pokemon/follow">
+  {{ pokemon_sheet("follow-sheet", "Follow", species_choices, sprites_ready, None, species_swatches, owned_species, "Follow", field="dex", artists=True) }}
+</form>
+{% if groups %}
+<div class="cgrid mon-grid" id="mon-grid">
+  {% for g in groups %}
+  <div class="mtile" data-n="{{ g | length }}">
+    {% for f in g %}
+    <a class="mon" href="/pokemon/{{ f.dex_id }}" title="{{ f.name }} #{{ '%03d' % f.dex_id }}">
+      <img src="/sprites/{{ f.dex_id }}.png" alt="" data-fail="hide">
+      <span class="nm">{{ f.name }}</span>
+      {% if f.running %}<span class="ct">Getting its cards&hellip;</span>
+      {% else %}<span class="bar"><span style="width:{{ f.percent }}%"></span></span>
+      <span class="ct">{{ f.arts_owned }} of {{ f.arts }}</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+<script src="{{ asset("js/chases.js") }}"></script>
+{% else %}
+<p class="muted" style="margin:0 2px">You don't follow any Pokémon yet.</p>
+{% endif %}
+
+{# Artists you follow, under Pokémon sets. #}
+<div class="chase-h"><h2>Artists</h2></div>
+{% if artists %}
+<div class="cgrid">
+  {% for a in artists %}
+  <a class="mtile artist-tile" href="/artists/{{ a.norm | urlencode }}" title="{{ a.name }}">
+    <span class="mon"><span class="artist-ic" aria-hidden="true">{{ icon("palette", 30) }}</span>
+      <span class="nm">{{ a.name }}</span>
+      {% if a.running %}<span class="ct">Getting their cards&hellip;</span>
+      {% else %}<span class="bar"><span style="width:{{ a.percent }}%"></span></span>
+      <span class="ct">{{ a.arts_owned }} of {{ a.arts }}</span>{% endif %}</span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted" style="margin:0 2px">You don't follow any artists yet. Use {{ icon("plus", 14) }} Follow and pick Artist.</p>
+{% endif %}
+
+{% endblock %}

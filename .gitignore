@@ -1,0 +1,9 @@
+data/
+caddy/
+dist/
+.env
+__pycache__/
+*.pyc
+export.csv
+.pytest_cache/
+rules/personal.md

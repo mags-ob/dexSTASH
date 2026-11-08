@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cname %}
+{% block title %}Import · {{ app_name }}{% endblock %}
+{% block heading %}Import{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/imports", "Imports") }}{% endblock %}
+{% block content %}
+{% macro change_list(items, label, open=False) -%}
+{% if items %}
+<details {% if open %}open{% endif %}>
+  <summary><strong>{{ items | length }}</strong> {{ label }}</summary>
+  <table class="list">
+    {% for c in items %}
+    <tr><td><a href="/cards/{{ c.card_id }}" style="color:inherit">{{ cname(c.name, c.card_id) }}</a>
+      <div class="muted" style="font-size:12px">{{ c.set_name }} <span class="cno">#{{ c.number }}</span> &middot; {{ c.variant_label }}, {{ condition_labels.get(c.condition, c.condition) }}</div></td>
+      <td class="num">{{ c.current }} &rarr; <strong>{{ c.target }}</strong></td></tr>
+    {% endfor %}
+  </table>
+</details>
+{% endif %}
+{%- endmacro %}
+
+<p class="muted" style="margin:0 0 8px">{{ batch.filename }}</p>
+<p class="muted" style="margin-top:0">Uploaded {{ batch.created_at | when }}{% if batch.created_by_name %} by {{ batch.created_by_name }}{% endif %}{% if batch.applied_at %} &middot; applied {{ batch.applied_at | when }}{% endif %}</p>
+
+{% if batch.status == "matching" %}
+<meta http-equiv="refresh" content="3">
+<p><strong>Matching cards…</strong> {{ batch.message or "" }}</p>
+<p class="muted" style="font-size:13px">Sets that aren't loaded yet are downloaded from TCGdex, which can take a few minutes for a big collection. This page refreshes by itself.</p>
+{% elif batch.status == "stopped" %}
+<p>{{ batch.message }}</p>
+<form method="post" action="/imports/{{ batch.id }}/match"><button>Start matching again</button></form>
+{% elif batch.status == "failed" %}
+<p class="error">{{ batch.message }}</p>
+{% else %}
+
+<p>{{ review.counts.matched }} row{{ "s" if review.counts.matched != 1 }} matched &middot;
+  {% if review.counts.unmatched %}<a href="#unmatched">{{ review.counts.unmatched }} not matched</a>{% else %}none left unmatched{% endif %} &middot;
+  {{ review.counts.ignored }} ignored</p>
+
+{% if result %}
+<div class="banner">
+  Applied: {{ result.added }} card{{ "s" if result.added != 1 }} added, {{ result.removed }} removed{% if result.notes %}, {{ result.notes }} note{{ "s" if result.notes != 1 }} added{% endif %}.
+  {% if result.purchase_id %}Purchase prices from the file are in <a href="/purchases/{{ result.purchase_id }}">this spending entry</a>, which you can add more cards to.{% endif %}
+  {% if review.counts.unmatched %}<br>Fixed more rows below? Import the same file again and only the differences go in.
+  <form method="post" action="/imports/{{ batch.id }}/again" data-heavy="Importing the file again…" style="margin-top:6px"><button>Import this file again</button></form>{% endif %}
+</div>
+{% endif %}
+
+{% if batch.status == "ready" %}
+<h2 style="font-size:16px">What changes</h2>
+<p class="muted" style="font-size:13px;margin-top:0">The file is your whole collection, so each card's quantity becomes the file's.</p>
+{{ change_list(review.changes.new, "new to the app") }}
+{{ change_list(review.changes.more, "you'll have more of") }}
+{{ change_list(review.changes.fewer, "you'll have fewer of (if you keep \"Lower quantities\" ticked)") }}
+{{ change_list(review.changes.missing, "in the app but not in the file") }}
+{% if review.changes.same %}<p class="muted" style="font-size:14px">{{ review.changes.same | length }} already match.</p>{% endif %}
+
+<form method="post" action="/imports/{{ batch.id }}/apply" data-heavy="Applying the import to your collection…" style="display:grid;gap:8px;margin:16px 0;padding:12px;border:1px solid var(--line);border-radius:8px"
+      data-confirm="Apply this import to the collection?">
+  <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" name="lower" value="1" checked style="padding:0;margin-top:4px">
+    <span>Lower quantities to the file's<br><span class="muted" style="font-size:13px">Untick to only ever add cards.</span></span></label>
+  <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" name="remove_missing" value="1" style="padding:0;margin-top:4px">
+    <span>Remove the {{ review.changes.missing | length }} card{{ "s" if review.changes.missing | length != 1 }} that aren't in the file<br>
+    <span class="muted" style="font-size:13px">{% if review.counts.unmatched %}Careful: some of them may be the {{ review.counts.unmatched }} rows that aren't matched yet. {% endif %}Off by default.</span></span></label>
+  <label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">Put the cards it adds in
+    <select name="to_binder" aria-label="Binder" data-new-binder-select>
+      <option value="">Not in a binder</option>
+      {% for b in binders %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+      <option value="new">New binder…</option>
+    </select>
+    <input name="new_binder" maxlength="40" placeholder="New binder name" aria-label="New binder name" hidden></label>
+  {% if review.spend_cards %}<p style="margin:0">{{ review.spend_cards }} new card{{ "s" if review.spend_cards != 1 }} with a purchase price in the file ({{ review.spend_total | money(review.currency) }}) go into one spending entry.</p>{% endif %}
+  <button style="justify-self:start">Apply import</button>
+</form>
+{% endif %}
+
+<h2 style="font-size:16px" id="unmatched">Not matched</h2>
+{% for g in unmatched %}
+<section style="margin-bottom:16px">
+  <h3 style="font-size:15px;margin:12px 0 4px">"{{ g.set_name }}" <span class="muted" style="font-weight:400">&middot; {{ g.rows | length }} row{{ "s" if g.rows | length != 1 }}</span></h3>
+  {% if batch.status == "ready" %}
+  <p style="font-size:14px;margin:0 0 6px">{% if g.language_name %}These are <strong>{{ g.language_name }}</strong> cards, and only English set names are matched automatically. {% endif %}Which set is "{{ g.set_name }}"? Pick it once and {{ "all " ~ g.rows | length ~ " rows are" if g.rows | length != 1 else "the row is" }} matched by number.</p>
+  <form method="post" action="/imports/{{ batch.id }}/set" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+    <input type="hidden" name="set_name" value="{{ g.set_name }}">
+    <select name="lang" aria-label="Language" hx-get="/imports/set-options" hx-target="next select" hx-trigger="change">
+      {% for code, label in languages.items() %}<option value="{{ code }}" {% if code == g.lang or (code == "zh" and g.lang in ("zh-tw", "zh-cn")) %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    {% if g.sets is not none %}
+    <select name="set_id" aria-label="Set" required style="flex:1 1 180px;min-width:0">
+      <option value="">Pick the set</option>
+      {% for s in g.sets %}<option value="{{ s.id }}">{{ s.name }} ({{ s.id }})</option>{% endfor %}
+    </select>
+    {% else %}
+    <input name="set_id" placeholder="TCGdex set id, e.g. SV6" required {{ no_correct }} style="flex:1 1 140px;min-width:0">
+    {% endif %}
+    <button class="quiet" style="padding:6px 10px">Match {{ "all " ~ g.rows | length ~ " rows" if g.rows | length != 1 else "this row" }}</button>
+    <span class="muted" style="font-size:12px;flex-basis:100%">Remembered for future imports of this set name.</span>
+  </form>
+  {% endif %}
+  <table class="list">
+    {% for r in g.rows %}
+    <tr id="row-{{ r.id }}">
+      <td>{{ r.name }} <span class="muted"><span class="cno">#{{ r.number }}</span></span>
+        <div class="muted" style="font-size:12px">{{ r.variance or "Normal" }}, {{ condition_labels.get(r.condition, r.condition) }} &times;{{ r.quantity }} &middot; line {{ r.line }}{% if r.market %} &middot; {{ symbol_of(r.cost_currency) }}{{ r.market }} in the file{% endif %}</div>
+        {% if not g.language_name %}<div class="muted" style="font-size:12px">{{ r.reason }}</div>{% endif %}</td>
+      <td class="num" style="white-space:normal">
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+          <a class="btn" href="/search?q={{ r.search | urlencode }}&amp;lang={{ g.lang }}&amp;fix={{ r.id }}">Find it</a>
+          <form method="post" action="/imports/rows/{{ r.id }}/ignore" style="margin:0"><button class="quiet" style="padding:6px 10px">Ignore</button></form>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% else %}
+<p class="muted">Every row is matched or ignored.</p>
+{% endfor %}
+
+{% set matched = rows | selectattr("status", "equalto", "matched") | list %}
+{% if matched %}
+<details>
+  <summary><strong>{{ matched | length }}</strong> matched rows</summary>
+  <table class="list">
+    {% for r in matched %}
+    <tr id="row-{{ r.id }}">
+      <td>{{ r.name }} <span class="muted"><span class="cno">#{{ r.number }}</span> &middot; {{ r.set_name }}</span>
+        <div class="muted" style="font-size:12px">&rarr; <a href="/cards/{{ r.card_id }}">{{ cname(r.card_name, r.card_id) }} <span class="cno">#{{ r.card_number }}</span>, {{ r.card_set_name }}</a> &middot; {{ r.variant_label }}, {{ condition_labels.get(r.condition, r.condition) }} &times;{{ r.quantity }}{% if r.cost %} &middot; paid {{ r.cost | money(r.cost_currency) }} each{% endif %}</div>
+        <div class="muted" style="font-size:12px">{{ {"auto": "matched automatically", "saved": "remembered from before", "you": "matched by you"}[r.matched_by] }}{% if r.note %} &middot; note: {{ r.note }}{% endif %}</div></td>
+      <td class="num">{% set rl = r.card_id.split(":")[0] if ":" in (r.card_id or "") else "en" %}<a href="/search?q={{ r.search | urlencode }}&amp;lang={{ "zh" if rl.startswith("zh") else rl }}&amp;fix={{ r.id }}" style="font-size:13px">Wrong? Fix</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</details>
+{% endif %}
+
+{% set ignored = rows | selectattr("status", "equalto", "ignored") | list %}
+{% if ignored %}
+<details>
+  <summary><strong>{{ ignored | length }}</strong> ignored rows</summary>
+  <table class="list">
+    {% for r in ignored %}
+    <tr id="row-{{ r.id }}">
+      <td>{{ r.name }} <span class="muted"><span class="cno">#{{ r.number }}</span> &middot; {{ r.set_name }}</span><div class="muted" style="font-size:12px">{{ r.reason }}</div></td>
+      <td class="num">{% if r.matched_by %}<form method="post" action="/imports/rows/{{ r.id }}/ignore"><input type="hidden" name="undo" value="1"><button class="quiet" style="padding:4px 8px">Undo</button></form>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</details>
+{% endif %}
+{% endif %}
+
+<form method="post" action="/imports/{{ batch.id }}/delete" style="margin-top:24px"
+      data-confirm="Delete this import from the list? Cards it added stay, and so do remembered matches.">
+  <button class="quiet">Delete this import</button>
+</form>
+{% endblock %}

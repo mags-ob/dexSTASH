@@ -1,0 +1,21 @@
+{# You added the first copy of a card you were chasing. Asked for by base-nav.js (/got) when the page has data-got. #}
+{% from "_macros.html" import card_picture %}
+{% if got %}
+{% set one = got | length == 1 %}
+{% set boxed = got | selectattr("links") | list | length + got | selectattr("photos") | list | length %}
+<dialog class="got" id="got" aria-labelledby="got-h">
+  <div class="got-confetti" aria-hidden="true">{% for i in range(28) %}<i style="--i:{{ i }};--y:{{ i * 37 % 9 }}"></i>{% endfor %}</div>
+  <h2 id="got-h">You got {% if one %}{{ got[0].name }}{% else %}{{ got | length }} cards you were chasing{% endif %}</h2>
+  <ul class="got-cards{% if one %} one{% endif %}">
+    {% for c in got[:20] %}
+    <li><a href="/cards/{{ c.card_id }}">{{ card_picture(card_pics(c.card_id, c.image_url), c.name, c.number, small=not one, caption=False) }}<span>{% if not one %}{{ c.name }} · {% endif %}{{ c.set_name }} <span class="cno">#{{ c.number }}</span></span></a></li>
+    {% endfor %}
+  </ul>
+  {% if got | length > 20 %}<p class="muted">and {{ got | length - 20 }} more.</p>{% endif %}
+  <form method="post" action="/chases/stop" class="got-ask"{% if boxed %} data-ask="{% if one %}Stop chasing {{ got[0].name }}? Its {% else %}Stop chasing them? Their {% endif %}shop links and photos are deleted too."{% endif %}>
+    {% for c in got %}<input type="hidden" name="want_id" value="{{ c.want_id }}">{% endfor %}
+    <b>Stop chasing {{ "it" if one else "them" }}?</b>
+    <div class="got-acts"><button class="btn">Yes</button><button type="button" class="btn quiet" data-keep>Keep chasing</button></div>
+  </form>
+</dialog>
+{% endif %}

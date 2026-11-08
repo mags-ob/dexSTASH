@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Add a card by hand · {{ app_name }}{% endblock %}
+{% block heading %}Add a card by hand{% endblock %}
+{% block content %}
+<p class="muted" style="margin-top:0">For cards TCGdex doesn't have, like mainland Chinese sets (CSV7C, the CBB Gem Packs). The card then works like any other: add copies, chase it, scan it. If TCGdex adds it later, "Update prices" fills in the rest.</p>
+{% if scan_fix %}<div class="banner">
+  {% if scan_fix.photo %}<img src="/scans/photo/{{ scan_fix.id }}?v={{ scan_fix.photo[:12] }}" alt="Your photo" style="width:56px;float:right;border-radius:4px;margin-left:8px">{% endif %}
+  Adding the card in your photo. Once it's added you go back to the batch to confirm it.
+  <a href="/scans/{{ scan_fix.batch_id }}#scan-{{ scan_fix.id }}">Back to the batch</a><div style="clear:both"></div></div>{% endif %}
+{% if fix_row %}<div class="banner">For import row {{ fix_row.line }}: <strong>{{ fix_row.raw["Product Name"] }}</strong> #{{ fix_row.raw["Card Number"] }} ({{ fix_row.raw["Set"] }}).</div>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if load_set %}<div class="banner" style="font-size:14px">
+  {% if owner %}<form method="post" action="/account/data/chs/all" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0">
+    <span style="flex:1 1 200px">{{ load_set }} can come with every card and picture instead of typing cards in.</span><button>Load all Chinese sets</button></form>
+  {% else %}{{ load_set }} can come with every card and picture. An admin can load the Chinese sets from Data sources.{% endif %}
+</div>{% endif %}
+<link rel="stylesheet" href="{{ asset("css/card-new.css") }}">
+<form method="post" action="/cards/new" enctype="multipart/form-data" class="panel hand-form" style="display:grid;gap:10px;max-width:520px">
+  <input type="hidden" name="scan" value="{{ v.scan or '' }}"><input type="hidden" name="fix" value="{{ v.fix or '' }}">
+  <label>Language
+    <select name="lang" data-go="/cards/new?lang={value}&amp;code={code}&amp;number={number}&amp;name={name}&amp;scan={{ (v.scan or '') | urlencode }}&amp;fix={{ (v.fix or '') | urlencode }}">
+      {% for code, label in languages.items() %}<option value="{{ code }}" {% if code == v.lang %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Set code <span class="muted">as printed at the bottom left, like CSV7C or CBB4C</span>
+    <input name="code" value="{{ v.code or '' }}" list="known-sets" required autocapitalize="characters" autocomplete="off">
+    <datalist id="known-sets">{% for s in known_sets %}<option value="{{ tcgdex_set_id(s.set_id) }}">{{ s.name }}</option>{% endfor %}</datalist>
+  </label>
+  <label>Set name <span class="muted">optional; only used for a set you don't have yet</span>
+    <input name="set_name" value="{{ v.set_name or '' }}" autocomplete="off">
+  </label>
+  <label>Number <span class="muted">as printed, like 141/204 or 0602/07</span>
+    <input name="number" value="{{ v.number or '' }}" required autocomplete="off" inputmode="text">
+  </label>
+  <label>Name
+    <input name="name" value="{{ v.name or '' }}" required autocomplete="off">
+  </label>
+  <label>Rarity <span class="muted">optional, like RR</span>
+    <input name="rarity" value="{{ v.rarity or '' }}" autocomplete="off">
+  </label>
+  {% if scan_fix and scan_fix.photo %}
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="use_scan_photo" value="1" checked style="width:auto;padding:0"> Use my photo as the card's picture</label>
+  {% endif %}
+  <label>Picture <span class="muted">optional</span>
+    <input type="file" name="photo" accept="image/*">
+  </label>
+  <button>Add card</button>
+</form>
+{% endblock %}

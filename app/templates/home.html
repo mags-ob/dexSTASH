@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cname, card_image, card_picture, set_image, sname %}
+{% block title %}{{ app_name }}{% endblock %}
+{% block heading %}Home{% endblock %}
+{% block header_actions %}
+<form method="post" action="/prices/refresh" class="pc-only">
+  <button class="head-btn pop" {% if updating %}disabled data-updating{% endif %}>{{ icon("refresh", 16) }} {{ 'Updating prices…' if updating else 'Update prices' }}</button>
+</form>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/home.css") }}">
+{% if getting_started %}{% set gs = getting_started %}
+<section class="panel getting-started" aria-label="Getting started">
+  <div class="gs-head"><h2>Getting started &middot; {{ gs.done }} of {{ gs["items"] | length }}</h2>
+    <form method="post" action="/welcome/hide"><button class="quiet">Hide</button></form></div>
+  <ul>{% for item in gs["items"] %}
+    <li class="{{ 'done' if item.done else '' }}"><span aria-label="{{ 'done' if item.done else 'to do' }}">{{ "&#10003;" | safe if item.done else "&#9675;" | safe }}</span>
+      {% if item.href and not item.done %}<a href="{{ item.href }}">{{ item.label }}</a>{% else %}{{ item.label }}{% endif %}
+      {% if item.note %}<span class="muted"> &middot; {{ item.note }}</span>{% endif %}</li>{% endfor %}
+  </ul>
+  {% if gs.theme_hint %}<p class="muted gs-hint">The sprites are here: <a href="/account#theme">pick your theme</a>.</p>{% endif %}
+</section>
+{% endif %}
+
+{% if home_theme and home_theme.sprite %}
+<section class="poke-tile" aria-label="Your Pokémon today">
+  <a class="poke-main" href="/pokemon/{{ home_theme.species_id }}" aria-label="{{ home_theme.name }}'s set">
+    <img src="{{ home_theme.sprite }}" alt="" width="128" height="128">
+    <div style="min-width:0">
+      <div class="num">#{{ "%03d" % home_theme.species_id }}{% if home_theme.shiny %} &middot; Shiny{% endif %}</div>
+      <div class="nm">{{ home_theme.name }}</div>
+      {% if home_theme.swatches %}<div class="sw" aria-hidden="true">{% for c in home_theme.swatches %}<i style="background:{{ c }}"></i>{% endfor %}</div>{% endif %}
+    </div>
+    <span class="go" aria-hidden="true">{{ icon("right", 22) }}</span>
+  </a>
+  {% if fact %}<p class="fact"><span>Fun fact</span> {{ fact }}</p>{% endif %}
+  <a class="doku" href="{{ pokedoku }}" target="_blank" rel="noopener noreferrer">PokéDoku of the day &#8599;</a>
+</section>
+{% endif %}
+<div class="home-top">
+<section class="panel stats value-card">
+  <div class="big">
+    <div>
+      <a href="/value" style="color:inherit;text-decoration:none" title="Value over time"><div style="font-size:30px;font-weight:600;line-height:1.1">{{ stats.value | money }}</div></a>
+      {% if stats.estimated %}<div class="muted" style="font-size:12px">incl. {{ stats.estimated | money }} &asymp; estimated</div>{% endif %}
+      {% if stats.change %}
+      {%- set c = stats.change -%}
+      <div class="{{ 'up' if c.amount > 0 else ('down' if c.amount < 0 else 'muted') }}" style="font-size:14px;font-weight:600">
+        {{ "▲" if c.amount > 0 else ("▼" if c.amount < 0 else "") }} {{ (c.amount | abs) | money }}{% if c.percent is not none %} ({{ "%+.1f" % c.percent }}%){% endif %}
+        <span class="muted" style="font-weight:400">since {{ c.since | short_date }}</span></div>
+      {% endif %}
+      <div class="card-count">{{ stats.cards }} card{{ "s" if stats.cards != 1 }}</div>
+    </div>
+    <form method="post" action="/prices/refresh" class="phone-only" style="align-self:flex-start">
+      <button class="price-btn{% if updating %} spinning{% endif %}" {% if updating %}disabled data-updating{% endif %}
+              title="{{ 'Updating prices…' if updating else 'Update prices' }}" aria-label="{{ 'Updating prices' if updating else 'Update prices' }}"><span>{{ icon("refresh", 20) }}</span></button>
+    </form>
+  </div>
+  {% if stats.top %}
+  <a class="top-card" href="/cards/{{ stats.top.id }}">
+    <span class="pic">{{ card_picture(card_pics(stats.top.id, stats.top.image_url), stats.top.name, stats.top.number, stats.top.logo_url, small=True, caption=False) }}</span>
+    <span style="flex:1;min-width:0"><span class="stat-l">Most valuable card</span><br><strong>{{ cname(stats.top.name, stats.top.id) }}</strong>
+      <span class="muted" style="font-size:13px">&middot; {{ stats.top.set_name }} <span class="cno">#{{ stats.top.number }}</span></span></span>
+    <strong>{{ stats.top.price | money }}</strong>
+  </a>
+  {% endif %}
+</section>
+{# One mover: its picture, name, set and number; the change, then and now. #}
+{% macro mrow(m) -%}
+<a class="mrow" href="/cards/{{ m.card_id }}">
+  <span class="pic">{{ card_picture(card_pics(m.card_id), m.name, m.number, small=True, caption=False) }}</span>
+  <span class="mmain"><strong class="one">{{ cname(m.name, m.card_id, m.twin_name) }}</strong>
+    <span class="muted one" style="font-size:12px">{{ m.set_name }} <span class="cno">#{{ m.number }}</span>{% if m.variant_label %} &middot; {{ m.variant_label }}{% endif %}</span></span>
+  <span class="mchg"><b class="{{ 'up' if m.change > 0 else 'down' }}">{{ "▲" if m.change > 0 else "▼" }} {{ (m.change | abs) | money }}</b>
+    <span class="muted" style="font-size:12px">{{ m.then | money }} &rarr; {{ m.now | money }}</span></span>
+</a>
+{%- endmacro %}
+{% if stats.cards %}
+<section class="panel movers" aria-label="Today's movers">
+  <div class="mhead"><h2>Today's movers</h2><a href="/value?moves=1d#movers" class="muted" style="font-size:14px">See all &rsaquo;</a></div>
+  {% if movers.up or movers.down %}
+  <div class="mtabs">
+    <input type="radio" name="movers" id="mv-up" checked><input type="radio" name="movers" id="mv-down">
+    <div class="mseg"><label for="mv-up">&#9650; Up</label><label for="mv-down">&#9660; Down</label></div>
+    <div class="mlist mv-up">{% for m in movers.up %}{{ mrow(m) }}{% else %}<p class="muted">Nothing went up since {{ movers.start | short_date }}.</p>{% endfor %}</div>
+    <div class="mlist mv-down">{% for m in movers.down %}{{ mrow(m) }}{% else %}<p class="muted">Nothing went down since {{ movers.start | short_date }}.</p>{% endfor %}</div>
+  </div>
+  {% else %}
+  <p class="muted" style="margin:6px 0 2px">Moves fill in day by day, after each night's price update.</p>
+  {% endif %}
+</section>
+{% endif %}
+</div>
+<p class="muted" style="font-size:12px;margin:6px 0 0">{% if prices_updated %}Prices updated {{ prices_updated | when }}{% else %}No price update yet{% endif %}{% if not updating and update_failed %}. {{ update_result }}{% endif %}</p>
+{% if updating %}<script src="{{ asset("js/home.js") }}"></script>{% endif %}
+
+{% if review %}
+<div class="home-h"><h2>Cards to review <span class="muted" style="font-weight:400">&middot; {{ review | length }}</span></h2>{% if review | length > 5 %}<a href="/review" class="muted" style="font-size:14px">See all</a>{% endif %}</div>
+<div class="panel review" style="padding:2px 14px">
+  {% for r in review[:5] %}
+  <a href="/cards/{{ r.id }}#fix">
+    <span class="pic">{{ card_picture(card_pics(r.id, r.image_url), r.name, r.number, r.logo_url, small=True, caption=False) }}</span>
+    <span style="flex:1;min-width:0"><strong>{{ cname(r.name, r.id) }}</strong><br><span class="muted" style="font-size:12px">{{ r.set_name }} <span class="cno">#{{ r.number }}</span></span></span>
+    <span class="tag">{{ r.reason }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if recent %}
+<div class="home-h"><h2>Recently added</h2><a href="/collection?sort=newest" class="muted" style="font-size:14px">See all</a></div>
+<div class="strip">
+  {% for r in recent %}
+  <a href="/cards/{{ r.card_id }}">
+    {{ card_picture(card_pics(r.card_id, r.image_url), r.name, r.number, r.logo_url, small=True, caption=False) }}
+    <strong style="display:block;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cname(r.name, r.card_id) }}</strong>
+    <span class="muted">{% if r.by %}by {{ r.by }}{% else %}{{ r.at | short_date }}{% endif %}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if cheaper %}{# Single chases down 10% or more this week #}
+<div class="home-h"><h2>Chases that got cheaper</h2><a href="/chases" class="muted" style="font-size:14px">See all</a></div>
+<div class="strip">
+  {% for r in cheaper %}
+  <a href="/cards/{{ r.card_id }}">
+    {{ card_picture(card_pics(r.card_id), r.name, r.number, small=True, caption=False) }}
+    <strong style="display:block;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cname(r.name, r.card_id, r.twin_name) }}</strong>
+    <span class="down">{{ r.now | money }} &middot; {{ r.percent | round | int }}%</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if not stats.cards %}
+<section class="panel" style="margin-top:16px">
+  <strong>No cards yet.</strong>
+  <p class="muted" style="margin:6px 0 0">Use <a href="/search">Find</a> to look up a card or a set, {% if scanning_on() %}<a href="/scans">Scan</a> to add cards from photos, {% endif %}
+    or Import from CSV in the menu under your initial.</p>
+</section>
+{% endif %}
+{% endblock %}

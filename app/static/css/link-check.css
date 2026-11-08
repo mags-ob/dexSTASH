@@ -1,0 +1,8 @@
+  dialog.link-check { border:0; border-radius:16px; padding:18px 20px 20px; width:min(400px, calc(100% - 24px)); background:var(--surface); color:var(--fg); }
+  dialog.link-check::backdrop { background:rgba(0,0,0,.45); }
+  .lc-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .lc-head h2 { margin:0; font-size:20px; }
+  dialog.link-check p { margin:10px 0 16px; font-size:15px; overflow-wrap:anywhere; }
+  .lc-answer { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .lc-answer form { margin:0; }
+  .lc-answer button { width:100%; min-height:48px; border-radius:12px; white-space:nowrap; }

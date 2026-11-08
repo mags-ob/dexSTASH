@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700" role="img" aria-label="A phone connects over HTTPS to your reverse proxy, which passes requests to the dexstash container on port 8000. There, FastAPI routes call feature modules and background workers. A second container, dexstash-scanner, reads scan photos at low priority. Both keep everything in the data folder: one SQLite database plus backups, photos, pictures and models. Every request to another site goes through app/sites.py, which sends one User-Agent and refuses sites that are switched off. TCGdex, TCGCSV, the European Central Bank and PokéAPI are always on, and CardTrader&#x27;s API with the host&#x27;s token; Limitless TCG, the Chinese card datasets and Bulbapedia are switches that start off on a new install. TCGplayer&#x27;s and PriceCharting&#x27;s pages are never read."><title>dexSTASH architecture overview</title>
+<defs><style>
+svg{--bg:#ffffff;--fg:#1b2330;--muted:#5d6878;--line:#c7cfda;--accent:#7c4dcc;--off:#b5651d;
+--py:#2f6fb3;--py-bg:#e3edf8;--html:#c4532a;--html-bg:#fbe8df;--js:#8a6d00;--js-bg:#fbf1c9;
+--sql:#137a6b;--sql-bg:#dcf2ee;--cfg:#6a4fb0;--cfg-bg:#ece6f8;--csv:#4a7a22;--csv-bg:#e6f2da;
+font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
+@media (prefers-color-scheme: dark){svg{--bg:#0d1117;--fg:#e6eaf0;--muted:#9aa5b5;--line:#3a4453;--accent:#b99af5;--off:#f0a868;
+--py:#8cbcf0;--py-bg:#1d3047;--html:#f29a77;--html-bg:#3d2318;--js:#e8cc5c;--js-bg:#3a3214;
+--sql:#6fd6c4;--sql-bg:#143631;--cfg:#b9a3f2;--cfg-bg:#2b2443;--csv:#a5d679;--csv-bg:#22331a}}
+.bg{fill:var(--bg)}
+.box{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+.box.hot{stroke:var(--accent);stroke-width:2}
+.box.off{stroke:var(--off);stroke-width:1.5}
+.ext{stroke-dasharray:4 3}
+.ctr{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 5}
+.t{fill:var(--fg);font-weight:700;font-size:16px}
+.t2{fill:var(--fg);font-weight:700;font-size:13.5px}
+.d{fill:var(--muted);font-size:12.5px}
+.ds{fill:var(--muted);font-size:11.5px}
+.m{fill:var(--fg);font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:12px;font-weight:600}
+.lbl,.kt{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:11px}
+.lbl{fill:var(--muted)}
+.offt{fill:var(--off);font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:11px}
+.edge{stroke:var(--fg);stroke-width:1.5;fill:none}
+.edge.soft{stroke:var(--muted);stroke-dasharray:4 3}
+.ah{fill:var(--fg)}
+.k-py{fill:var(--py-bg)}.k-py+text{fill:var(--py)}
+.k-html{fill:var(--html-bg)}.k-html+text{fill:var(--html)}
+.k-js{fill:var(--js-bg)}.k-js+text{fill:var(--js)}
+.k-sql{fill:var(--sql-bg)}.k-sql+text{fill:var(--sql)}
+.k-cfg{fill:var(--cfg-bg)}.k-cfg+text{fill:var(--cfg)}
+.k-csv{fill:var(--csv-bg)}.k-csv+text{fill:var(--csv)}
+</style>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="bg" x="0" y="0" width="1200" height="700"/>
+<rect class="box " x="20" y="190" width="175" height="230" rx="18"/>
+<text class="t" x="36" y="216">Phone browser</text>
+<rect class="k-html" x="36" y="226" width="84" height="20" rx="4"/><text class="kt" x="43" y="240">Jinja HTML</text>
+<rect class="k-js" x="36" y="250" width="42" height="20" rx="4"/><text class="kt" x="43" y="264">htmx</text>
+<rect class="k-js" x="84" y="250" width="84" height="20" rx="4"/><text class="kt" x="91" y="264">JavaScript</text>
+<text class="d" x="36" y="300">Pages and forms</text>
+<text class="d" x="36" y="318">Camera photos, shrunk</text>
+<text class="d" x="36" y="336">before they&#x27;re sent</text>
+<text class="d" x="36" y="354">Style, scripts, font and</text>
+<text class="d" x="36" y="372">icons ship with the app</text>
+<path class="edge" d="M195 300 H232" marker-end="url(#ar)"/>
+<text class="lbl" x="214" y="291" text-anchor="middle">HTTPS</text>
+<rect class="box " x="235" y="240" width="140" height="120" rx="8"/>
+<text class="t" x="251" y="266">Reverse proxy</text>
+<text class="d" x="251" y="288">Caddy, or any</text>
+<text class="d" x="251" y="306">proxy with HTTPS</text>
+<rect class="k-cfg" x="251" y="320" width="77" height="20" rx="4"/><text class="kt" x="258" y="334">Caddyfile</text>
+<path class="edge" d="M375 300 H418" marker-end="url(#ar)"/>
+<text class="lbl" x="397" y="291" text-anchor="middle">:8000</text>
+<rect class="ctr" x="400" y="20" width="470" height="470" rx="12"/>
+<text class="t" x="418" y="48">Container “dexstash”</text>
+<text class="lbl" x="854" y="48" text-anchor="end">1 CPU · 1 GB</text>
+<rect class="box hot" x="420" y="56" width="430" height="112" rx="8"/>
+<text class="t" x="436" y="82">Web app · FastAPI + Uvicorn</text>
+<rect class="k-py" x="782.0" y="67" width="56" height="20" rx="4"/><text class="kt" x="789.0" y="81">Python</text>
+<text class="d" x="436" y="104">app/routes/: 16 page modules, 216 routes</text>
+<text class="d" x="436" y="122">app/web.py: templates, sign-in, shared helpers</text>
+<text class="d" x="436" y="140">app/main.py: start-up, middleware, the routers</text>
+<path class="edge" d="M635 168 V188" marker-end="url(#ar)"/>
+<rect class="box " x="420" y="190" width="430" height="104" rx="8"/>
+<text class="t" x="436" y="216">Feature modules</text>
+<rect class="k-py" x="782.0" y="201" width="56" height="20" rx="4"/><text class="kt" x="789.0" y="215">Python</text>
+<text class="d" x="436" y="238">sets and completion · cards · Find · My Stash</text>
+<text class="d" x="436" y="256">binders · chases · spending · prices · themes</text>
+<text class="d" x="436" y="274">Collectr import · backups · accounts · first run</text>
+<path class="edge" d="M635 294 V314" marker-end="url(#ar)"/>
+<text class="lbl" x="645" y="309" text-anchor="start">slow work</text>
+<rect class="box " x="420" y="316" width="430" height="112" rx="8"/>
+<text class="t" x="436" y="342">Background workers</text>
+<rect class="k-py" x="782.0" y="327" width="56" height="20" rx="4"/><text class="kt" x="789.0" y="341">Python</text>
+<text class="d" x="436" y="364">nightly price update and backup</text>
+<text class="d" x="436" y="382">picture check · Collectr matcher · downloads</text>
+<text class="d" x="436" y="400">threads in the same process</text>
+<rect class="box hot" x="420" y="440" width="430" height="38" rx="8"/>
+<text class="m" x="436" y="464">app/sites.py: one User-Agent, switch check</text>
+<rect class="ctr" x="400" y="510" width="470" height="160" rx="12"/>
+<text class="t" x="418" y="538">Container “dexstash-scanner”</text>
+<text class="lbl" x="854" y="538" text-anchor="end">low priority</text>
+<rect class="box " x="420" y="546" width="430" height="108" rx="8"/>
+<text class="t" x="436" y="572">Scanner · python -m app.scan_worker</text>
+<rect class="k-py" x="782.0" y="557" width="56" height="20" rx="4"/><text class="kt" x="789.0" y="571">Python</text>
+<text class="d" x="436" y="594">Reads photos: name, set code, number (RapidOCR)</text>
+<text class="d" x="436" y="612">Enhanced Search: matches by picture (CLIP, ONNX)</text>
+<text class="d" x="436" y="630">Picture lookups and fingerprints</text>
+<path class="edge soft" d="M635 510 V496" marker-end="url(#ar)"/>
+<text class="lbl" x="645" y="505" text-anchor="start">queues in the database</text>
+<rect class="box " x="20" y="450" width="355" height="220" rx="8"/>
+<text class="t" x="36" y="476">Your data/ folder</text>
+<rect class="k-sql" x="307.0" y="461" width="56" height="20" rx="4"/><text class="kt" x="314.0" y="475">SQLite</text>
+<text class="d" x="36" y="498">dexstash.db: your data, 50 tables</text>
+<text class="d" x="36" y="516">dexstash-catalog.db: downloads, 15 tables</text>
+<text class="d" x="36" y="534">backups/: before upgrades, nightly, by hand</text>
+<text class="d" x="36" y="552">scans/, card-photos/: your photos</text>
+<text class="d" x="36" y="570">models/, index/: Enhanced Search</text>
+<text class="d" x="36" y="588">card-pictures/, logs/, secret_key, name lists</text>
+<text class="d" x="36" y="606">Back up this folder and .env: that&#x27;s</text>
+<text class="d" x="36" y="624">everything the app knows.</text>
+<path class="edge" d="M400 470 H378" marker-end="url(#ar)"/>
+<path class="edge" d="M400 600 H378" marker-end="url(#ar)"/>
+<text class="t" x="905" y="40">The internet</text>
+<rect class="box ext" x="905" y="56" width="280" height="248" rx="8"/>
+<text class="t" x="921" y="82">Always on</text>
+<text class="t2" x="921" y="108">TCGdex</text>
+<text class="ds" x="921" y="123">sets, cards, pictures, Cardmarket prices</text>
+<text class="t2" x="921" y="142">TCGCSV</text>
+<text class="ds" x="921" y="157">TCGplayer&#x27;s daily prices and pictures</text>
+<text class="t2" x="921" y="176">CardTrader API</text>
+<text class="ds" x="921" y="191">lowest listings, with the host&#x27;s token</text>
+<text class="t2" x="921" y="210">European Central Bank</text>
+<text class="ds" x="921" y="225">daily exchange rates</text>
+<text class="t2" x="921" y="244">PokéAPI</text>
+<text class="ds" x="921" y="259">names, Pokédex data, sprites</text>
+<text class="t2" x="921" y="278">CLIP model</text>
+<text class="ds" x="921" y="293">once, when Enhanced Search is on</text>
+<rect class="box ext off" x="905" y="326" width="280" height="164" rx="8"/>
+<text class="t2" x="921" y="352">Switches, off on a new install</text>
+<text class="offt" x="921" y="370">Data sources › Price and picture sites</text>
+<text class="t2" x="921" y="396">Limitless TCG</text>
+<text class="ds" x="921" y="411">Japanese card pictures</text>
+<text class="t2" x="921" y="430">Chinese card datasets</text>
+<text class="ds" x="921" y="445">mainland sets and pictures</text>
+<text class="t2" x="921" y="464">Bulbapedia</text>
+<text class="ds" x="921" y="479">Pokémon descriptions</text>
+<path class="edge" d="M850 459 H880 V180 H903" marker-end="url(#ar)"/>
+<path class="edge" d="M880 459 V408 H903" marker-end="url(#ar)"/>
+<path class="edge" d="M850 600 H880 V459"/>
+<text class="ds" x="905" y="516">Every outside request, from either container,</text>
+<text class="ds" x="905" y="532">goes through app/sites.py. A switched-off</text>
+<text class="ds" x="905" y="548">site gets no request, and turning one off</text>
+<text class="ds" x="905" y="564">deletes nothing.</text>
+</svg>

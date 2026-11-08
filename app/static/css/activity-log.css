@@ -1,0 +1,7 @@
+  .log-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:4px 0 12px; }
+  .log-list { display:grid; gap:0; padding:0 12px; }
+  .log-row { padding:8px 0; border-top:1px solid var(--line); font-size:13px; }
+  .log-row:first-child { border-top:0; }
+  .log-row .meta { color:var(--muted); font-size:12px; display:flex; gap:8px; }
+  .log-row pre { margin:2px 0 0; white-space:pre-wrap; word-break:break-word; font:inherit; }
+  .log-row.problem .lvl { color:var(--danger-text); font-weight:600; }

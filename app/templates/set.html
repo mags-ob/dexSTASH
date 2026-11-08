@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% set keep_place = true %}{# Opens where you left it when you come back #}
+{% set wide = true %}
+{% from "_macros.html" import cname, set_image %}
+{% block title %}{{ set_label(set.set_id, set.name) }} · {{ app_name }}{% endblock %}
+{% block heading %}{{ set_label(set.set_id, set.name) }}{% endblock %}
+{% set grid = [] %}
+{% for c in cards %}{% set _ = grid.append({
+  "href": "/cards/" ~ c.id, "pics": pictures_for(c, extras_map.get(c.id)), "name": cname(c.name, c.id if ":" in c.id else set.language, c.twin_name),
+  "number": c.number, "price": card_prices.get(c.id), "owned": c.owned_qty > 0, "qty": c.owned_qty, "star": c.id in wanted,
+  "rarity": c.rarity, "value": set_values.get(norm_number(c.number))}) %}{% endfor %}
+{% set view = set_grid_view(grid, request.query_params.get("rarity", ""), set_sort) %}
+{% set here = "/sets/" ~ set.set_id %}
+{% set filter_count = 1 if view.rarity else 0 %}
+{% block filters %}{% if view.rarities %}{% include "_set_filters.html" %}{% endif %}{% endblock %}
+{% block content %}
+<div class="set-intro">{{ set_image(set.set_id, set.logo_url, set.symbol_url) }}
+  <div class="muted" style="font-size:13px">{% if set.name not in set_label(set.set_id, set.name) %}{{ set.name }} &middot; {% endif %}{{ set_code(set.set_id) }}</div></div>
+{% with have=summary.owned_main if summary else 0, total=(set.printed_total or cards | length), percent=summary.percent if summary else 0,
+        extra_line=("+" ~ summary.owned_extra ~ " of " ~ summary.extra_total ~ " secret") if summary and summary.extra_total else "",
+        value=summary.owned_value if summary else None, logo=set.logo_url %}
+{% include "_set_grid.html" %}
+{% endwith %}
+{% if tcgdex_set_url %}<p style="font-size:14px;margin-bottom:0"><a href="{{ tcgdex_set_url }}" target="_blank" rel="noopener">TCGdex entry for this set &#8599;</a></p>{% endif %}
+<p style="font-size:14px"><a href="/cards/new?lang={{ set.language }}&code={{ tcgdex_code | urlencode }}">Add a card that's missing</a> <span class="muted">for cards TCGdex doesn't have</span></p>
+
+<form method="post" action="/sets/{{ set.set_id }}/remove" style="margin-top:24px"
+      data-confirm="Remove {{ set_label(set.set_id, set.name) }}? Your cards, chases and pulled cards from this set are deleted from your collection."
+     >
+  <button class="quiet">Remove set</button>
+</form>
+{% endblock %}

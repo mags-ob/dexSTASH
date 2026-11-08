@@ -1,0 +1,15 @@
+  .chase-h { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:16px 2px 8px; }
+  .chase-h h2 { margin:0; font-size:17px; }
+  /* Pokémon: one tile per evolution line in the card grid; a line spans as many columns as it has Pokémon (up to a row). */
+  .mon-grid { grid-auto-flow:row dense; }
+  .mtile { grid-column:span var(--s, 1); display:grid; grid-template-columns:repeat(var(--s, 1), minmax(0, 1fr)); gap:4px;
+           background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:8px 6px 10px; }
+  .mon { display:grid; justify-items:center; gap:3px; color:inherit; text-decoration:none; text-align:center; min-width:0; font-size:13px; }
+  .mon img { width:72px; height:72px; image-rendering:pixelated; }
+  .mon .nm { font-weight:600; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mon .bar { width:80%; }
+  .mon .ct { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .follow-box { margin:0 0 10px; }
+  .artist-tile { color:inherit; text-decoration:none; }
+  .artist-ic { width:72px; height:72px; display:grid; place-items:center; color:var(--ink); }
+  .follow-box[hidden] { display:none; }

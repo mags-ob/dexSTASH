@@ -1,0 +1,26 @@
+{# A shared binder's card, enlarged. Only whitelisted details; no condition, notes, paid or photos. #}
+{% set shown = en_name(r.name, r.card_id if ':' in r.card_id else r.language, r.twin_name) %}
+<div style="padding:12px">
+  <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px">
+    <button type="button" class="quiet" data-prev aria-label="Previous card">&lsaquo;</button>
+    <button type="button" class="quiet" data-close aria-label="Close">{{ icon("x", 14) }}</button>
+    <button type="button" class="quiet" data-next aria-label="Next card">&rsaquo;</button>
+  </div>
+  <div style="max-width:420px;margin:0 auto">
+    {% if pics %}<img src="{{ pics[0][0] | replace('/low.webp', '/high.webp') }}" data-pics="{{ pics[1:] | tojson | forceescape }}" alt="{{ r.name }}" style="width:100%;border-radius:12px;display:block" data-fail="next">{% endif %}
+    <div class="muted"{% if pics %} hidden{% endif %} style="padding:40px;text-align:center;border:1px dashed var(--line);border-radius:12px">{{ r.name }}</div>
+  </div>
+  <h2 style="margin:12px 0 2px;font-size:20px">{{ shown.en }}{% if shown.translated %} <span class="muted" style="font-weight:400;font-size:15px">{{ shown.original }}</span>{% endif %}</h2>
+  <div class="muted" style="font-size:14px">{{ set_label(r.set_id, r.set_name) }} &middot; <span class="cno">#{{ r.number }}</span>{% if r.rarity %} &middot; {{ r.rarity }}{% endif %}</div>
+  <div style="font-size:14px">{{ r.variant_label }}{% if r.quantity > 1 %} &middot; &times;{{ r.quantity }}{% endif %}</div>
+  <div style="font-size:24px;font-weight:600;margin-top:6px">{% if r.price is not none %}{{ r.price | money }}{% else %}<span class="muted" style="font-size:16px;font-weight:400">No price yet</span>{% endif %}</div>
+  {% if r.price is not none and r.source %}<div class="muted" style="font-size:13px">{% if r.source.url %}<a href="{{ r.source.url }}" target="_blank" rel="noopener noreferrer">{{ r.source.label }}</a>{% else %}{{ r.source.label }}{% endif %}{% if updated %} &middot; updated {{ updated | short_date }}{% endif %}</div>{% endif %}
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:14px">
+    <a href="{{ links.tcg_url }}" target="_blank" rel="noopener noreferrer">{{ "TCGplayer" if links.tcg_exact else "Search TCGplayer" }} &#8599;</a>
+    <a href="{{ links.pc_url }}" target="_blank" rel="noopener noreferrer">{{ "PriceCharting" if links.pc_exact else "Search PriceCharting" }} &#8599;</a>
+    {% if tcgdex_links %}<a href="{{ tcgdex_links.card }}" target="_blank" rel="noopener noreferrer">TCGdex entry &#8599;</a>{% endif %}
+    {% if links.ct_url %}<a href="{{ links.ct_url }}" target="_blank" rel="noopener noreferrer">{{ "CardTrader" if links.ct_exact else "Search CardTrader" }} &#8599;</a>{% endif %}
+    {% if links.ebay_url %}<a href="{{ links.ebay_url }}" target="_blank" rel="noopener noreferrer">Search eBay sold &#8599;</a>{% endif %}
+  </div>
+  {% if card.twin_name and card.twin_code %}<p class="muted" style="font-size:13px;margin:8px 0 0">English version: {{ card.twin_name }} &middot; {{ card.twin_code }} {{ card.twin_number }}</p>{% endif %}
+</div>

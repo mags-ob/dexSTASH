@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Import · {{ app_name }}{% endblock %}
+{% block heading %}Import{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/collection", "My Stash") }}{% endblock %}
+{% block content %}
+<p class="muted" style="margin-top:0;font-size:14px">Upload a CSV export of your whole collection. Nothing changes until you've reviewed it and pressed Apply. The file is compared with what's already here, so importing again only adds the differences. Matches you fix by hand are remembered for next time.</p>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+<form method="post" action="/imports" enctype="multipart/form-data" data-heavy="Reading your CSV file…" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
+  <input type="file" name="file" accept=".csv,text/csv" required style="flex:1 1 220px;min-width:0">
+  <button>Upload and match</button>
+</form>
+
+<h2 style="font-size:16px">Imports</h2>
+<table class="list">
+  {% for b in batches %}
+  <tr>
+    <td><a href="/imports/{{ b.id }}" style="color:inherit"><strong>{{ b.filename }}</strong></a>
+      <div class="muted" style="font-size:12px">{{ b.created_at | when }}{% if b.created_by_name %} &middot; by {{ b.created_by_name }}{% endif %} &middot; {{ b.rows }} rows{% if b.unmatched %}, {{ b.unmatched }} unmatched{% endif %}</div></td>
+    <td class="num">{{ {"matching": "Matching…", "ready": "Ready to review", "applied": "Applied", "failed": "Failed", "stopped": "Stopped by a restart"}[b.status] }}</td>
+  </tr>
+  {% else %}
+  <tr><td class="muted">No imports yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

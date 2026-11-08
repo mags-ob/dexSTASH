@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Activity log · {{ app_name }}{% endblock %}
+{% block heading %}Activity log{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/account/data", "Data sources") }}{% endblock %}
+{% block content %}
+{# Background work and every problem, from the app and the scanner. Secrets are blanked. #}
+<link rel="stylesheet" href="{{ asset("css/activity-log.css") }}">
+<div class="log-bar">
+  <div class="chips">{% for c in choices %}<a class="chip{% if c == hours %} on{% endif %}" href="?h={{ c }}{% if only %}&only={{ only }}{% endif %}">{{ c }} h</a>{% endfor %}</div>
+  <div class="chips"><a class="chip{% if not only %} on{% endif %}" href="?h={{ hours }}">All</a><a class="chip{% if only == 'problems' %} on{% endif %}" href="?h={{ hours }}&only=problems">Problems</a></div>
+  <button type="button" class="quiet" data-copy-log>Copy last hour</button>
+</div>
+<textarea id="log-text" readonly hidden>{{ last_hour }}</textarea>
+{% if entries %}
+<div class="panel log-list">
+  {% for e in entries %}
+  <div class="log-row{% if e.level in ('WARNING', 'ERROR', 'CRITICAL') %} problem{% endif %}">
+    <div class="meta"><span>{{ e.at | replace("T", " ") | replace("Z", "") }} UTC</span><span>{{ "Scanner" if e.source == "scanner" else "App" }}</span><span class="lvl">{{ e.level | lower }}</span></div>
+    <pre>{{ e.text }}</pre>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted">Nothing {% if only == 'problems' %}went wrong{% else %}logged{% endif %} in the last {{ hours }} hour{{ "s" if hours != 1 }}.</p>
+{% endif %}
+<script src="{{ asset("js/activity-log.js") }}"></script>
+{% endblock %}
