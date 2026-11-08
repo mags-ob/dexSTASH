@@ -53,13 +53,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
+      - id: name
+        name: Image name, as in docker-compose.yml (registry names are lower case)
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/dexstash" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/${{ matrix.arch }}
-          tags: dexstash:${{ needs.version.outputs.version }}
+          tags: ${{ steps.name.outputs.image }}:${{ needs.version.outputs.version }}
           outputs: type=docker,dest=dexstash.tar
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,scope=${{ matrix.arch }},mode=max

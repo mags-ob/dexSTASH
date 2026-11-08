@@ -15,16 +15,16 @@ x-logging: &logs
 
 services:
   app:
+    # The release image from GitHub. DEXSTASH_VERSION in .env pins one (0.28 or 0.28.0); `docker compose pull`
+    # updates. `docker compose up -d --build` builds it here from the Dockerfile instead.
+    image: ghcr.io/obiehq/dexstash:${DEXSTASH_VERSION:-latest}
     build: .
-    # Built here from the Dockerfile unless .env names a ready-built image (DEPLOY.md › Using a release image):
-    #   DEXSTASH_IMAGE=ghcr.io/<owner>/dexstash:0.28 and DEXSTASH_PULL_POLICY=always (pulled), or
-    #   DEXSTASH_IMAGE=dexstash:0.28.0 and DEXSTASH_PULL_POLICY=never (an image file you loaded)
-    image: ${DEXSTASH_IMAGE:-dexstash:latest}
-    pull_policy: ${DEXSTASH_PULL_POLICY:-build}
     container_name: dexstash
     restart: unless-stopped
     logging: *logs
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false   # every setting is optional
     environment:
       DEXSTASH_SECRET_KEY: ${DEXSTASH_SECRET_KEY:-}   # empty: the app makes one in data/secret_key
       DEXSTASH_SCANNER: ${DEXSTASH_SCANNER:-}   # off | inside | separate; empty: the switch in Data sources › Scanning
@@ -50,14 +50,15 @@ services:
 
   scanner:
     profiles: [scanner]   # started only with the scanner profile (COMPOSE_PROFILES=scanner in .env)
+    image: ghcr.io/obiehq/dexstash:${DEXSTASH_VERSION:-latest}   # the same image as the app
     build: .
-    image: ${DEXSTASH_IMAGE:-dexstash:latest}   # the same image as the app
-    pull_policy: ${DEXSTASH_PULL_POLICY:-build}
     container_name: dexstash-scanner
     restart: unless-stopped
     logging: *logs
     command: ["python", "-m", "app.scan_worker"]
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
