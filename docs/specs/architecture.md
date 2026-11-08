@@ -80,8 +80,8 @@ statements a change must keep true.
 - Containers and settings: `docker-compose.yml`, `Dockerfile`, `.env.example`.
 - Diagrams: `docs/architecture-overview.svg` and `docs/architecture-detailed.svg`, drawn by
   `tools/make_diagrams.py`.
-- Related specs: [overview](overview.md); the data model, data sources, prices, scanning and deploy specs
-  once written.
+- Related specs: [overview](overview.md), [data sources](data-sources.md), [prices](prices.md),
+  [scanning](scanning.md), [deploy](deploy.md); the data model spec once written.
 
 ## Open questions
 

@@ -42,21 +42,21 @@ to date, without sending your collection anywhere.
 
 ## The parts and their specs
 
-A spec is written from the code the first time an issue touches that part, so most of these don't exist yet.
+A spec is written from the code the first time an issue touches that part, so some of these don't exist yet.
 
 | Part | Kind | Spec |
 |---|---|---|
 | How the app is built | technical | [architecture.md](architecture.md) |
-| Scanning | capability | `scanning.md` (not written yet) |
+| Scanning | capability | [scanning.md](scanning.md) |
 | Prices | capability | [prices.md](prices.md) |
-| My Stash | capability | `my-stash.md` (not written yet) |
+| My Stash | capability | [my-stash.md](my-stash.md) |
 | Binders | capability | `binders.md` (not written yet) |
-| Chases | capability | `chases.md` (not written yet) |
-| Sets and search | capability | `sets-and-search.md` (not written yet) |
-| Sharing | capability | `sharing.md` (not written yet) |
+| Chases | capability | [chases.md](chases.md) |
+| Sets and search | capability | [sets-and-search.md](sets-and-search.md) |
+| Sharing | capability | [sharing.md](sharing.md) |
 | Accounts and first start | capability | `accounts-and-setup.md` (not written yet) |
 | Data model and database steps | technical | `data-model.md` (not written yet) |
-| Data sources and their terms | technical | `data-sources.md` (not written yet) |
+| Data sources and their terms | technical | [data-sources.md](data-sources.md) |
 | Design system | technical | `design-system.md` (not written yet) |
 | Deploy and configuration | technical | [deploy.md](deploy.md) |
 
