@@ -22,7 +22,9 @@ services:
     container_name: dexstash
     restart: unless-stopped
     logging: *logs
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false   # every setting is optional
     environment:
       DEXSTASH_SECRET_KEY: ${DEXSTASH_SECRET_KEY:-}   # empty: the app makes one in data/secret_key
       DEXSTASH_SCANNER: ${DEXSTASH_SCANNER:-}   # off | inside | separate; empty: the switch in Data sources › Scanning
@@ -54,7 +56,9 @@ services:
     restart: unless-stopped
     logging: *logs
     command: ["python", "-m", "app.scan_worker"]
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}

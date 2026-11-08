@@ -14,18 +14,19 @@ Give the app a domain name. A free DuckDNS subdomain works: at duckdns.org, add 
 
 ## 2. Copy the app to your server
 
-Unpack `dexstash-*.tar.gz` into a folder on the server, for example `/opt/dexstash` (on a NAS, a folder in its Docker share):
+Make a folder on the server, for example `/opt/dexstash` (on a NAS, a folder in its Docker share), and fetch the compose file and the example settings into it:
 
 ```sh
 cd /opt/dexstash
-sudo tar xzf dexstash-<version>.tar.gz
+sudo curl -fsSLO https://raw.githubusercontent.com/obiehq/dexSTASH/main/docker-compose.yml
+sudo curl -fsSL -o .env https://raw.githubusercontent.com/obiehq/dexSTASH/main/.env.example
 ```
+
+That's all the app needs: the image comes ready-built (see Using a release image). To build it on your server instead, clone the repository (or unpack a release's source) into the folder and start it with `--build`.
 
 ## 3. Settings
 
-```sh
-cp .env.example .env
-```
+Edit `.env` (`sudo nano .env`). Without one the app starts with its defaults.
 
 In `.env` (everything here is optional):
 - `DEXSTASH_SECRET_KEY`: leave it empty and the app makes one on the first start, in `data/secret_key`. It signs sign-ins and shared-binder codes, so when you move the app to another server, copy the whole `data/` folder. If you set one yourself, make it with `python3 -c "import secrets; print(secrets.token_hex(32))"`; the app **won't start** with the example value or anything shorter than 32 characters.
