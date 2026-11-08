@@ -11,20 +11,20 @@
 </p>
 
 <p align="center">
-<img src="docs/screenshots/home-dark.png" width="200" alt="Home: the collection's value, card count, spending and recently added cards">
-<img src="docs/screenshots/set-light.png" width="200" alt="A set page: 14 of 20 cards, sorted by value">
-<img src="docs/screenshots/card-dark.png" width="200" alt="A card page with its price">
-<img src="docs/screenshots/my-cards-light.png" width="200" alt="My Stash: every card you have">
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/home-dark.png"><img src="docs/screenshots/home-light.png" width="200" alt="Home: the collection's value, card count, most valuable card and recently added cards"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/set-dark.png"><img src="docs/screenshots/set-light.png" width="200" alt="A set page: 14 of 20 cards, sorted by value"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/card-dark.png"><img src="docs/screenshots/card-light.png" width="200" alt="A card page with its price"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/my-stash-dark.png"><img src="docs/screenshots/my-stash-light.png" width="200" alt="My Stash: every card you have"></picture>
 </p>
 
-<p align="center"><sub>Screenshots use the made-up demo set from <code>tools/demo_data.py</code>, not real card art.</sub></p>
+<p align="center"><sub>Screenshots use the made-up demo set from <code>tools/demo_data.py</code>, not real card art. They follow your GitHub theme, light or dark.</sub></p>
 
 ## Features
 
 - **Set completion.** Every set shows how many of its cards you have ("14 of 20"), with secret rares counted apart, sorted by value, number or name.
 - **Find any card** in English, Japanese, Korean, Chinese and the other languages TCGdex covers. Type a name in English and it searches in the card's language too. "Don't know the name?" finds a Pokémon by type, colour or a few words. After the first search in a language, Find searches a copy of the card list kept on your own server.
 - **Scan cards in batches.** Take photos with the phone's camera. The server reads the name, set code and number (RapidOCR, CPU only) and matches each photo to a card. You review the batch and add it in one go. The optional Enhanced Search matches a photo by its picture when the text can't settle it.
-- **Prices.** TCGplayer's market price for every card (through TCGCSV), CardTrader's lowest listing with your own API token, and any price you type in. Every source counts: the card page shows the range from lowest to highest and lists each one, and lists, sorting, your stash's worth and price history use their average. A daily value-over-time chart and top movers. Links you save to other sites open in your browser; dexSTASH never reads them.
+- **Prices.** TCGplayer's market price for every card (through TCGCSV), CardTrader's lowest listing and PriceCharting's ungraded price with your own API keys (entered in the app, stored encrypted), and any price you type in. Every source counts: the card page shows the range from lowest to highest and lists each one, and lists, sorting, your stash's worth and price history use their average. A daily value-over-time chart and top movers. Links you save to other sites open in your browser; dexSTASH never reads them.
 - **Your collection, your way.** Printings and conditions, binders (shareable with friends through a link and a code), chases, spending and pack pulls, notes, and where each card came from.
 - **Shared accounts.** Several logins on one collection, with who added what.
 - **Collectr CSV import** with a queue for rows that need a decision, and **CSV downloads** of your stash, a binder or your chases (dexSTASH's own columns or Collectr's).
@@ -42,16 +42,18 @@
 
 ## Quick start
 
+dexSTASH comes as a ready-built image (`ghcr.io/obiehq/dexstash`, amd64 and arm64), so you only need two files. Make a folder for it and fetch them:
+
 ```sh
-git clone https://github.com/obiehq/dexSTASH.git dexstash
-cd dexstash
-cp .env.example .env
+mkdir dexstash && cd dexstash
+curl -fsSLO https://raw.githubusercontent.com/obiehq/dexSTASH/main/docker-compose.yml
+curl -fsSL -o .env https://raw.githubusercontent.com/obiehq/dexSTASH/main/.env.example
 ```
 
-To try it on the same computer first, open `docker-compose.yml` and uncomment the two `ports:` lines under `app`, then set `DEXSTASH_HTTPS_ONLY=0` in `.env`. Then:
+`.env` is optional: every setting has a default, and [Configuration](#configuration) lists them. To try it on the same computer first, open `docker-compose.yml` and uncomment the two `ports:` lines under `app`, then set `DEXSTASH_HTTPS_ONLY=0` in `.env`. Then:
 
 ```sh
-docker compose up -d --build
+docker compose up -d     # fetches the image and starts it
 docker compose ps        # dexstash says (healthy) after about 20 seconds
 docker logs dexstash     # shows the one-time setup code
 ```
@@ -61,6 +63,8 @@ Open http://localhost:8000, type the setup code and create the first admin accou
 After signing in, a short first-run wizard asks you to change your password, then sets the time zone and currency, the languages you collect and the extra sites, and what to download (each with its estimated size). Everything it sets is in Account and Data sources afterwards.
 
 When you put it online, comment the `ports:` lines out again and set `DEXSTASH_HTTPS_ONLY=1`.
+
+To build the image yourself instead, see [Building from source](#building-from-source).
 
 ## Putting it online with HTTPS
 
@@ -83,7 +87,7 @@ cards.example.com {
 }
 ```
 
-`request_body` lets scan photos upload. No Caddy yet? `docker compose --profile caddy up -d` starts one from this folder, using `DEXSTASH_DOMAIN` from `.env`. [DEPLOY.md](DEPLOY.md) has the full steps, including a free DuckDNS domain and Caddy running outside Docker.
+`request_body` lets scan photos upload. No Caddy yet? `docker compose --profile caddy up -d` starts one from this folder, using `DEXSTASH_DOMAIN` from `.env` and `deploy/Caddyfile` (fetch it next to `docker-compose.yml`). [DEPLOY.md](DEPLOY.md) has the full steps, including a free DuckDNS domain and Caddy running outside Docker.
 
 On a phone, open your address in Safari or Chrome and choose **Add to Home Screen** (Account has the steps). It opens full screen like an app, with its own launch screen and, when the server can't be reached, a page that says so and tries again. This needs https: over plain http the phone saves a bookmark instead.
 
@@ -94,10 +98,12 @@ Everything in `.env` is optional; `.env.example` has each one with a note.
 | Setting | Default | What it does |
 |---|---|---|
 | `APP_NAME` | `dexSTASH` | The name shown in the app, the browser tab and shared binders. |
+| `DEXSTASH_VERSION` | `latest` | Which release image to run: `0.28` follows the newest 0.28.x, `0.28.0` stays on one release. |
 | `DEXSTASH_SECRET_KEY` | made on first start | Signs sign-ins and shared-binder codes. Left empty, the app makes one in `data/secret_key`. If you set one, it must be at least 32 characters. |
 | `DEXSTASH_ADMIN_USER`, `DEXSTASH_ADMIN_PASSWORD` | unset | Creates the first admin on the first start instead of asking for the setup code. Only read while there are no accounts. |
 | `DEXSTASH_HTTPS_ONLY` | `1` | `1` sends the sign-in cookie only over HTTPS. Set `0` only to try it over plain http. |
 | `DEXSTASH_PROXY_IPS` | private addresses | The addresses of your reverse proxy. The app believes the visitor's address and https from these only, so wrong-password lockouts block the right visitor and the sign-in cookie is marked secure. |
+| `DEXSTASH_APP_MEMORY` | `2g` | The app container's memory cap. A host that doesn't scan inside the app can lower it, for example to `1g`. |
 | `DEXSTASH_SCANNER` | unset | `off`, `inside` or `separate`: see [Scanning](#scanning). Unset, the Scanning switch in Data sources decides. |
 | `COMPOSE_PROFILES` | unset | `scanner` starts the separate scanner container with every `docker compose` command. |
 | `DEXSTASH_NETWORK`, `DEXSTASH_NETWORK_EXTERNAL` | `dexstash`, `false` | The Docker network the app joins, so a Caddy in Docker can reach `dexstash:8000`. |
@@ -142,11 +148,10 @@ Every request names itself with the User-Agent `dexSTASH/<version> (+https://git
 ## Updating
 
 ```sh
-git pull                       # or unpack a new release over the old files
-docker compose up -d --build
+docker compose pull && docker compose up -d
 ```
 
-Each release on GitHub also carries the image ready-built (one file for amd64, one for arm64), so a server can load it instead of building: see DEPLOY.md › Using a release image.
+`DEXSTASH_VERSION` in `.env` pins a version (see [Configuration](#configuration)). Each release on GitHub also carries the image as a file for servers that can't reach the registry, and a build from source updates with `git pull` and `--build`: [DEPLOY.md](DEPLOY.md#updating) has both.
 
 - **Everything the app keeps is in `data/`** (on a hosting service, the data folder or volume, often `/srv/data` or `/app/data`). `.env` and `data/` are kept by an update.
 - **Updates only go forward.** On start, the app backs up the database into `data/backups/` and then updates its tables. An older version refuses to start on an updated database and says so in its log.
@@ -179,16 +184,36 @@ For `separate`, also set `COMPOSE_PROFILES=scanner` in `.env` (or start it with 
 
 ```sh
 python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt pytest
-python -m pytest
+pip install -r requirements.lock pytest
+python -m pytest -q                              # the whole suite; no network needed
 DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
 ```
 
 - `tools/demo_data.py` fills an empty data folder with a made-up set and collection (sign in as `misty` / `pikachu123`). It's how the screenshots were made.
 - `tools/make_logo.py` draws the logo and app icons.
+- `tools/make_diagrams.py` draws the two architecture diagrams.
 - [docs/architecture.md](docs/architecture.md) explains how the app fits together, with diagrams and a map from each page to its code and tables.
+- [docs/specs/](docs/specs/README.md) holds a spec for each part of the app: what it does and what a change must keep true.
+- [AGENTS.md](AGENTS.md) is for anyone working with an AI coding assistant.
 
 The app is FastAPI with Jinja templates and htmx, and SQLite. There's no JavaScript build step.
+
+### Building from source
+
+```sh
+git clone https://github.com/obiehq/dexSTASH.git dexstash
+cd dexstash
+cp .env.example .env
+docker compose up -d --build
+```
+
+The rest of [Quick start](#quick-start) is the same. To update, `git pull` and run `docker compose up -d --build` again.
+
+## Getting help
+
+- **Questions and ideas:** [GitHub Discussions](https://github.com/obiehq/dexSTASH/discussions).
+- **Something broken:** [open an issue](https://github.com/obiehq/dexSTASH/issues/new/choose); the form asks for your version and what you saw.
+- **A security problem:** don't open an issue; [SECURITY.md](SECURITY.md) says how to report it privately.
 
 ## Contributing, security and licence
 
