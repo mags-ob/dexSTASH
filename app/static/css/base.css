@@ -407,6 +407,15 @@
     .cv-add-head button { min-height:36px; padding:4px 12px; }
     @media (max-width: 819px) { dialog.cv-add { margin:auto 0 0; width:100vw; border-radius:16px 16px 0 0; padding-bottom:max(16px, env(safe-area-inset-bottom)); } }
     .cv-label { font-size:13px; color:var(--muted); margin:16px 0 6px; font-weight:500; }
+    /* Printing and language chips (card page, Edit art): ✓ and filled when you have it. */
+    .pr-row { display:flex; flex-wrap:wrap; gap:6px; }
+    .pr-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:8px; font-size:13px; font-weight:500;
+               border:1.5px solid var(--line); color:var(--fg); text-decoration:none; }
+    a.pr-chip:hover { border-color:var(--accent); }
+    .pr-chip.have { background:var(--accent); border-color:var(--accent); color:var(--on, #fff); }
+    .pr-chip.here { box-shadow:0 0 0 2px var(--fg); }
+    .pr-chip small { font-weight:500; color:var(--muted); }
+    .pr-chip .ic { width:13px; height:13px; }
     .cv-line { display:flex; align-items:center; gap:8px; padding:10px 0; border-top:1px solid var(--line); }
     .cv-line:first-child { border-top:0; }
     .cv-bar { position:sticky; bottom:0; z-index:20; display:flex; gap:8px; margin:20px -16px 0; padding:10px 16px;

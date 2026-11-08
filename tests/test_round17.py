@@ -194,47 +194,6 @@ def test_a_scan_added_by_htmx_asks_for_the_pop_up():
     assert 'response.headers["HX-Trigger"] = "dsGot"' in src
 
 
-# --- 3: Pokémon sets by era -----------------------------------------------------------------------------------
-
-def test_eras_place_cards_by_their_own_set_date():
-    from app import eras
-    assert eras.era_of("2023-09-22", "en") == ("sv", "Scarlet & Violet")
-    assert eras.era_of("2023-02-01", "en")[0] == "swsh" and eras.era_of("2023-02-01", "ja")[0] == "sv"  # Japan first
-    assert eras.era_of("2023-02-01", "zh-cn")[0] == "swsh" and eras.era_of("2023-02-01", "zh-tw")[0] == "sv"
-    assert eras.era_of("1999-01-09", "en") == eras.OLDER and eras.era_of(None, "en") == eras.UNKNOWN
-
-
-def test_a_new_english_series_becomes_a_row(client):
-    from app import eras
-    _setup_with_set(client)
-    main.conn.execute("INSERT INTO sets (set_id, language, name, series, release_date, printed_total, total) VALUES "
-                      "('zz1', 'en', 'Future One', 'Future Era', '2027-03-01', 1, 1), "
-                      "('zz2', 'en', 'Pocket', 'Pokémon TCG Pocket', '2027-04-01', 1, 1)")
-    known = eras.known(main.conn)
-    assert known[0][:3] == ("futureera", "Future Era", "2027-03-01") and all(e[1] != "Pokémon TCG Pocket" for e in known)
-    assert eras.era_of("2027-05-01", "en", known)[0] == "futureera"
-
-
-def test_the_pokemon_page_shows_era_rows_and_view_all(client, monkeypatch):
-    from app import chase
-    from test_app import _chase_rows, _vec
-    user_id = _setup_with_set(client)
-    chase.follow(main.conn, user_id, 35, "Clefairy", user_id)
-    chase.save_cards(main.conn, 35, _chase_rows())
-    chase.regroup(main.conn, 35, {"sv03.5-035": _vec(1, 0, 0), "base1-5": _vec(0, 1, 0)})
-    page = client.get("/pokemon/35").text
-    assert 'class="era-rows"' in page and "Scarlet &amp; Violet <small>&middot; 1 art &middot; 0 owned" in page
-    assert page.index("Scarlet &amp; Violet") < page.index(">Older <small>")  # newest era first
-    assert "View all &rsaquo;" in page and "era=sv" in page
-    assert '<b>Language</b>' in page and "lang-chips big-chips" not in page  # the language is in Filters now
-    for show in ("Owned", "Missing", "♥ Chased", "Full art", "Promo"):
-        assert f">{show}</label>" in page
-    page = client.get("/pokemon/35", params={"era": "sv"}).text
-    assert 'class="pgrid" id="arts"' in page and "Every era" in page and "<h2>Scarlet &amp; Violet</h2>" in page
-    assert "Base Set" not in page.split('id="arts"')[1]  # only that era's arts
-    assert "No arts match." in client.get("/pokemon/35", params={"show": "promo"}).text
-
-
 # --- 2: binder pages -------------------------------------------------------------------------------------------
 
 def test_binder_pages_put_one_copy_in_each_pocket_with_empty_sleeves():

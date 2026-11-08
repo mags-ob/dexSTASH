@@ -1,65 +1,60 @@
-{# One art opened in place (option D): a row per print with its languages as tags; Edit adds the fixing tools. #}
+{# The Edit art sheet's insides: the art's cards one per row, Add a card to this art, and what was taken out. #}
 {% from "_macros.html" import cname %}
-<link rel="stylesheet" href="{{ asset("css/pokemon-art.css") }}">
 {% set anchor = d.anchor %}
-<div class="tray-h">
-  {% if edit %}<b>Editing {{ d.cover.set_name or d.cover.set_code }} art</b>
-  <span style="display:flex;gap:6px">
-    <form method="post" action="/pokemon/{{ dex }}/recheck" style="margin:0"><input type="hidden" name="back" value="{{ anchor }}"><button class="quiet" title="Compare this Pokémon's pictures again. Your own choices stay.">{{ icon("refresh", 15) }} Re-check</button></form>
-    <button type="button" data-edit="{{ anchor }}" data-on="0">Done</button></span>
-  {% else %}<b>{{ d.cover.set_name or d.cover.set_code }} art &middot; {{ d.rows | length }} print{{ "s" if d.rows | length != 1 }} &middot; {{ d.cards }} card{{ "s" if d.cards != 1 }}</b>
-  <button type="button" class="quiet" data-edit="{{ anchor }}" data-on="1">Edit</button>{% endif %}
-</div>
-{% for row in d.rows %}
-<div class="prow">
-  <span class="pp {{ row.pattern }}{% if not row.have %} miss{% endif %}">{% if row.image %}<img src="{{ row.image }}" data-pics="{{ row.pics[1:] | tojson | forceescape }}" alt="" loading="lazy" data-fail="art">{% elif sprite %}<img class="spr" src="{{ sprite }}" alt="">{% endif %}</span>
+<link rel="stylesheet" href="{{ asset("css/pokemon-art.css") }}">
+<div class="as-head">
+  <span class="as-pic">{% if d.rows and d.rows[0].image %}<img src="{{ d.rows[0].image }}" alt="" loading="lazy">{% elif sprite %}<img class="spr" src="{{ sprite }}" alt="">{% endif %}
+    {% if d.langs %}<span class="ltags">{% for l in d.langs %}<span class="ltg ltg-{{ l.key }}{% if l.owned %} h{% endif %}">{{ l.tag }}</span>{% endfor %}</span>{% endif %}</span>
   <div style="min-width:0">
-    <div class="pr-h"><b>{{ row.label }}</b><span class="muted">{{ row.have }} of {{ row.total }}</span></div>
-    {% if edit %}<div class="muted" style="font-size:12px">{{ row.lead.set_name or row.lead.set_code }} &middot; {{ row.lead.number }}</div>{% endif %}
-    <div class="lps">
-      {% for c in row.cards %}
-      {% if edit %}
-      <form method="post" action="/pokemon/{{ dex }}/fix/out" style="margin:0"{% if loop.index > 5 %} hidden{% endif %}>
-        <input type="hidden" name="card" value="{{ c.card_id }}"><input type="hidden" name="back" value="{{ anchor }}">
-        <input type="hidden" name="stay" value="{{ (d.art.card_ids | reject('equalto', c.card_id) | first) or anchor }}">
-        <button class="lp{% if c.owned %} h{% endif %}" title="Take {{ c.tag }} {{ c.set_code }} {{ c.number }} out of this art">{{ c.tag }} {{ icon("x", 14) }}</button></form>
-      {% else %}
-      <a class="lw" href="{{ c.link }}"{% if loop.index > 5 %} hidden{% endif %}><span class="lp{% if c.owned %} h{% endif %}">{{ c.tag }}{% if c.owned %} {{ icon("check", 14) }}{% endif %}</span>
-        <span class="lw-s">{{ c.set_name or c.set_code }}{% if c.set_code and c.set_code | lower not in (c.set_name or "") | lower %} ({{ c.set_code }}){% endif %} &middot; {{ c.number }}</span></a>
-      {% endif %}
-      {% endfor %}
-      {% if row.cards | length > 5 %}<button type="button" class="lp more" data-more>+{{ row.cards | length - 5 }}</button>{% endif %}
-    </div>
+    <h2>Edit art</h2>
+    <div class="muted">{{ d.cover.set_name or d.cover.set_code }} art &middot; {{ d.cards }} card{{ "s" if d.cards != 1 }} &middot; {{ d.printings }} printing{{ "s" if d.printings != 1 }}</div>
   </div>
-  {% if edit %}
-  <form method="post" action="/pokemon/{{ dex }}/fix/out" style="margin:0">
-    {% for cid in row.card_ids %}<input type="hidden" name="card" value="{{ cid }}">{% endfor %}
-    <input type="hidden" name="back" value="{{ anchor }}">
-    <input type="hidden" name="stay" value="{{ (d.art.card_ids | reject('in', row.card_ids) | first) or anchor }}">
-    <button class="quiet xb" aria-label="Take this print out of the art" title="Take this print out of the art">{{ icon("x", 14) }}</button></form>
+  <button type="button" data-close>Done</button>
+</div>
+
+<h3 class="cv-label">Cards in this art</h3>
+{% for r in d.rows %}
+<div class="as-card">
+  <a class="pp" href="{{ r.link }}">{% if r.image %}<img src="{{ r.image }}" data-pics="{{ r.pics[1:] | tojson | forceescape }}" alt="" loading="lazy" data-fail="art">{% elif sprite %}<img class="spr" src="{{ sprite }}" alt="">{% endif %}</a>
+  <div style="min-width:0">
+    <div class="as-where"><span class="ltg ltg-{{ r.group }}{% if r.owned %} h{% endif %}">{{ r.tag }}</span>
+      <a href="{{ r.link }}">{{ r.set_name or r.set_code }}{% if r.set_code and r.set_code | lower not in (r.set_name or "") | lower %} ({{ r.set_code }}){% endif %} &middot; {{ r.number }}</a></div>
+    <div class="pr-row">{% for p in r.prints %}<span class="pr-chip{% if p.owned %} have{% endif %}">{% if p.owned %}{{ icon("check", 13) }}{% endif %}{{ p.label }}</span>{% endfor %}</div>
+  </div>
+  {% if d.rows | length > 1 %}
+  <form method="post" action="/pokemon/{{ dex }}/fix/out">
+    <input type="hidden" name="card" value="{{ r.card_id }}"><input type="hidden" name="back" value="{{ anchor }}">
+    <input type="hidden" name="stay" value="{{ (d.art.card_ids | reject('equalto', r.card_id) | first) or anchor }}">
+    <button class="quiet" title="Take {{ r.tag }} {{ r.set_code }} {{ r.number }} out of this art. It becomes an art of its own.">Not this art</button></form>
   {% else %}<span></span>{% endif %}
 </div>
 {% endfor %}
-{% if edit %}
-<p class="muted" style="font-size:12px;margin:8px 0">Tap {{ icon("x", 14) }} on a print, or on one language, to take it out of this art. It becomes an art of its own.</p>
+
+<form method="post" action="/pokemon/{{ dex }}/fix/add" class="as-add">
+  <input type="hidden" name="to" value="{{ anchor }}">
+  <h3 class="cv-label">Add a card to this art <span>&middot; closest pictures first</span></h3>
+  {% if candidates %}
+  <div class="pgrid">
+    {% for c in candidates %}
+    <label class="cand">
+      <span class="face">{% if c.image_url %}<img src="{{ c.image_url }}" alt="" loading="lazy">{% elif sprite %}<img class="spr" src="{{ sprite }}" alt="">{% endif %}
+        <input type="checkbox" name="card" value="{{ c.card_id }}" aria-label="Add {{ c.set_code }} {{ c.number }}">
+        <span class="ltags"><span class="ltg ltg-{{ 'zh' if c.lang.startswith('zh') else c.lang }}">{{ tags.get(c.lang, c.lang | upper) }}</span></span></span>
+      <span class="n">{{ c.set_code }} &middot; {{ c.number }}</span>
+      <span class="t">{{ c.word }}</span>
+    </label>
+    {% endfor %}
+  </div>
+  <button class="as-go">Add to this art</button>
+  {% else %}<p class="muted" style="font-size:13px">No other cards of this Pokémon.</p>{% endif %}
+</form>
+
 {% if d.removed %}
-<div style="border-top:1px dashed var(--line);padding-top:8px">
-  <b style="font-size:13px">Not this art ({{ d.removed | length }})</b>
+<div class="as-out">
+  <h3 class="cv-label">Taken out of this art ({{ d.removed | length }})</h3>
   {% for c in d.removed %}
-  <form class="rm" method="post" action="/pokemon/{{ dex }}/fix/undo"><span>{{ cname(c.name, c.card_id) }}, {{ c.set_name or c.set_code }} {{ c.number }}</span>
+  <form class="rm" method="post" action="/pokemon/{{ dex }}/fix/undo"><span><span class="ltg ltg-{{ 'zh' if c.lang.startswith('zh') else c.lang }}">{{ tags.get(c.lang, c.lang | upper) }}</span> {{ cname(c.name, c.card_id) }}, {{ c.set_name or c.set_code }} {{ c.number }}</span>
     <input type="hidden" name="card" value="{{ c.card_id }}"><input type="hidden" name="back" value="{{ anchor }}"><button class="quiet">Undo</button></form>
   {% endfor %}
 </div>
-{% endif %}
-<form method="post" action="/pokemon/{{ dex }}/fix/add" style="margin-top:10px">
-  <input type="hidden" name="to" value="{{ anchor }}">
-  <b style="font-size:14px">&#65291; Add a version</b>
-  <p class="muted" style="font-size:12px;margin:2px 0 4px">Other cards of this Pokémon, the closest first. Tick the ones that are this art.</p>
-  {% for c in candidates %}
-  <label class="cand">{% if c.image_url %}<img src="{{ c.image_url }}" alt="" loading="lazy">{% else %}<span class="noimg">{% if sprite %}<img class="spr" src="{{ sprite }}" alt="">{% endif %}</span>{% endif %}
-    <span style="min-width:0">{{ cname(c.name, c.card_id) }} &middot; {{ c.set_code }} {{ c.number }}<br><span class="muted" style="font-size:12px">{{ c.word }}</span></span>
-    <input type="checkbox" name="card" value="{{ c.card_id }}"></label>
-  {% else %}<p class="muted" style="font-size:13px">No other cards of this Pokémon.</p>{% endfor %}
-  {% if candidates %}<button style="width:100%;margin-top:8px">Add to this art</button>{% endif %}
-</form>
 {% endif %}

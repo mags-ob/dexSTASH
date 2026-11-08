@@ -249,7 +249,7 @@ def test_picture_score_and_no_picture_list_by_language(client):
 def test_pokemon_page_tray_rows_use_the_tile_picture_list():
     from pathlib import Path
     tray = (Path(main.__file__).parent / "templates" / "_pokemon_art.html").read_text()
-    assert "row.pics[1:]" in tray and 'data-fail="art"' in tray  # A2: built in 10c
+    assert "r.pics[1:]" in tray and 'data-fail="art"' in tray  # A2: built in 10c
 
 
 # --- part 3: prices and links -------------------------------------------------------------------

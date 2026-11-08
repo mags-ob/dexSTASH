@@ -43,7 +43,9 @@ it on a page that says what it is, what you have of it and what it's worth.
     prices per printing with where each came from (see [prices](prices.md)), what the household has of it
     (by printing and condition) with add and remove, binders, tags, notes, the Chase box when chased, links
     out to shops and price sites, prices or links typed by hand, and the history of who added and removed
-    copies.
+    copies. When the card is in an art of a Pokémon or artist you follow, and that art is printed in more than
+    one language, Languages (under Printings) has a chip for each, ✓ when you have it; a tap opens that
+    language's card.
 14. A Japanese or Chinese card shows its English name beside its own, and its set's English name, when one
     is known (TCGCSV's or CardTrader's set lists, or the app's own list). A name is never machine-translated.
     Data sources › Settings picks which names show on Japanese and Chinese cards.
@@ -60,10 +62,8 @@ it on a page that says what it is, what you have of it and what it's worth.
     filter picks a rarity, and its sort is Value (the dearest printing first, the default), Number or Name,
     kept per login. A card with no stored price shows the set's TCGplayer list price for the Value sort.
 19. Typing numbers on a set page adds cards quickly (see [My Stash](my-stash.md)).
-20. Sets, and artist pages, are grouped in rows by era, newest first: Mega Evolution, Scarlet & Violet,
-    Sword & Shield and so on, with sets before Diamond & Pearl in one "Older" row. Japanese, Taiwan Chinese
-    and Korean cards use the Japanese start dates; English and mainland Chinese cards the English ones. A new
-    series TCGdex lists becomes its own row without an app update.
+20. A Pokémon's or artist's page is one grid like a set page, with the same Value, Number and Name sorts (see
+    [chases](chases.md)). It isn't split into rows by era.
 
 ### Searching from Scan and Import
 
@@ -84,7 +84,7 @@ it on a page that says what it is, what you have of it and what it's worth.
   `/search/add`; `/describe`; `/preview/{lang}/{card_id}`; `/set-preview/{lang}/{set_id}`; `/sets` and
   `/sets/{set_id}`; `/cards/{card_id}` and its actions; `/cards/new` (a card added by hand); `/find/use`.
 - Code: `app/search.py`, `app/card_index.py`, `app/smart.py`, `app/spelling.py`, `app/names.py`,
-  `app/describe.py`, `app/saved_searches.py`, `app/eras.py`, `app/english.py`, `app/handmade.py`,
+  `app/describe.py`, `app/saved_searches.py`, `app/english.py`, `app/handmade.py`,
   `app/catalog.py`, `app/tcgdex.py`, `app/display.py` (`set_grid_view`), `app/routes/search.py`,
   `app/routes/sets.py`, `app/routes/cards.py`.
 - Tables: `sets`, `cards` (the household's file), `index_sets`, `index_cards`, `index_names` (catalog),
