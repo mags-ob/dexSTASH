@@ -25,6 +25,8 @@ DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
 
 The tests need no network: every outside request is replaced with a fake one. `tools/demo_data.py` makes a demo collection to click around in. Every push and pull request runs the same tests on GitHub Actions, and a release image is only built after they pass. The Checks workflow also runs `ruff check .`, `python tools/check_rules.py` (personal details, files that must never be committed, and the spec rule), gitleaks and pip-audit; run the first two before you push.
 
+When GitHub Actions is switched off for the repository, a maintainer runs the checks for a pull request on their own machine instead: check out its branch and run `python tools/local_checks.py`. It runs each check and reports the result on the pull request under the same name as the Actions job, so the checks `main` requires still pass or fail. It needs the GitHub CLI signed in, gitleaks, `pip install pip-audit ruff`, and `DEXSTASH_PRIVATE_WORDS` set the same as the repository secret.
+
 On Windows, set `PYTHONUTF8=1` first (PowerShell: `$env:PYTHONUTF8 = "1"`). The few Linux-only tests (file permissions, process priority, open files) are skipped there.
 
 ## How the code is laid out
