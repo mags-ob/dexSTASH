@@ -2,6 +2,7 @@
 cancelled, a description edit reruns only the spec rule, and spec-only pull requests skip the tests."""
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -46,14 +47,25 @@ def test_a_description_edit_reruns_only_the_spec_rule():
     assert job["steps"][-1]["env"]["DEXSTASH_PRIVATE_WORDS"] == "${{ secrets.DEXSTASH_PRIVATE_WORDS }}"
 
 
+def _skips(files: list[str]) -> bool:
+    """Whether the tests workflow's own filter skips the suite for a pull request changing these files."""
+    script = _flow("tests.yml")["jobs"]["changes"]["steps"][-1]["run"]
+    pattern = re.search(r"grep -Ev '(.+?)'", script).group(1)
+    out = subprocess.run(["grep", "-Ev", pattern], input="\n".join(files) + "\n", capture_output=True, text=True)
+    return not out.stdout.strip()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="uses grep")
 def test_spec_only_pull_requests_skip_the_tests():
-    ignored = _on("tests.yml")["pull_request"]["paths-ignore"]
-    assert "docs/specs/**" in ignored and "rules/**" in ignored
-    # Every file a test reads must keep the tests running.
+    job = _flow("tests.yml")["jobs"]["tests"]
+    assert job["needs"] == "changes" and job["if"] == "needs.changes.outputs.code == 'true'"
+    assert "pull_request" in _on("tests.yml") and "paths-ignore" not in (_on("tests.yml")["pull_request"] or {})
+    assert _skips(["docs/specs/prices.md", "rules/project.md", "AGENTS.md", ".github/ISSUE_TEMPLATE/bug.yml"])
+    # Every file a test reads keeps the tests running.
     for path in ["README.md", "DEPLOY.md", "CONTRIBUTING.md", "CHANGELOG.md", "docs/architecture.md",
-                 ".github/workflows/tests.yml", "app/main.py", "tests/test_ci.py"]:
-        assert not any(path == p or (p.endswith("/**") and path.startswith(p[:-2])) for p in ignored), path
-    assert not any(p.startswith("docs/") and p != "docs/specs/**" for p in ignored)
+                 ".github/workflows/tests.yml", "app/main.py", "tests/test_ci.py", "rules.py", "docs/specs.py"]:
+        assert not _skips([path]), path
+    assert not _skips(["docs/specs/prices.md", "app/prices.py"])
 
 
 @pytest.mark.skipif(os.name == "nt", reason="shell hook")
