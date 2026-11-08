@@ -29,13 +29,16 @@ the stash.
 8. A Pokémon's cards are grouped into arts: the same illustrator and near-identical pictures, in every
    language. Edit arts puts a pencil on each tile; tapping one opens the Edit art sheet: the art's cards one
    per row (language, set and number, and the printings it comes in, ✓ the ones you have), each with Not this
-   art; Add a card to this art (the closest pictures first); and Taken out of this art, with Undo. The fixes
-   are kept. Printings can't be changed there. ↻ Re-check, beside Following, compares the pictures again and
+   art; and Add a card to this art, which searches either the Pokémon's cards (a row of the closest pictures,
+   then every card, newest first, however alike) or All cards (any stored card by name, set or number, for a
+   card the Pokémon is in but not named on; it joins the Pokémon's page as added by you). A card taken out is
+   found again the same way. The fixes are kept. Printings can't be changed there. ↻ Re-check, beside Following, compares the pictures again and
    keeps the fixes. Check for updates adds new cards.
 9. A followed Pokémon's or artist's page shows every art in one grid, like a set page (no rows by era). Every
    language counts: an art is yours when you have any card of it, in any language, and the arts, cards and
    printings counts cover them all. Each tile has language tags (EN, JA, ZH, mainland and Taiwan together) on
-   its picture for the languages the art is printed in, filled when you have one. Sorts, on the page and kept
+   its picture for the languages the art is printed in, filled when you have one, and its printings as owned
+   of total (1/3). The Pokémon's words start collapsed under "Tags", as on Find. Sorts, on the page and kept
    per login: Value (the dearest printing first, the default), Number (newest set first, then card number)
    and Name. Filters can show only owned, missing, chased, full art or promo arts. There's no language choice.
 10. Cards of followed Pokémon keep stored prices (see [prices](prices.md)), but aren't single chases: they

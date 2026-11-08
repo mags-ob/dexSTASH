@@ -1,0 +1,6 @@
+{# Edit art's All cards results: tickable tiles inside the Add a card form. #}
+{% from "_pokemon_cand.html" import cand with context %}
+{% if not q %}<p class="muted as-none">Search every card by name, set or number.</p>
+{% elif found %}<h4 class="as-sub">All cards matching &ldquo;{{ q }}&rdquo; &middot; {{ found | length }}{% if found | length >= 60 %}+{% endif %}</h4>
+<div class="pgrid as-every">{% for c in found %}{{ cand(c) }}{% endfor %}</div>
+{% else %}<p class="muted as-none">No cards match &ldquo;{{ q }}&rdquo;.</p>{% endif %}

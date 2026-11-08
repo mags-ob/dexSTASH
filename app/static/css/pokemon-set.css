@@ -51,6 +51,7 @@
               background:var(--accent); color:#fff; place-items:center; }
   #arts.editing .edit-pen { display:grid; }
   .face:has(.ltags) .nopic b { bottom:24px; }
+  .pset-tags > summary { text-align:center; }  /* the Pokémon's words, under the evolution line */
   .ptile .n { display:block; font-weight:600; margin-top:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ptile .t { display:block; color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ptile .p { display:block; font-weight:600; font-variant-numeric:tabular-nums; }

@@ -185,12 +185,8 @@ def art_detail(conn: sqlite3.Connection, collection_id: int, dex: int, card_id: 
                      "set_name": c["set_name"], "set_code": c["set_code"], "number": c["number"],
                      "image": pics[0][0] if pics else None, "pics": pics,
                      "prints": [{"variant": v, "label": VARIANTS.get(v, v), "owned": v in mine} for v in variants]})
-    removed = []
-    for f in chase.fixes_of(conn, dex):
-        if f["join_card_id"] is None and f["left_card_id"] in art["card_ids"] and f["card_id"] in every:
-            removed.append(every[f["card_id"]])
     cover = every.get(art["cover"]) or members[0]
-    return {"art": art, "cover": cover, "rows": rows, "removed": removed, "cards": len(members),
+    return {"art": art, "cover": cover, "rows": rows, "cards": len(members),
             "printings": sum(len(r["prints"]) for r in rows), "langs": _langs(members, have), "anchor": art["cover"]}
 
 
@@ -220,22 +216,61 @@ def art_languages(conn: sqlite3.Connection, collection_id: int, card_id: str) ->
     return []
 
 
-def candidates(conn: sqlite3.Connection, dex: int, card_id: str, vectors: dict, limit: int = 15) -> list[dict]:
-    """＋ Add a version: the Pokémon's other cards, closest to this art's cover first."""
+CLOSEST = 8  # how many suggestions the Closest pictures row shows
+
+
+def candidates(conn: sqlite3.Connection, dex: int, card_id: str, vectors: dict) -> dict:
+    """Add a card to this art: {"close": the closest pictures to the art's cover, "every": every other card of
+    the Pokémon, newest first}. How alike a card is never decides whether it can be added."""
     import numpy as np
-    art = next((a for a in arts(conn, dex) if card_id in a["card_ids"]), None)
+    art_list = arts(conn, dex)
+    art = next((a for a in art_list if card_id in a["card_ids"]), None)
     if art is None:
-        return []
+        return {"close": [], "every": []}
     rows = cards(conn, dex)
+    inside = {}  # a card already grouped with others: the set its art is named for
+    for a in art_list:
+        if len(a["card_ids"]) > 1 and a is not art and a["cover"] in rows:
+            for c in a["card_ids"]:
+                inside[c] = rows[a["cover"]]["set_name"] or rows[a["cover"]]["set_code"]
     cover = vectors.get(art["cover"])
-    out = []
+    every = []
     for cid, c in rows.items():
         if cid in art["card_ids"]:
             continue
         score = float(np.dot(vectors[cid], cover)) if cover is not None and cid in vectors else None
-        out.append(dict(c, score=score, word=chase.likeness_word(score)))
-    out.sort(key=lambda c: (c["score"] is None, -(c["score"] or 0), c["release_date"] or "9999"))
-    return out[:limit]
+        every.append(dict(c, score=score, in_art=inside.get(cid), tag=chase.LANG_TAGS.get(c["lang"], c["lang"].upper()),
+                          group=lang_group(c["lang"])))
+    close = sorted((c for c in every if c["score"] is not None), key=lambda c: -c["score"])[:CLOSEST]
+    every.sort(key=lambda c: (c["release_date"] or "0000", c["set_id"], _number_key(c["number"] or "")), reverse=True)
+    return {"close": close, "every": every}
+
+
+def search_cards(conn: sqlite3.Connection, dex: int, card_id: str, q: str, limit: int = 60) -> list[dict]:
+    """All cards: any stored card, by name, set or number, for a card the Pokémon is in but not named on.
+    Leaves out the art's own cards."""
+    from .display import fold
+    words = fold(q).split()
+    if not words:
+        return []
+    art = next((a for a in arts(conn, dex) if card_id in a["card_ids"]), None)
+    mine = set(art["card_ids"]) if art else set()
+    out = []
+    for r in conn.execute("""SELECT c.id, c.set_id, c.name, c.number, c.image_url, s.name AS set_name, s.language, s.release_date
+                             FROM cards c JOIN sets s ON s.set_id = c.set_id
+                             ORDER BY s.release_date DESC, c.sort_number"""):
+        if r["id"] in mine:
+            continue
+        code = catalog.tcgdex_set_id(r["set_id"]).upper()
+        hay = fold(f"{r['name'] or ''} {r['set_name'] or ''} {r['number'] or ''} {code}")
+        if all(w in hay for w in words):
+            lang = r["language"] or "en"
+            out.append({"card_id": r["id"], "name": r["name"], "number": r["number"], "image_url": r["image_url"],
+                        "set_name": r["set_name"], "set_code": code,
+                        "lang": lang, "tag": chase.LANG_TAGS.get(lang, lang.upper()), "group": lang_group(lang)})
+            if len(out) >= limit:
+                break
+    return out
 
 
 def followed_list(conn: sqlite3.Connection, collection_id: int) -> list[dict]:

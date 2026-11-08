@@ -2982,13 +2982,12 @@ def test_pokemon_chase_screens(client, monkeypatch):
     assert re.search(r'>JA</span>\s*<a href="/preview/ja/SV2a-035">[^<]+ &middot; 035</a>', art)  # each card's set and number
     assert "Not this art" in art and 'value="base1-5"' in art and "Add a card to this art" in art
 
-    # Editing: take Chinese out, it's listed under Taken out of this art, Undo puts it back; Add brings Base Set in.
+    # Editing: take Chinese out and it's its own art, offered under Add a card; adding it and Base Set makes one art.
     r = client.post("/pokemon/35/fix/out", data={"card": "zh-tw:SV2a-035", "back": "sv03.5-035"})
     assert r.status_code == 200
     assert main.conn.execute("SELECT COUNT(*) FROM arts WHERE dex_id = 35").fetchone()[0] == 3
-    assert "Taken out of this art (1)" in client.get("/pokemon/35/art", params={"card": "sv03.5-035"}).text
-    client.post("/pokemon/35/fix/undo", data={"card": "zh-tw:SV2a-035", "back": "sv03.5-035"})
-    client.post("/pokemon/35/fix/add", data={"card": "base1-5", "to": "sv03.5-035"})
+    assert 'value="zh-tw:SV2a-035"' in client.get("/pokemon/35/art", params={"card": "sv03.5-035"}).text
+    client.post("/pokemon/35/fix/add", data={"card": ["zh-tw:SV2a-035", "base1-5"], "to": "sv03.5-035"})
     assert main.conn.execute("SELECT COUNT(*) FROM arts WHERE dex_id = 35").fetchone()[0] == 1
 
     assert 'href="/pokemon/35"' not in client.get("/").text  # Your Pokémon left Home in round 24 (still on Chases)

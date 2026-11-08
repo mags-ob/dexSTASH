@@ -180,7 +180,16 @@ def pokemon_art(request: Request, dex: int, card: str, user=Depends(current_user
         raise HTTPException(404)
     return templates.TemplateResponse(request, "_pokemon_art.html", {
         "user": user, "dex": dex, "d": detail, "tags": chase.LANG_TAGS,
+        "name": (chase.artist(conn, dex) or {}).get("name", "") if dex < 0 else _pokemon_name(dex),
         "candidates": chase_pages.candidates(conn, dex, card, chase.fingerprints(conn, dex, None)),
+        "sprite": f"/sprites/{dex}.png" if themes.sprite_path(dex, False).exists() else None})
+
+
+@router.get("/pokemon/{dex}/art/search")
+def pokemon_art_search(request: Request, dex: int, card: str, q: str = "", user=Depends(current_user)):
+    """Edit art's All cards: any stored card by name, set or number, as tickable tiles."""
+    return templates.TemplateResponse(request, "_pokemon_art_found.html", {
+        "user": user, "q": q.strip(), "found": chase_pages.search_cards(conn, dex, card, q),
         "sprite": f"/sprites/{dex}.png" if themes.sprite_path(dex, False).exists() else None})
 
 
@@ -210,12 +219,22 @@ async def pokemon_fix_out(request: Request, dex: int, user=Depends(current_user)
 
 @router.post("/pokemon/{dex}/fix/add")
 async def pokemon_fix_add(request: Request, dex: int, user=Depends(current_user)):
-    """＋ Add a version: the ticked cards join this art."""
+    """Add a card to this art: the ticked cards join it. One from All cards that isn't the Pokémon's yet
+    joins its page too ("Added by you")."""
     form = await request.form()
 
     def work():  # Off the event loop, as one transaction
         to = form.get("to", "")
-        for card in form.getlist("card"):
+        for card in dict.fromkeys(form.getlist("card")):
+            inside = conn.execute("SELECT how FROM pokemon_cards WHERE dex_id = ? AND card_id = ?", (dex, card)).fetchone()
+            if inside is None:
+                row = chase.row_from_cards(conn, card)
+                if row is None:
+                    continue
+                chase.add_card(conn, dex, row, user["id"])
+            elif inside["how"] == "removed":
+                conn.execute("UPDATE pokemon_cards SET how = 'auto' WHERE dex_id = ? AND card_id = ?", (dex, card))
+                conn.commit()
             chase.put_with(conn, dex, card, to, user["id"])
         _regroup(dex)
         return _back_to_art(dex, to)

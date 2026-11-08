@@ -87,6 +87,7 @@ POST /pokemon/{dex}/star pokemon_star
 POST /pokemon/{dex}/unfollow pokemon_unfollow
 GET /pokemon/{dex} pokemon_set
 GET /pokemon/{dex}/art pokemon_art
+GET /pokemon/{dex}/art/search pokemon_art_search
 POST /pokemon/{dex}/fix/out pokemon_fix_out
 POST /pokemon/{dex}/fix/add pokemon_fix_add
 POST /pokemon/{dex}/fix/undo pokemon_fix_undo

@@ -35,9 +35,6 @@
   .fp-star { margin:0; }
   .fp-star button { width:40px; height:40px; color:var(--muted); }
   .fp-star button.on { color:var(--chase); }
-  .fp-tags { margin-top:6px; }
-  .fp-tags > summary { list-style:none; cursor:pointer; font-size:13px; font-weight:600; color:var(--muted); padding:4px 8px; }
-  .fp-tags > summary::-webkit-details-marker { display:none; }
   .set-hits { display:grid; gap:8px; margin:4px 0 18px; }
   .set-hit { display:flex; gap:12px; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:12px; color:inherit; text-decoration:none; background:var(--surface); }
   .set-hit .logo { width:64px; height:32px; flex:none; display:flex; align-items:center; justify-content:center; }

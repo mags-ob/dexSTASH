@@ -414,6 +414,10 @@
     a.pr-chip:hover { border-color:var(--accent); }
     .pr-chip.have { background:var(--accent); border-color:var(--accent); color:var(--on, #fff); }
     .pr-chip.here { box-shadow:0 0 0 2px var(--fg); }
+    /* A Pokémon's words (Find and its page): collapsed under "Tags · n ›". */
+    .fp-tags { margin-top:6px; }
+    .fp-tags > summary { list-style:none; cursor:pointer; font-size:13px; font-weight:600; color:var(--muted); padding:4px 8px; }
+    .fp-tags > summary::-webkit-details-marker { display:none; }
     .pr-chip small { font-weight:500; color:var(--muted); }
     .pr-chip .ic { width:13px; height:13px; }
     .cv-line { display:flex; align-items:center; gap:8px; padding:10px 0; border-top:1px solid var(--line); }
