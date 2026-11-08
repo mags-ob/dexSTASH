@@ -29,7 +29,8 @@ Every change starts from a GitHub issue and follows the same five steps.
    marked ready.
 3. **Build.** Work on a branch named `feature/<short-name>`, `fix/<short-name>`, `docs/<short-name>`,
    `chore/<short-name>`, `refactor/<short-name>` or `test/<short-name>`, never on `main`. Code, tests and the
-   spec update go in the same pull request, which says `Closes #<issue>`.
+   spec update go in the same pull request, which says `Closes #<issue>`. One issue per pull request unless a
+   maintainer asks to group related issues; a grouped pull request has one `Closes #<issue>` line for each.
    Commits and pull requests are short and say only what changed; the why is on the issue. No attribution
    lines, sign-offs or links to anyone's assistant sessions ([rules/project.md](rules/project.md)).
 4. **Validate.** GitHub Actions runs the checks on every pull request. Each acceptance criterion should have a

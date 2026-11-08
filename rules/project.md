@@ -63,7 +63,9 @@ How dexSTASH is built. They may change by a reviewed pull request, but they neve
 - **One team.** Commits, pull requests, issues and comments carry no attribution lines (`Co-Authored-By`,
   "Generated with ..."), no sign-offs, no links to anyone's assistant sessions or projects, and no "requested
   by". Who wrote a commit is in its author field.
-- One issue per pull request where possible.
+- One issue per pull request by default. Several related issues may share one pull request when a maintainer
+  asks for that, each with its own `Closes #<issue>` line. Every issue in a pull request comes from a
+  maintainer's request.
 - `CHANGELOG.md` gets a line for every change people will notice.
 
 ## Versions
