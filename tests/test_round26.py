@@ -273,7 +273,7 @@ def test_tests_run_on_push_and_before_an_image():
     tests_yml = (ROOT / ".github/workflows/tests.yml").read_text()
     image_yml = (ROOT / ".github/workflows/image.yml").read_text()
     assert "push:" in tests_yml and "workflow_call:" in tests_yml
-    assert "uses: ./.github/workflows/tests.yml" in image_yml and "needs: tests" in image_yml
+    assert "uses: ./.github/workflows/tests.yml" in image_yml and "needs: [tests, version]" in image_yml
     assert 'tzdata>=2024.1; sys_platform == "win32"' in (ROOT / "requirements.txt").read_text()
 
 

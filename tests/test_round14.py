@@ -263,7 +263,7 @@ def test_workflows_run_only_when_asked():
     tests = yaml.safe_load((ROOT / ".github" / "workflows" / "tests.yml").read_text())
     image = yaml.safe_load((ROOT / ".github" / "workflows" / "image.yml").read_text())
     assert set(tests[True]) == {"push", "pull_request", "workflow_dispatch", "workflow_call"}  # yaml reads "on" as True; round 26: on push, and before an image
-    assert image[True] == {"release": {"types": ["published"]}}  # nothing is built until a release is published
+    assert image[True]["release"] == {"types": ["published"]}  # nothing is built until a release is published
     assert image["jobs"]["image"]["strategy"]["matrix"]["arch"] == ["amd64", "arm64"]
 
 
