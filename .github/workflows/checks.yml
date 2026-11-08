@@ -1,17 +1,22 @@
 # The checks that hold the rules in rules/core.md and rules/project.md, next to the test suite (tests.yml).
-# They run on every push and pull request, and when started by hand (Actions > Checks > Run workflow).
-# Each job is its own check on a pull request, so a failure says which rule it was.
+# They run on pushes to main, on pull requests, and when started by hand (Actions > Checks > Run workflow).
+# Each job is its own check on a pull request, so a failure says which rule it was. Editing a pull request's
+# description reruns only the spec rule (description.yml).
 name: Checks
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, edited]  # edited: the spec check reads the description
   workflow_dispatch:
 
 permissions:
   contents: read
+
+# A newer push to a pull request stops its older run. Runs on main always finish.
+concurrency:
+  group: checks-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:

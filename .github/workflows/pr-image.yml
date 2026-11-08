@@ -1,24 +1,30 @@
-# A test image for every pull request: ghcr.io/<owner>/dexstash:pr-<number>, for amd64 and arm64, rebuilt on
-# each push to the pull request, so a host can try the change before it is merged (DEPLOY.md › Trying a pull
-# request). The image is removed when the pull request closes. Release images come from image.yml.
+# A test image for a pull request with the "test image" label: ghcr.io/<owner>/dexstash:pr-<number>, for amd64
+# and arm64, built when the label is added and rebuilt on each push after, so a host can try the change before
+# it is merged (DEPLOY.md › Trying a pull request). It takes several minutes, so only pull requests someone
+# wants to try get one. The image is removed when the pull request closes. Release images come from image.yml.
 # Pull requests from forks build nothing here: GitHub gives them no right to write packages.
 name: Test image
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened, labeled, closed]
 
 permissions:
   contents: read
   packages: write
 
+# A newer push stops the older build. Adding some other label builds nothing, so it gets its own group and
+# doesn't stop a build either.
 concurrency:
-  group: test-image-${{ github.event.pull_request.number }}
+  group: test-image-${{ github.event.pull_request.number }}${{ github.event.action == 'labeled' && github.event.label.name != 'test image' && '-other-label' || '' }}
   cancel-in-progress: true
 
 jobs:
   image:
-    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'test image') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'test image')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
