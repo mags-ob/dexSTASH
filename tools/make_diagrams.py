@@ -124,29 +124,36 @@ class Svg:
         path.write_text(self.head + "\n".join(self.out) + "\n</svg>\n", encoding="utf-8")
 
 
-ALWAYS = [("TCGdex", "sets, cards, pictures, Cardmarket prices"), ("TCGCSV", "TCGplayer's daily prices and pictures"),
-          ("CardTrader API", "lowest listings, with the host's token"),
+ALWAYS = [("TCGdex", "sets, cards, pictures, prices TCGCSV lacks"), ("TCGCSV", "TCGplayer's daily prices and pictures"),
           ("European Central Bank", "daily exchange rates"), ("PokéAPI", "names, Pokédex data, sprites"),
           ("CLIP model", "once, when Enhanced Search is on")]
+KEYED = [("CardTrader API", "lowest listings"), ("PriceCharting API", "ungraded prices")]
 SWITCHED = [("Limitless TCG", "Japanese card pictures"), ("Chinese card datasets", "mainland sets and pictures"),
             ("Bulbapedia", "Pokémon descriptions")]
 
 
 def sources(s: Svg, x, y, w, line_gap=34) -> tuple[int, int, int]:
-    """The two internet boxes; gives back the y of each box's middle and the bottom."""
+    """The three internet boxes; gives back the y of each box's middle and the bottom."""
     h1 = 44 + len(ALWAYS) * line_gap
     s.box(x, y, w, h1, "Always on", cls="ext")
     for i, (name, what) in enumerate(ALWAYS):
         s.text(x + 16, y + 52 + i * line_gap, name, "t2")
         s.text(x + 16, y + 67 + i * line_gap, what, "ds")
-    y2 = y + h1 + 22
+    yk = y + h1 + 22
+    hk = 62 + len(KEYED) * line_gap
+    s.box(x, yk, w, hk, "With your own API key", cls="ext", title_cls="t2")
+    s.text(x + 16, yk + 44, "Data sources › Prices › API keys", "lbl")
+    for i, (name, what) in enumerate(KEYED):
+        s.text(x + 16, yk + 70 + i * line_gap, name, "t2")
+        s.text(x + 16, yk + 85 + i * line_gap, what, "ds")
+    y2 = yk + hk + 22
     h2 = 62 + len(SWITCHED) * line_gap
     s.box(x, y2, w, h2, "Switches, off on a new install", cls="ext off", title_cls="t2")
     s.text(x + 16, y2 + 44, "Data sources › Price and picture sites", "offt")
     for i, (name, what) in enumerate(SWITCHED):
         s.text(x + 16, y2 + 70 + i * line_gap, name, "t2")
         s.text(x + 16, y2 + 85 + i * line_gap, what, "ds")
-    return y + h1 // 2, y2 + h2 // 2, y2 + h2
+    return y + h1 // 2, yk + hk // 2, y2 + h2 // 2, y2 + h2
 
 
 def overview(f: dict) -> Svg:
@@ -156,7 +163,8 @@ def overview(f: dict) -> Svg:
             "dexstash-scanner, reads scan photos at low priority. Both keep everything in the data folder: one SQLite "
             "database plus backups, photos, pictures and models. Every request to another site goes through "
             "app/sites.py, which sends one User-Agent and refuses sites that are switched off. TCGdex, TCGCSV, the "
-            "European Central Bank and PokéAPI are always on, and CardTrader's API with the host's token; Limitless TCG, "
+            "European Central Bank and PokéAPI are always on; CardTrader's and PriceCharting's APIs need your own key; "
+            "Limitless TCG, "
             "the Chinese card datasets and Bulbapedia are switches that start off on a new install. TCGplayer's and "
             "PriceCharting's pages are never read.")
     # Phone and proxy
@@ -173,7 +181,7 @@ def overview(f: dict) -> Svg:
     s.arrow("M375 300 H418", ":8000", (397, 291))
 
     # dexstash container
-    s.container(400, 20, 470, 470, "Container “dexstash”", "1 CPU · 1 GB")
+    s.container(400, 20, 470, 470, "Container “dexstash”", "1 CPU · 2 GB cap")
     s.box(420, 56, 430, 112, "Web app · FastAPI + Uvicorn", [
         f"app/routes/: {len(f['routes'])} page modules, {f['route_total']} routes",
         "app/web.py: templates, sign-in, shared helpers",
@@ -183,10 +191,10 @@ def overview(f: dict) -> Svg:
         "sets and completion · cards · Find · My Stash", "binders · chases · spending · prices · themes",
         "Collectr import · backups · accounts · first run"], badges=[("Python", "py")])
     s.arrow("M635 294 V314", "slow work", (645, 309), anchor="start")
-    s.box(420, 316, 430, 112, "Background workers", [
-        "nightly price update and backup",
-        "picture check · Collectr matcher · downloads",
-        "threads in the same process"], badges=[("Python", "py")])
+    s.box(420, 316, 430, 112, "Job runner · app/jobs.py", [
+        "one job at a time; pages come first",
+        "nightly prices and backup · picture check",
+        "Collectr matcher · downloads · catalog fetch"], badges=[("Python", "py")])
     s.box(420, 440, 430, 38, None, cls="hot")
     s.text(436, 464, "app/sites.py: one User-Agent, switch check", "m")
 
@@ -205,7 +213,7 @@ def overview(f: dict) -> Svg:
         "backups/: before upgrades, nightly, by hand",
         "scans/, card-photos/: your photos",
         "models/, index/: Enhanced Search",
-        "card-pictures/, logs/, secret_key, name lists",
+        "card-pictures/, logs/, secret_key, api_keys.json",
         "Back up this folder and .env: that's",
         "everything the app knows."], badges=[("SQLite", "sql")])
     s.arrow("M400 470 H378")
@@ -213,8 +221,9 @@ def overview(f: dict) -> Svg:
 
     # outside
     s.text(905, 40, "The internet", "t")
-    mid1, mid2, bottom = sources(s, 905, 56, 280)
+    mid1, midk, mid2, bottom = sources(s, 905, 56, 280)
     s.arrow("M850 459 H880 V%d H903" % mid1)
+    s.arrow("M880 459 V%d H903" % midk)
     s.arrow("M880 459 V%d H903" % mid2)
     s.add('<path class="edge" d="M850 600 H880 V459"/>')
     for i, line in enumerate(["Every outside request, from either container,", "goes through app/sites.py. A switched-off",
@@ -261,10 +270,11 @@ def detailed(f: dict) -> Svg:
                         "spending · value · home · smart"]),
         ("Find", ["search · describe · names", "spelling · looks_like · evolution", "handmade · pokeapi · display",
                   "region · pokemon_words · card_index"]),
-        ("Prices and links", ["prices (one rule) · sync (nightly)", "tcgcsv · cardtrader", "fx (currency)",
+        ("Prices and links", ["prices (one rule) · sync (nightly)", "tcgcsv · cardtrader · pricecharting",
+                              "fx (currency) · keys (API keys)",
                               "extras (your links, never read)"]),
         ("Pictures and themes", ["card_pictures · pictures (CLIP)", "themes · icons", "scans · scanner (queue)", ""]),
-        ("Data and import", ["tcgdex · chinese · bulbapedia", "importer · collectr", "jobs (downloads)", ""]),
+        ("Data and import", ["tcgdex · chinese · bulbapedia", "importer · collectr", "", ""]),
         ("Platform", ["db (numbered steps) · auth", "backup · reset · settings", "activity (log) · recent",
                       "welcome (first-run wizard)"]),
     ]
@@ -274,10 +284,10 @@ def detailed(f: dict) -> Svg:
         s.box(x, y, 232, 114, title, lines, title_cls="t2", line_cls="ds", gap=17)
     s.text(270, 532, f"{f['modules']} Python modules in app/, each taking a database connection", "ds")
 
-    s.box(270, 546, 476, 100, "Background threads", [
+    s.box(270, 546, 476, 100, "Job runner · app/jobs.py · one job at a time", [
         "PriceUpdater + Nightly: prices, new sets, backup",
-        "Checker: saved pictures",
-        "Matcher: Collectr · Jobs · card catalog fetch"], badges=[("Python", "py")], title_cls="t2", line_cls="ds")
+        "Checker: saved pictures · Matcher: Collectr",
+        "Downloads and card catalog fetch; pages come first"], badges=[("Python", "py")], title_cls="t2", line_cls="ds")
     s.box(758, 546, 232, 100, "app/sites.py", ["One User-Agent:", "dexSTASH/<version> (+repo)", "refuses switched-off sites"],
           cls="hot", title_cls="t2", line_cls="ds")
 
@@ -303,7 +313,7 @@ def detailed(f: dict) -> Svg:
     for i, (_, line) in enumerate(areas):
         s.text(36, 428 + i * 17, line, "ds")
     folders = ["backups/", "scans/ · card-photos/", "card-pictures/", "models/ · index/", "sprites/ · pokeapi/",
-               "bulbapedia/ · logs/", "secret_key"]
+               "bulbapedia/ · logs/", "secret_key · api_keys.json"]
     for i, line in enumerate(folders):
         s.text(36, 600 + i * 18, line, "m")
     s.text(36, 740, "Shared by both", "ds")
@@ -316,8 +326,9 @@ def detailed(f: dict) -> Svg:
 
     # outside
     s.text(1040, 40, "The internet", "t")
-    mid1, mid2, bottom = sources(s, 1040, 56, 340)
+    mid1, midk, mid2, bottom = sources(s, 1040, 56, 340)
     s.arrow("M990 596 H1015 V%d H1038" % mid1)
+    s.arrow("M1015 596 V%d H1038" % midk)
     s.arrow("M1015 596 V%d H1038" % mid2)
     s.text(1040, bottom + 26, "Hosts each source uses are listed in the", "ds")
     s.text(1040, bottom + 42, "README under “Where your data comes from”.", "ds")
