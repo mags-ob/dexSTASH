@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from .. import catalog, chinese, display, english, extras, handmade, inventory, notes, prices, search, spending
-from .. import (card_pictures, recent, chase, pokemon_words, saved_searches, smart, spelling, tags,
+from .. import (card_pictures, recent, chase, chase_pages, pokemon_words, saved_searches, smart, spelling, tags,
                 tcgdex, themes, tile_prices)
 from ..tcgdex import LANGUAGES
 from .. import web
@@ -668,6 +668,7 @@ def preview(request: Request, lang: str, card_id: str, user=Depends(current_user
         "from_find": True, "offered": offered, "extra": None, "extra_price": None, "extra_source": None,
         "site_labels": web.LINK_LABELS,
         "pokemon": _card_pokemon(user, card["name"], lang), "pokemon_sets": chase.followed(conn, user["collection_id"]),
+        "art_languages": chase_pages.art_languages(conn, user["collection_id"], our_card_id),
         "variants": inventory.VARIANTS, "conditions": inventory.CONDITIONS,
         "condition": request.session.get("entry_condition", "NM"),
         "origins": inventory.ORIGINS, "origin": request.session.get("entry_origin", ""),

@@ -182,6 +182,17 @@
   </div>
 </section>
 {% endif %}
+{% if art_languages %}
+<section class="cv-prints" aria-label="Languages">{# The same art in other languages (a followed Pokémon or artist), ✓ the ones you have #}
+  <h2 class="cv-label">Languages</h2>
+  <div class="pr-row">
+    {% for l in art_languages %}{% set inner %}{% if l.owned %}{{ icon("check", 13) }}{% endif %}{{ l.label }}{% endset %}
+    {% if l.link %}<a class="pr-chip{% if l.owned %} have{% endif %}" href="{{ l.link }}">{{ inner }}</a>
+    {% else %}<span class="pr-chip here{% if l.owned %} have{% endif %}" aria-current="page">{{ inner }}</span>{% endif %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% if binder_error %}<p class="error">{{ binder_error }}</p>{% endif %}
 <div class="cv-cards">{# your copies (side by side when there's room), then the chase in its own section #}
 {% if holdings %}

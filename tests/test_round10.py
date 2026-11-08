@@ -182,7 +182,8 @@ def test_an_art_tap_opens_the_card_and_modify_set_edits(client, monkeypatch):
     chase.regroup(main.conn, 35, vectors)
     page = client.get("/pokemon/35").text
     assert '<a href="/preview/en/sv03.5-035" aria-label="Open the' in page or '<a href="/cards/sv03.5-035" aria-label="Open the' in page
-    assert "data-modify" in page and "Modify set" in page and '.ptile > button' not in page
+    assert "data-modify" in page and "Edit arts" in page and "Modify set" not in page and '.ptile > button' not in page
+    assert 'id="art-sheet"' in page and 'class="edit-pen"' in page
 
 
 # --- step 1: artist search and follow -------------------------------------------------------
@@ -263,8 +264,8 @@ def test_follow_an_artist_groups_their_cards(client, artists, monkeypatch):
     assert ARITA in text and main.conn.execute("SELECT COUNT(*) FROM pokemon_cards WHERE dex_id = ?", (key,)).fetchone()[0] == 6  # 2 cards × English, Japanese, Taiwan (the fake answers all three)
     assert artists.asked[0] == {"illustrator": f"eq:{ARITA}"}
     page = client.get("/artists/mitsuhiro%20arita").text
-    assert ARITA in page and "Artist</small>" in page and "Following" in page and "Modify set" in page
-    assert f"/pokemon/{key}/unfollow" in page and 'class="era-rows" id="arts"' in page
+    assert ARITA in page and "Artist</small>" in page and "Following" in page and "Edit arts" in page
+    assert f"/pokemon/{key}/unfollow" in page and 'class="pgrid" id="arts"' in page and "era-rows" not in page
     assert chase_pages.followed_artist_list(main.conn, uid)[0]["arts"] >= 2
     assert "/artists/mitsuhiro%20arita" in client.get("/chases").text
     assert key in {r[0] for r in main.conn.execute("SELECT dex_id FROM followed_pokemon")}  # covered by updates and prices
@@ -301,7 +302,7 @@ def test_pokemon_page_tiles_use_the_shared_picture_list(client, monkeypatch):
                       "('base1-5', 'base1', '5', 5, 1, 'Clefairy', 'saved.webp')")
     main.conn.execute("INSERT INTO inventory (user_id, card_id, variant, condition, quantity) VALUES (?, 'base1-5', 'holo', 'NM', 1)", (uid,))
     main.conn.commit()
-    tiles = {t["cover"]["card_id"]: t for t in chase_pages.art_tiles(main.conn, uid, 35, "")}
+    tiles = {t["cover"]["card_id"]: t for t in chase_pages.art_tiles(main.conn, uid, 35)}
     assert tiles["base1-5"]["pics"][0][0].endswith("saved.webp")  # the saved picture of the card you have
     from app import card_pictures
     assert all(not card_pictures.known(t["pics"]) for cid, t in tiles.items()

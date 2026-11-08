@@ -1,51 +1,39 @@
+// Edit arts: a pencil on each tile; a tap opens that art's Edit art sheet (its cards, Add a card, Taken out).
+// Without Edit arts on, a tap opens the card.
 (() => {
   const grid = document.getElementById("arts");
-  let tray = null, openTile = null;
-  function rowEnd(tile) {  // the last tile on the same row, so the tray opens below the row
-    if (tile.parentNode.classList.contains("era-strip")) return tile.parentNode;  // Under the era's row
-    let last = tile;
-    for (let t = tile.nextElementSibling; t && t.classList.contains("ptile") && t.offsetTop === tile.offsetTop; t = t.nextElementSibling) last = t;
-    return last;
+  const sheet = document.getElementById("art-sheet");
+  if (!grid || !sheet) return;
+  const body = sheet.querySelector("[data-art-body]");
+  async function open(card) {
+    body.textContent = "Opening…";
+    if (!sheet.open) sheet.showModal();
+    const r = await fetch(`/pokemon/${grid.dataset.dex}/art?` + new URLSearchParams({card}));
+    body.innerHTML = r.ok ? await r.text() : "Couldn't open this art. Refresh and try again.";
+    body.querySelector("[data-close]")?.addEventListener("click", () => sheet.close());
   }
-  async function show(tile, card, edit) {
-    if (tray) tray.remove();
-    if (openTile) openTile.classList.remove("open");
-    if (openTile === tile && !card) { tray = openTile = null; return; }
-    openTile = tile; tile.classList.add("open");
-    tray = document.createElement("div"); tray.className = "tray"; tray.id = "art"; tray.textContent = "Opening…";
-    rowEnd(tile).after(tray);
-    const q = new URLSearchParams({card: card || tile.dataset.card, lang: grid.dataset.lang});
-    if (edit) q.set("edit", "1");
-    const r = await fetch(`/pokemon/${grid.dataset.dex}/art?` + q);
-    tray.innerHTML = r.ok ? await r.text() : "Couldn't open this art. Refresh and try again.";
-    tray.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => {
-      if (b.dataset.on === "1") show(tile, b.dataset.edit, true);
-      else { tray.remove(); tile.classList.remove("open"); tray = openTile = null; }  // the art's Done closes it
-    }));
-    tray.querySelectorAll("[data-more]").forEach(b => b.addEventListener("click", () => { b.parentNode.querySelectorAll("[hidden]").forEach(x => x.hidden = false); b.remove(); }));
-    if (edit) tray.scrollIntoView({block: "start"});
-  }
+  sheet.addEventListener("click", e => { if (e.target === sheet) sheet.close(); });  // a tap on the backdrop
   const me = document.currentScript;
   const modify = document.querySelector("[data-modify]"), hint = document.querySelector("[data-modify-hint]");
-  const idle = modify ? modify.innerHTML : "";  // the button as drawn: pencil, Modify set
+  const idle = modify ? modify.innerHTML : "";  // the button as drawn: pencil, Edit arts
   const editing = on => {
     grid.classList.toggle("editing", on);
     if (!modify) return;
     modify.setAttribute("aria-pressed", String(on));
     modify.innerHTML = on ? "Done" : idle;
     modify.classList.toggle("quiet", !on);
-    hint.hidden = !on;
-    if (!on && tray) { tray.remove(); openTile?.classList.remove("open"); tray = openTile = null; }
+    if (hint) hint.hidden = !on;
   };
   modify?.addEventListener("click", () => editing(!grid.classList.contains("editing")));
   grid.querySelectorAll(".ptile > a").forEach(a => a.addEventListener("click", e => {
     if (!grid.classList.contains("editing")) return;  // a tap opens the card
     e.preventDefault();
-    show(a.parentNode, null, true);
+    open(a.parentNode.dataset.card);
   }));
-  const open = me.dataset.openArt || "";
-  if (open) {
-    const tile = grid.querySelector(`.ptile[data-art="${open}"]`);
-    if (tile) { editing(true); show(tile, me.dataset.open || null, true); }
+  // Back from a fix (Not this art, Add, Undo, Re-check): the same art's sheet opens again.
+  if (me.dataset.openArt) {
+    const tile = grid.querySelector(`.ptile[data-art="${me.dataset.openArt}"]`);
+    editing(true);
+    open(me.dataset.open || tile?.dataset.card);
   }
 })();
