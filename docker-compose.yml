@@ -17,7 +17,8 @@ services:
   app:
     build: .
     # Built here from the Dockerfile unless .env names a ready-built image (DEPLOY.md › Using a release image):
-    #   DEXSTASH_IMAGE=dexstash:0.28.0   and   DEXSTASH_PULL_POLICY=never
+    #   DEXSTASH_IMAGE=ghcr.io/<owner>/dexstash:0.28 and DEXSTASH_PULL_POLICY=always (pulled), or
+    #   DEXSTASH_IMAGE=dexstash:0.28.0 and DEXSTASH_PULL_POLICY=never (an image file you loaded)
     image: ${DEXSTASH_IMAGE:-dexstash:latest}
     pull_policy: ${DEXSTASH_PULL_POLICY:-build}
     container_name: dexstash

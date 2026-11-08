@@ -48,16 +48,38 @@ def test_a_closed_pull_request_s_image_is_removed():
 
 def test_a_published_release_gets_image_files_after_the_tests():
     flow = _yaml(WORKFLOWS / "image.yml")
-    assert flow[True] == {"release": {"types": ["published"]}}  # not a registry: files on the Release
+    assert flow[True]["release"] == {"types": ["published"]}
     assert flow["permissions"] == {"contents": "write"}
     job = flow["jobs"]["image"]
-    assert job["needs"] == "tests" and job["strategy"]["matrix"]["arch"] == ["amd64", "arm64"]
+    assert job["strategy"]["matrix"]["arch"] == ["amd64", "arm64"]
     build = _build_step(job)
     assert build["with"]["platforms"] == "linux/${{ matrix.arch }}" and "push" not in build["with"]
     assert build["with"]["outputs"] == "type=docker,dest=dexstash.tar"
     upload = job["steps"][-1]["run"]
     assert 'gh release upload "$TAG"' in upload and "-${{ matrix.arch }}.tar.gz" in upload
-    assert "ghcr.io" not in (WORKFLOWS / "image.yml").read_text(encoding="utf-8")
+    assert set(job["needs"]) == {"tests", "version"}
+
+
+def test_a_published_release_is_also_pushed_to_the_registry():
+    flow = _yaml(WORKFLOWS / "image.yml")
+    job = flow["jobs"]["registry"]
+    assert set(job["needs"]) == {"tests", "version"} and job["permissions"]["packages"] == "write"
+    meta = next(s for s in job["steps"] if s.get("id") == "meta")
+    tags = meta["with"]["tags"]
+    assert "needs.version.outputs.version" in tags and "needs.version.outputs.minor" in tags
+    assert "value=latest,enable=${{ env.LATEST }}" in tags
+    assert flow["env"]["LATEST"] == "${{ !github.event.release.prerelease }}"  # no latest for a pre-release
+    build = _build_step(job)
+    assert build["with"]["platforms"] == "linux/amd64,linux/arm64" and build["with"]["push"] is True
+
+
+def test_an_existing_release_can_be_built_again_by_hand():
+    flow = _yaml(WORKFLOWS / "image.yml")
+    assert flow[True]["workflow_dispatch"]["inputs"]["tag"]["required"] is True
+    assert flow["env"]["TAG"] == "${{ github.event.release.tag_name || inputs.tag }}"
+    for name in ("version", "image", "registry"):
+        checkout = flow["jobs"][name]["steps"][0]
+        assert checkout["with"]["ref"] == "${{ env.TAG }}"
 
 
 def test_compose_builds_here_unless_env_names_an_image():
@@ -68,7 +90,7 @@ def test_compose_builds_here_unless_env_names_an_image():
         assert services[name]["pull_policy"] == "${DEXSTASH_PULL_POLICY:-build}"
     assert {"IMAGE", "PULL_POLICY"} <= set(settings.KNOWN)
     example = (ROOT / ".env.example").read_text(encoding="utf-8")
-    assert "# DEXSTASH_IMAGE=dexstash:" in example and "# DEXSTASH_PULL_POLICY=never" in example
+    assert "# DEXSTASH_IMAGE=ghcr.io/" in example and "# DEXSTASH_PULL_POLICY=always" in example
 
 
 def test_deploy_explains_published_and_test_images():
@@ -76,4 +98,5 @@ def test_deploy_explains_published_and_test_images():
     for heading in ("### Using a release image", "### Trying a pull request"):
         assert heading in deploy
     assert "docker load -i dexstash-" in deploy and "DEXSTASH_PULL_POLICY=never" in deploy
+    assert "DEXSTASH_IMAGE=ghcr.io/obiehq/dexstash:0.28" in deploy and "docker compose pull" in deploy
     assert "read:packages" in deploy and "docker login ghcr.io" in deploy  # pull request images stay in Packages
