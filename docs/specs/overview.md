@@ -58,7 +58,7 @@ A spec is written from the code the first time an issue touches that part, so mo
 | Data model and database steps | technical | `data-model.md` (not written yet) |
 | Data sources and their terms | technical | `data-sources.md` (not written yet) |
 | Design system | technical | `design-system.md` (not written yet) |
-| Deploy and configuration | technical | `deploy.md` (not written yet) |
+| Deploy and configuration | technical | [deploy.md](deploy.md) |
 
 ## Interfaces
 
