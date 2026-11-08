@@ -30,7 +30,8 @@ binders and sharing have their own specs.
    work, and `-123` removes one. A quantity is 1 to 99.
 8. Removing the last copy of a line removes the line. A card whose copies are all removed leaves the stash
    but keeps its notes and tags.
-9. When a chased card is added, the chase is marked as got and the app celebrates (see [chases](chases.md)).
+9. When the first copy of a chased card is added, the app says "You got it!" and asks whether to stop
+   chasing it (see [chases](chases.md)).
 10. A new or imported card gets its prices from a short price run in the background.
 
 ### Finding cards
