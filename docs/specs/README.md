@@ -1,5 +1,8 @@
 # Specs
 
+Start with [overview.md](overview.md), which lists every part and its spec, and
+[architecture.md](architecture.md).
+
 A spec says what one part of dexSTASH does and why, so a change can be planned and checked against it. The
 code shows how it works today; the spec says what it should do.
 
