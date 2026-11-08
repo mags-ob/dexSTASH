@@ -14,18 +14,19 @@ Give the app a domain name. A free DuckDNS subdomain works: at duckdns.org, add 
 
 ## 2. Copy the app to your server
 
-Unpack `dexstash-*.tar.gz` into a folder on the server, for example `/opt/dexstash` (on a NAS, a folder in its Docker share):
+Make a folder on the server, for example `/opt/dexstash` (on a NAS, a folder in its Docker share), and fetch the compose file and the example settings into it:
 
 ```sh
 cd /opt/dexstash
-sudo tar xzf dexstash-<version>.tar.gz
+sudo curl -fsSLO https://raw.githubusercontent.com/obiehq/dexSTASH/main/docker-compose.yml
+sudo curl -fsSL -o .env https://raw.githubusercontent.com/obiehq/dexSTASH/main/.env.example
 ```
+
+That's all the app needs: the image comes ready-built (see Using a release image). To build it on your server instead, clone the repository (or unpack a release's source) into the folder and start it with `--build`.
 
 ## 3. Settings
 
-```sh
-cp .env.example .env
-```
+Edit `.env` (`sudo nano .env`). Without one the app starts with its defaults.
 
 In `.env` (everything here is optional):
 - `DEXSTASH_SECRET_KEY`: leave it empty and the app makes one on the first start, in `data/secret_key`. It signs sign-ins and shared-binder codes, so when you move the app to another server, copy the whole `data/` folder. If you set one yourself, make it with `python3 -c "import secrets; print(secrets.token_hex(32))"`; the app **won't start** with the example value or anything shorter than 32 characters.
@@ -42,7 +43,7 @@ In `.env` (everything here is optional):
 Over SSH in the folder:
 
 ```sh
-sudo docker compose up -d --build
+sudo docker compose up -d         # fetches the release image; add --build to build it here instead
 sudo docker compose ps            # dexstash should say (healthy) after ~20 s, then dexstash-scanner starts (with the scanner profile)
 ```
 
@@ -140,51 +141,39 @@ The old database is also saved in `data/backups` as "Before starting over", so i
 
 ## Updating
 
-Unpack the new release over the old files (`sudo tar xzf <release>.tar.gz`), or `git pull` in a clone. `.env` and `data/` are kept. Then:
+`.env` and `data/` are kept. Fetch the new image and start it:
 
 ```sh
-sudo docker compose up -d --build
+sudo docker compose pull && sudo docker compose up -d
 ```
+
+If you build on your server, unpack the new release over the old files (`sudo tar xzf <release>.tar.gz`) or `git pull` in a clone, then `sudo docker compose up -d --build`.
 
 On start the app backs up the database (`data/backups/…-upgrade.db`) and then makes its numbered database changes in order, each all or nothing. [CHANGELOG.md](CHANGELOG.md) says what a version changes and whether there's anything to do.
 
 A restart (an update, or `docker compose restart`) stops background jobs: anything that was running or waiting shows "Stopped by a restart" under Account › Data sources › Running now, and you start it again yourself. Scans pick up where they were. A nightly price update missed while the server was off isn't caught up; it runs the next night, or press Update prices.
 
-With a release image (below), updating is loading the new release's image file and changing the version in `.env`. Before a big update, press Account › Backups › Back up now and Download photos and keep both somewhere else.
+With an image file (below), updating is loading the new release's file and changing the version in `.env`. Before a big update, press Account › Backups › Back up now and Download photos and keep both somewhere else.
 
 **Going back:** an older version refuses to start on a database a newer one has changed, and says so in the log. To go back, put the `-upgrade.db` backup made before the upgrade back by hand (as under Backups above), then unpack the older release and start it. Restoring that backup from Account › Backups in the newer version doesn't work for this, because the newer version updates it again on start. Restoring a backup from a newer version is refused the same way. After going back, press Update prices once: older versions keep some downloaded prices in other tables.
 
 ### Using a release image
 
-Each release is built on GitHub, so your server doesn't have to build it. There are two ways to get it.
+Each release is built on GitHub, so your server doesn't have to build it. `docker-compose.yml` names it, `ghcr.io/obiehq/dexstash`, and `docker compose up -d` fetches it.
 
-**Pull it** from GitHub's container registry. In `.env`:
+**Pick a version** (optional) in `.env`: `DEXSTASH_VERSION=0.28` follows the newest 0.28.x, `0.28.0` stays on one release, and left out it's `latest`, which follows every release. To update, run `sudo docker compose pull && sudo docker compose up -d`.
 
-```sh
-DEXSTASH_IMAGE=ghcr.io/obiehq/dexstash:0.28
-DEXSTASH_PULL_POLICY=always
-```
-
-and `sudo docker compose up -d`. To update within 0.28, run `sudo docker compose pull && sudo docker compose up -d`; for a new minor version, change the tag (`0.28.0` stays on one release, `latest` follows every release). While the repository is private, sign in once first with a GitHub token that can only read packages (Settings › Developer settings › Personal access tokens › Tokens (classic), with just `read:packages`): `sudo docker login ghcr.io -u <your GitHub username>`, pasting the token as the password.
-
-**Or load the file** attached to the release (the repository's Releases page): `dexstash-<version>-amd64.tar.gz` for most servers and NAS boxes, or `-arm64` for ARM ones (a Raspberry Pi, say). Download the one for your server, copy it into the app's folder, and load it:
+**Or load the file** attached to the release (the repository's Releases page), for a server that can't reach the registry: `dexstash-<version>-amd64.tar.gz` for most servers and NAS boxes, or `-arm64` for ARM ones (a Raspberry Pi, say). Copy it into the app's folder and load it:
 
 ```sh
-sudo docker load -i dexstash-0.28.0-amd64.tar.gz      # prints: Loaded image: dexstash:0.28.0
+sudo docker load -i dexstash-0.28.0-amd64.tar.gz      # prints: Loaded image: ghcr.io/obiehq/dexstash:0.28.0
 ```
 
-Then in `.env`:
-
-```sh
-DEXSTASH_IMAGE=dexstash:0.28.0
-DEXSTASH_PULL_POLICY=never
-```
-
-and `sudo docker compose up -d` (without `--build`) starts both containers from it, without reaching a registry. To update, load the next release's file, change the version in `.env` and run `sudo docker compose up -d` again. You still need `docker-compose.yml` and `.env` in the folder (and `deploy/Caddyfile` for the bundled Caddy), from the release's source or a clone. Remove both lines to build on your server again. `sudo docker image prune` removes old versions once you no longer need to go back to them.
+Then set `DEXSTASH_VERSION=0.28.0` in `.env` and run `sudo docker compose up -d`: it uses the loaded image without reaching the registry. To update, load the next release's file and change the version. You still need `docker-compose.yml` and `.env` in the folder (and `deploy/Caddyfile` for the bundled Caddy). `sudo docker image prune` removes old versions once you no longer need to go back to them.
 
 ### Trying a pull request
 
-Every pull request from this repository gets an image tagged `pr-<number>` in the repository's Packages (Actions › Test image shows its name), rebuilt on each push and removed when the pull request closes. While the repository is private, sign in once with a GitHub token that can only read packages (Settings › Developer settings › Personal access tokens › Tokens (classic), with just `read:packages`): `sudo docker login ghcr.io -u <your GitHub username>`, pasting the token as the password. To try one, back up first (Account › Backups › Back up now), then set `DEXSTASH_IMAGE=ghcr.io/obiehq/dexstash:pr-<number>` and `DEXSTASH_PULL_POLICY=always` in `.env` and run `sudo docker compose up -d`. To go back, set `DEXSTASH_IMAGE` and `DEXSTASH_PULL_POLICY` back to the release (or remove them) and start it again.
+Every pull request from this repository gets an image tagged `pr-<number>` (Actions › Test image shows it), rebuilt on each push and removed when the pull request closes. To try one, back up first (Account › Backups › Back up now), then set `DEXSTASH_VERSION=pr-<number>` in `.env` and run `sudo docker compose pull && sudo docker compose up -d`. To go back, set `DEXSTASH_VERSION` back to the release (or remove it) and run the same again.
 
 A pull request that adds a database step says so at the top. Its image upgrades your database, and the release you go back to won't start on it: put the `-upgrade.db` backup back by hand first, as under Going back above.
 
