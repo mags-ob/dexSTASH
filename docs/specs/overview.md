@@ -48,7 +48,7 @@ A spec is written from the code the first time an issue touches that part, so mo
 |---|---|---|
 | How the app is built | technical | [architecture.md](architecture.md) |
 | Scanning | capability | `scanning.md` (not written yet) |
-| Prices | capability | `prices.md` (not written yet) |
+| Prices | capability | [prices.md](prices.md) |
 | My Stash | capability | `my-stash.md` (not written yet) |
 | Binders | capability | `binders.md` (not written yet) |
 | Chases | capability | `chases.md` (not written yet) |
