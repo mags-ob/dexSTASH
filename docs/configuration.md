@@ -1,6 +1,6 @@
 # Configuration
 
-Everything in `.env` is optional; `.env.example` has each one with a note.
+Each setting in `.env` has a default; `.env.example` has each one with a note.
 
 | Setting | Default | What it does |
 |---|---|---|
