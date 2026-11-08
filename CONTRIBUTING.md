@@ -27,6 +27,8 @@ The tests need no network: every outside request is replaced with a fake one. `t
 
 Run the quick ones before you push. `git config core.hooksPath tools/hooks` turns on a hook that runs ruff, the rules check and the tests on every `git push` (and gitleaks, if it's installed), so a failure shows up on your machine instead of on GitHub. `git push --no-verify` skips it once.
 
+When GitHub Actions is switched off for the repository, a maintainer runs the checks for a pull request on their own machine instead: check out its branch and run `python tools/local_checks.py`. It runs each check and reports the result on the pull request under the same name as the Actions job, so the checks `main` requires still pass or fail. It needs the GitHub CLI signed in, gitleaks, `pip install ruff`, and `DEXSTASH_PRIVATE_WORDS` set the same as the repository secret. The tests and pip-audit run directly when the project's packages are installed, and in Docker when they can't be (onnxruntime has nothing for Intel Macs). Where neither works, those two are left out: `main` requires only lint, the rules check and gitleaks, so whoever makes a change runs the tests before pushing.
+
 On Windows, set `PYTHONUTF8=1` first (PowerShell: `$env:PYTHONUTF8 = "1"`). The few Linux-only tests (file permissions, process priority, open files) are skipped there.
 
 ## How the code is laid out
