@@ -6,8 +6,10 @@ is switched off for the repository.
 
 Each check is reported on the pull request's last commit under the same name as its GitHub Actions job, so a
 ruleset that requires those checks (from any source) accepts it. Needs the GitHub CLI signed in (`gh auth
-login`), gitleaks and pip-audit installed, the project's packages, and DEXSTASH_PRIVATE_WORDS set the same as
-the repository secret. A check that can't run is reported as failed, never as passed.
+login`), gitleaks, `pip install ruff`, Docker (or the project's packages), and DEXSTASH_PRIVATE_WORDS set the
+same as the repository secret. The tests and pip-audit run directly when the project's packages are installed,
+otherwise in Docker; where neither works they're left out and not reported (they aren't required for a merge).
+Any other check that can't run is reported as failed, never as passed.
 """
 
 import json
@@ -30,6 +32,32 @@ CHECKS = {
                                  "--progress-spinner", "off"],
     "tests": [PY, "-m", "pytest", "-q"],
 }
+
+# Where the project's packages can't be installed (onnxruntime has nothing for Intel Macs), the tests and
+# pip-audit run in a Linux container instead, set up like the GitHub Actions jobs. Downloads are kept in a volume.
+SETUP = ("apt-get update -qq && apt-get install -y -qq --no-install-recommends libgl1 libglib2.0-0 nodejs git"
+         " >/dev/null && git config --global --add safe.directory /src && ")
+IN_DOCKER = {
+    "tests": SETUP + "pip install -q --root-user-action=ignore -r requirements.lock pytest==9.1.1"
+                     " && python -m pytest -q -p no:cacheprovider",
+    "Dependencies (pip-audit)": "pip install -q --root-user-action=ignore pip-audit==2.10.1"
+                                " && pip-audit --requirement requirements.lock --progress-spinner off",
+}
+
+
+def docker(script: str) -> list[str]:
+    """A command that runs a shell script in the Python image GitHub Actions uses, with this folder as /src."""
+    return ["docker", "run", "--rm", "-v", f"{ROOT}:/src", "-w", "/src", "-v", "dexstash-pip-cache:/root/.cache/pip",
+            "python:3.13-slim", "sh", "-c", script]
+
+
+def command(name: str) -> list[str] | None:
+    """How to run a check here: directly, or in Docker when it needs packages this machine can't install. None
+    when neither works: those two checks aren't required for a merge, so they're left out rather than failed."""
+    if name in IN_DOCKER and run([PY, "-c", "import onnxruntime, fastapi, pytest"]).returncode:
+        docker_ok = shutil.which("docker") and run(["docker", "info"]).returncode == 0
+        return docker(IN_DOCKER[name]) if docker_ok else None
+    return CHECKS[name]
 
 
 def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
@@ -91,12 +119,18 @@ def main(argv: list[str]) -> int:
     fetch_base(pr)
     sha = pr["headRefOid"]
     print(f"Checking {pr['url']} at {sha[:7]}")
-    for name in CHECKS:
-        report(repo, sha, name, "pending", "Running on a contributor's machine")
+    commands = {name: command(name) for name in CHECKS}
+    for name, cmd in commands.items():
+        if cmd is None:
+            print(f"- {name}: not run here (needs the project's packages or Docker), so not reported")
+        else:
+            report(repo, sha, name, "pending", "Running on a contributor's machine")
     failed = []
     with tempfile.TemporaryDirectory() as folder:
         env = {**os.environ, "GITHUB_EVENT_NAME": "pull_request", "GITHUB_EVENT_PATH": event_file(pr, folder)}
-        for name, cmd in CHECKS.items():
+        for name, cmd in commands.items():
+            if cmd is None:
+                continue
             print(f"- {name} ... ", end="", flush=True)
             if not env.get("DEXSTASH_PRIVATE_WORDS") and name == "Core rules and spec":
                 ok, note = False, "DEXSTASH_PRIVATE_WORDS isn't set"
