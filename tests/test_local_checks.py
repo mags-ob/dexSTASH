@@ -56,3 +56,28 @@ def test_a_check_that_cannot_run_is_reported_as_failed(monkeypatch, capsys):
     assert local_checks.main([]) == 1
     assert ("Secrets (gitleaks)", "failure") in reports and ("Core rules and spec", "failure") in reports
     assert ("Secrets (gitleaks)", "success") not in reports and ("Core rules and spec", "success") not in reports
+
+
+def test_checks_that_need_the_packages_run_in_docker_where_they_are_missing(monkeypatch):
+    real = local_checks.run
+    monkeypatch.setattr(local_checks, "run", lambda cmd, **kw: real([sys.executable, "-c", "raise SystemExit(1)"])
+                        if "-c" in cmd and "import onnxruntime" in cmd[-1] else
+                        real([sys.executable, "-c", "pass"]) if cmd[:2] == ["docker", "info"] else real(cmd, **kw))
+    monkeypatch.setattr(local_checks.shutil, "which", lambda name: "/usr/bin/" + name)
+    tests = local_checks.command("tests")
+    assert tests[:2] == ["docker", "run"] and "python:3.13-slim" in tests  # the Tests workflow's Python
+    assert "-r requirements.lock" in tests[-1] and "python -m pytest -q" in tests[-1]
+    assert "libgl1 libglib2.0-0" in tests[-1] and "nodejs" in tests[-1]  # as the Tests workflow installs
+    audit = local_checks.command("Dependencies (pip-audit)")
+    assert audit[:2] == ["docker", "run"] and "pip-audit --requirement requirements.lock" in audit[-1]
+    assert local_checks.command("Lint (ruff)") == local_checks.CHECKS["Lint (ruff)"]  # no packages needed
+    monkeypatch.setattr(local_checks, "run", real)
+    assert local_checks.command("tests") == local_checks.CHECKS["tests"]  # packages installed here
+
+
+def test_tests_and_pip_audit_are_left_out_without_packages_or_docker(monkeypatch):
+    real = local_checks.run
+    monkeypatch.setattr(local_checks, "run", lambda cmd, **kw: real([sys.executable, "-c", "raise SystemExit(1)"])
+                        if cmd[0] == "docker" or ("-c" in cmd and "import onnxruntime" in cmd[-1]) else real(cmd, **kw))
+    assert local_checks.command("tests") is None and local_checks.command("Dependencies (pip-audit)") is None
+    assert local_checks.command("Secrets (gitleaks)") == local_checks.CHECKS["Secrets (gitleaks)"]  # never left out
