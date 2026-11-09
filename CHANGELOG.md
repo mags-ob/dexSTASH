@@ -2,6 +2,14 @@
 
 Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor version, and a round shipped in parts raises the patch version for each later part. On start, a new version backs up the database before changing it; an older version won't start on a database a newer one has changed (see "Updating" in the README).
 
+## Unreleased
+
+### Fixed
+- **A card or set TCGdex doesn't answer for no longer shows "Can't reach your server".** The app's own page says "Couldn't load this card" (or set) with Try again and Back, and writes why to the log. The offline screen is only for a server that really can't be reached, and the "upgrade didn't finish" page now shows on a phone too (#77).
+
+### Changed
+- **Background work goes easy on every source.** Downloads (following a Pokémon, loading sets, price runs) send each site at most 5 requests a second, and wait when a site says to slow down, so the pages you're using keep working. Big downloads take a little longer (#77).
+
 ## 0.29.0
 
 Round 29: one grid for a followed Pokémon's or artist's cards in every language, the release image under its new name, and images built without GitHub Actions. No database step.

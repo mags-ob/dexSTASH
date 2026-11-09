@@ -17,10 +17,13 @@ each site's terms. A new source, or a new use of an old one, starts here.
    either site, except TCGplayer's product picture hosts and PriceCharting's `/api/` with the host's token.
 4. Requests pause between each other where a site asks for it (TCGCSV a quarter second, CardTrader and
    PriceCharting a second), and background work gives way to page loads.
+5. Background requests take turns per site (`sites.wait_turn`): at most 5 a second to one site, shared by every
+   job and download thread in that container. A 429 or 503 stops that site's queue for its Retry-After, else
+   30 seconds, doubling up to 5 minutes while it keeps refusing. Page requests skip the queue (#77).
 
 ### Always on
 
-5. These are contacted with no switch, because the app doesn't work without them:
+6. These are contacted with no switch, because the app doesn't work without them:
 
    | Site | What | How often |
    |---|---|---|
@@ -33,35 +36,35 @@ each site's terms. A new source, or a new use of an old one, starts here.
 
 ### Switched sites
 
-6. Three sites have a switch under Data sources › Price and picture sites, and a new install starts with
+7. Three sites have a switch under Data sources › Price and picture sites, and a new install starts with
    each off:
    - **Limitless TCG**: Japanese card pictures.
    - **Chinese card datasets**: mainland Chinese sets and pictures (PTCG-CHS-Datasets) and their English
      names (PTCG-card-data), from GitHub.
    - **Bulbapedia**: Pokémon descriptions for Describe, through its API.
-7. A site that's off gets no request at all, redirects included, and its pictures aren't sent to the phone
+8. A site that's off gets no request at all, redirects included, and its pictures aren't sent to the phone
    either. Turning one off deletes nothing; what was downloaded is used again once it's back on.
-8. The scanner container sees a change of switch within 15 seconds.
+9. The scanner container sees a change of switch within 15 seconds.
 
 ### Sites that need the host's own key
 
-9. **CardTrader** (official API v2) and **PriceCharting** (official API, a paid plan) are contacted only
+10. **CardTrader** (official API v2) and **PriceCharting** (official API, a paid plan) are contacted only
    when the host has entered a key under Data sources › Prices › API keys. Without one, nothing is sent.
-10. A key is stored in `data/api_keys.json`, encrypted with the app's secret key and signed, outside the
+11. A key is stored in `data/api_keys.json`, encrypted with the app's secret key and signed, outside the
     database, so backups, restores and exports never hold one. Only its last four characters are shown again.
     It is never logged or put in an error message, and the scanner container never reads it.
-11. A CardTrader token still in `.env` from before 0.28 is moved into the key file once at start-up.
-12. A key the site refuses is shown as refused on Data sources; the run carries on with the other sources.
+12. A CardTrader token still in `.env` from before 0.28 is moved into the key file once at start-up.
+13. A key the site refuses is shown as refused on Data sources; the run carries on with the other sources.
 
 ### Links out only
 
-13. These are only links that open in the person's browser; nothing is read from them: TCGplayer product
+14. These are only links that open in the person's browser; nothing is read from them: TCGplayer product
     and search pages, PriceCharting search, CardTrader card and search pages, Cardmarket search, eBay search
     (the eBay site is a setting), PokéDoku, and any link someone pastes on a card.
 
 ### The Data sources page
 
-14. Account › Data sources is for the admin who set up the install. Its tabs:
+15. Account › Data sources is for the admin who set up the install. Its tabs:
     - **Cards**: Check for updates (new and changed sets on TCGdex and in the Chinese sets, new cards of
       followed Pokémon, new sprites, missing pictures), card sets and languages, Pokémon data (names, sprites,
       descriptions).
@@ -72,7 +75,7 @@ each site's terms. A new source, or a new use of an old one, starts here.
     - **Settings**: time zone, currency, the eBay site for links, when a price counts as stale, which names
       show on Japanese and Chinese cards, and how old a set must be to count as vintage.
     - **Activity log**: the last hours of both containers' logs, with Copy last hour.
-15. Running now lists the jobs that are running or waiting, and those a restart stopped.
+16. Running now lists the jobs that are running or waiting, and those a restart stopped.
 
 ## Rules and limits
 
