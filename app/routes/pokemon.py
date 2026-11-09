@@ -4,7 +4,7 @@ from urllib.parse import quote, urlencode
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from .. import chase, chase_pages, eras, pokemon_words, tcgdex, themes
+from .. import chase, chase_pages, pokemon_words, tcgdex, themes
 from .. import web
 from ..web import (_Route, _artist_matches, _evolution, _following, _group_in_scanner, _in_thread, _pictures_ready,
                    _pokemon_name, background, chase_api, conn, current_user, templates)
@@ -76,8 +76,8 @@ def artist_suggest(q: str = "", user=Depends(current_user)):
 
 
 @router.get("/artists/{norm}")
-def artist_page(request: Request, norm: str, lang: str = "", show: str = "", sort: str = "newest",
-                open: str = "", edit: str = "", era: str = "", user=Depends(current_user)):
+def artist_page(request: Request, norm: str, show: str = "", sort: str = "",
+                open: str = "", user=Depends(current_user)):
     """An artist's cards grouped by art, like a Pokémon's set; a preview of their English cards until followed."""
     cid = user["collection_id"]
     found = chase.artist(conn, norm)
@@ -100,17 +100,7 @@ def artist_page(request: Request, norm: str, lang: str = "", show: str = "", sor
             **context, "preview": True,
             "briefs": [dict(b, image_url=tcgdex.image_url(b.get("image"))) for b in (briefs or [])][:300],
             "unreachable": briefs is None})
-    lang = _pokemon_language(user, lang)
-    show = show if show in chase_pages.SHOW else ""
-    sort = sort if sort in chase_pages.SORTS else "newest"
-    return templates.TemplateResponse(request, "pokemon_set.html", {
-        **context, "preview": False, "lang": lang, "show": show, "sort": sort,
-        "summary": chase_pages.summary(conn, cid, key, lang), **_by_era(chase_pages.art_tiles(conn, cid, key, lang, show, sort), era),
-        "sorts": chase_pages.SORTS, "shows": chase_pages.SHOW,
-        "open": open, "edit": bool(edit), "tags": chase.LANG_TAGS,
-        "open_art": next((a["id"] for a in chase_pages.arts(conn, key) if open in a["card_ids"]), None) if open else None,
-        "checked": conn.execute("SELECT MAX(checked_at) FROM followed_pokemon WHERE dex_id = ?", (key,)).fetchone()[0],
-    })
+    return _arts_page(request, context, user, key, show, sort, open)
 
 
 @router.post("/pokemon/{dex}/star")
@@ -133,31 +123,34 @@ def pokemon_unfollow(dex: int, user=Depends(current_user)):
     return RedirectResponse("/chases", status_code=303)
 
 
-def _by_era(tiles: list[dict], era: str) -> dict:
-    """The arts in era rows (newest first), or one era's full grid (View all, ?era=)."""
-    known = eras.known(conn)
-    rows = eras.rows(tiles, known)
-    if era and eras.name_of(era, known):
-        return {"tiles": [t for t in tiles if eras.era_of(t["release"], t["cover"]["lang"], known)[0] == era], "era": era,
-                "era_name": eras.name_of(era, known), "rows": None}
-    return {"tiles": tiles, "era": "", "era_name": None, "rows": rows}
-
-
-def _pokemon_language(user, lang: str) -> str:
-    """Pokémon pages show one language at a time: English to start, then whichever you
-    picked last, remembered per login across every Pokémon."""
-    if lang in chase_pages.LANG_CHIPS:
-        conn.execute("INSERT INTO user_prefs (user_id, key, value) VALUES (?, 'pokemon_lang', ?) "
-                     "ON CONFLICT (user_id, key) DO UPDATE SET value = excluded.value", (user["id"], lang))
+def _sort(user, sort: str) -> str:
+    """Pokémon and artist pages' sort: Value to start, then whichever you picked last, kept per login."""
+    if sort in chase_pages.SORTS:
+        conn.execute("INSERT INTO user_prefs (user_id, key, value) VALUES (?, 'pokemon_sort', ?) "
+                     "ON CONFLICT (user_id, key) DO UPDATE SET value = excluded.value", (user["id"], sort))
         conn.commit()
-        return lang
-    row = conn.execute("SELECT value FROM user_prefs WHERE user_id = ? AND key = 'pokemon_lang'", (user["id"],)).fetchone()
-    return row[0] if row and row[0] in chase_pages.LANG_CHIPS else "en"
+        return sort
+    row = conn.execute("SELECT value FROM user_prefs WHERE user_id = ? AND key = 'pokemon_sort'", (user["id"],)).fetchone()
+    return row[0] if row and row[0] in chase_pages.SORTS else "value"
+
+
+def _arts_page(request: Request, context: dict, user, key: int, show: str, sort: str, open: str):
+    """A followed Pokémon's or artist's page: every art in one grid, every language counted."""
+    cid = user["collection_id"]
+    show = show if show in chase_pages.SHOW else ""
+    sort = _sort(user, sort)
+    return templates.TemplateResponse(request, "pokemon_set.html", {
+        **context, "preview": False, "show": show, "sort": sort,
+        "summary": chase_pages.summary(conn, cid, key), "tiles": chase_pages.art_tiles(conn, cid, key, show, sort),
+        "sorts": chase_pages.SORTS, "shows": chase_pages.SHOW,
+        "open": open, "open_art": next((a["id"] for a in chase_pages.arts(conn, key) if open in a["card_ids"]), None) if open else None,
+        "checked": conn.execute("SELECT MAX(checked_at) FROM followed_pokemon WHERE dex_id = ?", (key,)).fetchone()[0],
+    })
 
 
 @router.get("/pokemon/{dex}")
-def pokemon_set(request: Request, dex: int, lang: str = "", show: str = "", sort: str = "newest",
-                open: str = "", edit: str = "", era: str = "", user=Depends(current_user)):
+def pokemon_set(request: Request, dex: int, show: str = "", sort: str = "",
+                open: str = "", user=Depends(current_user)):
     if not 1 <= dex <= themes.SPECIES:
         raise HTTPException(404)
     cid = user["collection_id"]
@@ -176,38 +169,34 @@ def pokemon_set(request: Request, dex: int, lang: str = "", show: str = "", sort
             **context, "preview": True,
             "briefs": [dict(b, image_url=tcgdex.image_url(b.get("image"))) for b in (briefs or [])][:300],
             "unreachable": briefs is None})
-    lang = _pokemon_language(user, lang)
-    show = show if show in chase_pages.SHOW else ""
-    sort = sort if sort in chase_pages.SORTS else "newest"
-    return templates.TemplateResponse(request, "pokemon_set.html", {
-        **context, "preview": False, "lang": lang, "show": show, "sort": sort,
-        "summary": chase_pages.summary(conn, cid, dex, lang), **_by_era(chase_pages.art_tiles(conn, cid, dex, lang, show, sort), era),
-        "sorts": chase_pages.SORTS, "shows": chase_pages.SHOW,
-        "open": open, "edit": bool(edit), "tags": chase.LANG_TAGS,
-        "open_art": next((a["id"] for a in chase_pages.arts(conn, dex) if open in a["card_ids"]), None) if open else None,
-        "checked": conn.execute(
-            "SELECT MAX(checked_at) FROM followed_pokemon WHERE dex_id = ?", (dex,)).fetchone()[0],
-    })
+    return _arts_page(request, context, user, dex, show, sort, open)
 
 
 @router.get("/pokemon/{dex}/art")
-def pokemon_art(request: Request, dex: int, card: str, lang: str = "", edit: str = "", user=Depends(current_user)):
-    """One art opened in place: print rows with language tags, or the editing tools."""
-    detail = chase_pages.art_detail(conn, user["collection_id"], dex, card, lang if lang in chase_pages.LANG_CHIPS else "")
+def pokemon_art(request: Request, dex: int, card: str, user=Depends(current_user)):
+    """The Edit art sheet's insides: the art's cards, Add a card to this art, and what was taken out."""
+    detail = chase_pages.art_detail(conn, user["collection_id"], dex, card)
     if detail is None:
         raise HTTPException(404)
-    extra = {}
-    if edit:
-        extra["candidates"] = chase_pages.candidates(conn, dex, card, chase.fingerprints(conn, dex, None))
     return templates.TemplateResponse(request, "_pokemon_art.html", {
-        "user": user, "dex": dex, "d": detail, "edit": bool(edit), "lang": lang, **extra,
+        "user": user, "dex": dex, "d": detail, "tags": chase.LANG_TAGS,
+        "name": (chase.artist(conn, dex) or {}).get("name", "") if dex < 0 else _pokemon_name(dex),
+        "candidates": chase_pages.candidates(conn, dex, card, chase.fingerprints(conn, dex, None)),
+        "sprite": f"/sprites/{dex}.png" if themes.sprite_path(dex, False).exists() else None})
+
+
+@router.get("/pokemon/{dex}/art/search")
+def pokemon_art_search(request: Request, dex: int, card: str, q: str = "", user=Depends(current_user)):
+    """Edit art's All cards: any stored card by name, set or number, as tickable tiles."""
+    return templates.TemplateResponse(request, "_pokemon_art_found.html", {
+        "user": user, "q": q.strip(), "found": chase_pages.search_cards(conn, dex, card, q),
         "sprite": f"/sprites/{dex}.png" if themes.sprite_path(dex, False).exists() else None})
 
 
 def _back_to_art(dex: int, card: str, message: str | None = None) -> RedirectResponse:
-    query = urlencode({"open": card, "edit": 1, **({"message": message} if message else {})})
+    query = urlencode({"open": card, **({"message": message} if message else {})})
     page = f"/artists/{quote((chase.artist(conn, dex) or {}).get('norm', ''))}" if dex < 0 else f"/pokemon/{dex}"
-    return RedirectResponse(f"{page}?{query}#art", status_code=303)
+    return RedirectResponse(f"{page}?{query}", status_code=303)
 
 
 @router.post("/pokemon/{dex}/fix/out")
@@ -230,12 +219,22 @@ async def pokemon_fix_out(request: Request, dex: int, user=Depends(current_user)
 
 @router.post("/pokemon/{dex}/fix/add")
 async def pokemon_fix_add(request: Request, dex: int, user=Depends(current_user)):
-    """＋ Add a version: the ticked cards join this art."""
+    """Add a card to this art: the ticked cards join it. One from All cards that isn't the Pokémon's yet
+    joins its page too ("Added by you")."""
     form = await request.form()
 
     def work():  # Off the event loop, as one transaction
         to = form.get("to", "")
-        for card in form.getlist("card"):
+        for card in dict.fromkeys(form.getlist("card")):
+            inside = conn.execute("SELECT how FROM pokemon_cards WHERE dex_id = ? AND card_id = ?", (dex, card)).fetchone()
+            if inside is None:
+                row = chase.row_from_cards(conn, card)
+                if row is None:
+                    continue
+                chase.add_card(conn, dex, row, user["id"])
+            elif inside["how"] == "removed":
+                conn.execute("UPDATE pokemon_cards SET how = 'auto' WHERE dex_id = ? AND card_id = ?", (dex, card))
+                conn.commit()
             chase.put_with(conn, dex, card, to, user["id"])
         _regroup(dex)
         return _back_to_art(dex, to)

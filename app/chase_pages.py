@@ -9,19 +9,29 @@ from .inventory import VARIANTS
 
 # Language tags: EN, JA, then ZH (mainland, then Taiwan).
 TAG_ORDER = ["en", "ja", "zh-cn", "zh-tw"]
-SORTS = {"newest": "Newest first", "oldest": "Oldest first", "price": "Price high→low"}  # Newest first
+SORTS = {"value": "Value", "number": "Number", "name": "Name"}  # Value first, like a set page
 SHOW = {"owned": "Owned", "missing": "Missing", "chased": "♥ Chased", "fullart": "Full art", "promo": "Promo"}
-LANG_CHIPS = ("en", "ja", "zh")
-PATTERNS = {"reverse": "pat-rev", "pokeball": "pat-pb", "masterball": "pat-mb", "holo": "pat-holo"}
+# The language tags on a tile and the Languages chips on a card page: mainland and Taiwan Chinese are one ZH.
+LANG_GROUPS = (("en", "EN", "English"), ("ja", "JA", "Japanese"), ("zh", "ZH", "Chinese"))
 
 
 def _lang_rank(lang: str) -> tuple:
     return (TAG_ORDER.index(lang) if lang in TAG_ORDER else len(TAG_ORDER), lang)
 
 
-def _in_lang(card_lang: str, lang: str) -> bool:
-    """The language chips: 'zh' is mainland and Taiwan Chinese together."""
-    return card_lang.startswith("zh") if lang == "zh" else card_lang == lang
+def lang_group(card_lang: str) -> str:
+    """'en', 'ja' or 'zh' (mainland and Taiwan Chinese together)."""
+    return "zh" if card_lang.startswith("zh") else card_lang
+
+
+def _langs(members: list[dict], have: dict) -> list[dict]:
+    """The language groups an art is printed in, in tag order, each owned or not."""
+    out = []
+    for key, tag, label in LANG_GROUPS:
+        group = [c for c in members if lang_group(c["lang"]) == key]
+        if group:
+            out.append({"key": key, "tag": tag, "label": label, "owned": any(c["card_id"] in have for c in group)})
+    return out
 
 
 def owned(conn: sqlite3.Connection, collection_id: int, dex: int) -> dict[str, set[str]]:
@@ -34,11 +44,10 @@ def owned(conn: sqlite3.Connection, collection_id: int, dex: int) -> dict[str, s
     return out
 
 
-def cards(conn: sqlite3.Connection, dex: int, lang: str = "") -> dict[str, dict]:
+def cards(conn: sqlite3.Connection, dex: int) -> dict[str, dict]:
+    """The Pokémon's (or artist's) cards in every language."""
     rows = {}
     for r in conn.execute("SELECT * FROM pokemon_cards WHERE dex_id = ? AND how <> 'removed'", (dex,)):
-        if lang and not _in_lang(r["lang"], lang):
-            continue
         c = dict(r)
         c["variants"] = json.loads(c["variants"] or "[]") or ["normal"]
         c["prices"] = json.loads(c["prices_json"] or "{}")
@@ -72,9 +81,10 @@ def arts(conn: sqlite3.Connection, dex: int) -> list[dict]:
     return list(out.values())
 
 
-def summary(conn: sqlite3.Connection, collection_id: int, dex: int, lang: str = "") -> dict:
-    """The completion bar: arts, cards and printings, owned of total (for the language shown)."""
-    rows = cards(conn, dex, lang)
+def summary(conn: sqlite3.Connection, collection_id: int, dex: int) -> dict:
+    """The completion bar: arts, cards and printings, owned of total, every language counted. An art is
+    yours when you have any card of it, in any language."""
+    rows = cards(conn, dex)
     have = owned(conn, collection_id, dex)
     art_list = [a for a in arts(conn, dex) if any(c in rows for c in a["card_ids"])]
     printings = sum(len(c["variants"]) for c in rows.values())
@@ -87,10 +97,9 @@ def summary(conn: sqlite3.Connection, collection_id: int, dex: int, lang: str = 
     return out
 
 
-def art_tiles(conn: sqlite3.Connection, collection_id: int, dex: int, lang: str = "", show: str = "",
-              sort: str = "newest") -> list[dict]:
-    """One tile per art, for the Pokémon set page."""
-    rows = cards(conn, dex, lang)
+def art_tiles(conn: sqlite3.Connection, collection_id: int, dex: int, show: str = "", sort: str = "value") -> list[dict]:
+    """One tile per art, for the Pokémon (or artist) page, every language together."""
+    rows = cards(conn, dex)
     have = owned(conn, collection_id, dex)
     stored = _prices_for(conn, rows)
     chased = {r[0] for r in conn.execute("SELECT card_id FROM wants WHERE user_id = ?", (collection_id,))}
@@ -111,7 +120,7 @@ def art_tiles(conn: sqlite3.Connection, collection_id: int, dex: int, lang: str 
         if show == "promo" and not any(_promo(c) for c in members):
             continue
         cover_prices = {**cover["prices"], **stored.get(cover["card_id"], {})}
-        all_prices = [p for c in members for p in {**c["prices"], **stored.get(c["card_id"], {})}.values()]
+        all_prices = [p for c in members for p in {**c["prices"], **stored.get(c["card_id"], {})}.values() if p is not None]
         tiles.append({
             "art_id": art["id"], "cover": cover, "owned": is_owned, "chased": is_chased, "prints": len(prints),
             # A tap opens the card (the one you have, else the cover)
@@ -119,16 +128,27 @@ def art_tiles(conn: sqlite3.Connection, collection_id: int, dex: int, lang: str 
             "pics": art_pics(conn, opened, cover, members),
             "prints_owned": len(prints_owned), "versions": len(members),
             "price": min(cover_prices.values()) if cover_prices else (min(all_prices) if all_prices else None),
+            "value": max(all_prices) if all_prices else None,  # the dearest printing, for the Value sort
+            "langs": _langs(members, have),
             "by_hand": all(c["how"] == "manual" for c in members),
-            "release": min((c["release_date"] or "9999") for c in members),
+            "release": max((c["release_date"] or "") for c in members) or "0000",
+            "number": cover["number"] or "",
         })
-    if sort == "newest":
+    if sort == "number":  # newest set first, then card number
+        tiles.sort(key=lambda t: (_number_key(t["number"]), t["cover"]["card_id"]))
+        tiles.sort(key=lambda t: (t["cover"]["release_date"] or "0000", t["cover"]["set_id"]), reverse=True)
+    elif sort == "name":
+        tiles.sort(key=lambda t: ((t["cover"]["name"] or "").casefold(), t["release"]))
+    else:  # value: the dearest printing first, then the ones with no price, newest first
         tiles.sort(key=lambda t: t["release"], reverse=True)
-    elif sort == "price":
-        tiles.sort(key=lambda t: (t["price"] is None, -(t["price"] or 0)))
-    else:
-        tiles.sort(key=lambda t: t["release"])
+        tiles.sort(key=lambda t: (t["value"] is None, -(t["value"] or 0)))
     return tiles
+
+
+def _number_key(number: str) -> tuple:
+    """Card numbers in printed order: 2 before 10, letters after digits ('TG05', 'SV001')."""
+    digits = "".join(ch for ch in number if ch.isdigit())
+    return (number.rstrip("0123456789") if not number[:1].isdigit() else "", int(digits) if digits else 0, number)
 
 
 def _promo(c: dict) -> bool:
@@ -142,63 +162,115 @@ def _link(conn: sqlite3.Connection, c: dict) -> str:
     return f"/preview/{c['lang']}/{c['tcgdex_id']}"
 
 
-def art_detail(conn: sqlite3.Connection, collection_id: int, dex: int, card_id: str, lang: str = "") -> dict | None:
-    """The art card_id is in, as print rows (option D), plus what you took out of it."""
+def art_detail(conn: sqlite3.Connection, collection_id: int, dex: int, card_id: str) -> dict | None:
+    """The art card_id is in, for the Edit art sheet: its cards one per row (language, set and number, and
+    the printings it comes in, ticked when you have them), plus what you took out of it."""
     every = cards(conn, dex)
-    rows = cards(conn, dex, lang) if lang else every
     art = next((a for a in arts(conn, dex) if card_id in a["card_ids"]), None)
     if art is None:
         return None
     have = owned(conn, collection_id, dex)
-    members = [rows[c] for c in art["card_ids"] if c in rows] or [every[c] for c in art["card_ids"] if c in every]
-    prints: dict[tuple, dict] = {}
-    for c in members:
-        for v in c["variants"]:
-            row = prints.setdefault((c["print_key"], v), {
-                "variant": v, "label": VARIANTS.get(v, v), "pattern": PATTERNS.get(v, ""), "cards": [],
-                "release": c["release_date"] or "9999"})
-            row["cards"].append({"card_id": c["card_id"], "lang": c["lang"], "tag": chase.LANG_TAGS.get(c["lang"], c["lang"].upper()),
-                                 "owned": v in have.get(c["card_id"], set()), "link": _link(conn, c),
-                                 "name": c["name"], "image": c["image_url"], "set_name": c["set_name"],
-                                 "set_code": c["set_code"], "number": c["number"]})
-            row["release"] = min(row["release"], c["release_date"] or "9999")
+    members = [every[c] for c in art["card_ids"] if c in every]
+    if not members:
+        return None
     order = list(VARIANTS)
-    out_rows = []
-    for (key, v), row in sorted(prints.items(), key=lambda kv: (kv[1]["release"], kv[0][0],
-                                                                 order.index(kv[0][1]) if kv[0][1] in order else 99)):
-        row["cards"].sort(key=lambda c: _lang_rank(c["lang"]))
-        lead = next((c for c in row["cards"] if c["lang"] == "en"), row["cards"][0])
-        pics = card_pictures._unique([p for c in [lead] + row["cards"] for p in card_pictures.for_id(conn, c["card_id"], c["image"])])
-        row.update(lead=lead, image=pics[0][0] if pics else None, pics=pics,
-                   have=sum(1 for c in row["cards"] if c["owned"]), total=len(row["cards"]),
-                   card_ids=sorted({c["card_id"] for c in row["cards"]}))
-        out_rows.append(row)
-    removed = []
-    for f in chase.fixes_of(conn, dex):
-        if f["join_card_id"] is None and f["left_card_id"] in art["card_ids"] and f["card_id"] in every:
-            removed.append(every[f["card_id"]])
+    rows = []
+    for c in sorted(members, key=lambda c: (_lang_rank(c["lang"]), c["release_date"] or "9999", c["card_id"])):  # EN, JA, ZH
+        mine = have.get(c["card_id"], set())
+        variants = list(c["variants"]) + sorted(mine - set(c["variants"]))  # a printing you have always shows
+        variants.sort(key=lambda v: order.index(v) if v in order else 99)
+        pics = card_pictures._unique(list(card_pictures.for_id(conn, c["card_id"], c["image_url"])))
+        rows.append({"card_id": c["card_id"], "lang": c["lang"], "tag": chase.LANG_TAGS.get(c["lang"], c["lang"].upper()),
+                     "group": lang_group(c["lang"]), "owned": bool(mine), "link": _link(conn, c), "name": c["name"],
+                     "set_name": c["set_name"], "set_code": c["set_code"], "number": c["number"],
+                     "image": pics[0][0] if pics else None, "pics": pics,
+                     "prints": [{"variant": v, "label": VARIANTS.get(v, v), "owned": v in mine} for v in variants]})
     cover = every.get(art["cover"]) or members[0]
-    return {"art": art, "cover": cover, "rows": out_rows, "removed": removed,
-            "cards": len(members), "anchor": art["cover"],
-            "added": [every[c] for c in art["card_ids"] if art["how"].get(c) == "manual" and c in every]}
+    return {"art": art, "cover": cover, "rows": rows, "cards": len(members),
+            "printings": sum(len(r["prints"]) for r in rows), "langs": _langs(members, have), "anchor": art["cover"]}
 
 
-def candidates(conn: sqlite3.Connection, dex: int, card_id: str, vectors: dict, limit: int = 15) -> list[dict]:
-    """＋ Add a version: the Pokémon's other cards, closest to this art's cover first."""
+def art_languages(conn: sqlite3.Connection, collection_id: int, card_id: str) -> list[dict]:
+    """A card page's Languages: the language groups of the card's art on a Pokémon or artist you follow,
+    each owned or not, with the version a tap opens (the one you have, else English, else the earliest).
+    Empty when the card is in no followed art, or its art is in one language only."""
+    followed = {f["dex_id"] for f in chase.followed(conn, collection_id)} | \
+               {f["dex_id"] for f in chase.followed(conn, collection_id, artists=True)}
+    for r in conn.execute("""SELECT a.dex_id FROM art_cards ac JOIN arts a ON a.id = ac.art_id
+                             WHERE ac.card_id = ? ORDER BY a.dex_id < 0, a.dex_id""", (card_id,)):
+        if r["dex_id"] not in followed:
+            continue
+        every = cards(conn, r["dex_id"])
+        art = next((a for a in arts(conn, r["dex_id"]) if card_id in a["card_ids"]), None)
+        members = [every[c] for c in (art or {}).get("card_ids", []) if c in every]
+        if not members or card_id not in every:
+            continue
+        have = owned(conn, collection_id, r["dex_id"])
+        out = []
+        for g in _langs(members, have):
+            group = sorted((c for c in members if lang_group(c["lang"]) == g["key"]),
+                           key=lambda c: (c["card_id"] not in have, c["lang"] != "en", c["release_date"] or "9999", c["card_id"]))
+            here = lang_group(every[card_id]["lang"]) == g["key"]
+            out.append(dict(g, here=here, link=None if here else _link(conn, group[0])))
+        return out if len(out) > 1 else []
+    return []
+
+
+CLOSEST = 8  # how many suggestions the Closest pictures row shows
+
+
+def candidates(conn: sqlite3.Connection, dex: int, card_id: str, vectors: dict) -> dict:
+    """Add a card to this art: {"close": the closest pictures to the art's cover, "every": every other card of
+    the Pokémon, newest first}. How alike a card is never decides whether it can be added."""
     import numpy as np
-    art = next((a for a in arts(conn, dex) if card_id in a["card_ids"]), None)
+    art_list = arts(conn, dex)
+    art = next((a for a in art_list if card_id in a["card_ids"]), None)
     if art is None:
-        return []
+        return {"close": [], "every": []}
     rows = cards(conn, dex)
+    inside = {}  # a card already grouped with others: the set its art is named for
+    for a in art_list:
+        if len(a["card_ids"]) > 1 and a is not art and a["cover"] in rows:
+            for c in a["card_ids"]:
+                inside[c] = rows[a["cover"]]["set_name"] or rows[a["cover"]]["set_code"]
     cover = vectors.get(art["cover"])
-    out = []
+    every = []
     for cid, c in rows.items():
         if cid in art["card_ids"]:
             continue
         score = float(np.dot(vectors[cid], cover)) if cover is not None and cid in vectors else None
-        out.append(dict(c, score=score, word=chase.likeness_word(score)))
-    out.sort(key=lambda c: (c["score"] is None, -(c["score"] or 0), c["release_date"] or "9999"))
-    return out[:limit]
+        every.append(dict(c, score=score, in_art=inside.get(cid), tag=chase.LANG_TAGS.get(c["lang"], c["lang"].upper()),
+                          group=lang_group(c["lang"])))
+    close = sorted((c for c in every if c["score"] is not None), key=lambda c: -c["score"])[:CLOSEST]
+    every.sort(key=lambda c: (c["release_date"] or "0000", c["set_id"], _number_key(c["number"] or "")), reverse=True)
+    return {"close": close, "every": every}
+
+
+def search_cards(conn: sqlite3.Connection, dex: int, card_id: str, q: str, limit: int = 60) -> list[dict]:
+    """All cards: any stored card, by name, set or number, for a card the Pokémon is in but not named on.
+    Leaves out the art's own cards."""
+    from .display import fold
+    words = fold(q).split()
+    if not words:
+        return []
+    art = next((a for a in arts(conn, dex) if card_id in a["card_ids"]), None)
+    mine = set(art["card_ids"]) if art else set()
+    out = []
+    for r in conn.execute("""SELECT c.id, c.set_id, c.name, c.number, c.image_url, s.name AS set_name, s.language, s.release_date
+                             FROM cards c JOIN sets s ON s.set_id = c.set_id
+                             ORDER BY s.release_date DESC, c.sort_number"""):
+        if r["id"] in mine:
+            continue
+        code = catalog.tcgdex_set_id(r["set_id"]).upper()
+        hay = fold(f"{r['name'] or ''} {r['set_name'] or ''} {r['number'] or ''} {code}")
+        if all(w in hay for w in words):
+            lang = r["language"] or "en"
+            out.append({"card_id": r["id"], "name": r["name"], "number": r["number"], "image_url": r["image_url"],
+                        "set_name": r["set_name"], "set_code": code,
+                        "lang": lang, "tag": chase.LANG_TAGS.get(lang, lang.upper()), "group": lang_group(lang)})
+            if len(out) >= limit:
+                break
+    return out
 
 
 def followed_list(conn: sqlite3.Connection, collection_id: int) -> list[dict]:

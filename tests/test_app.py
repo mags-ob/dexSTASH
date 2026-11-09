@@ -2973,30 +2973,21 @@ def test_pokemon_chase_screens(client, monkeypatch):
     assert "Clefairy" in page and "1 of 2</span>" in page and 'aria-current="page">Chases</a>' in page and "Single cards" in page
     page = client.get("/pokemon/35").text
     assert "Pokémon set" not in page and "</svg> Following" in page and "1 of 2 arts" in page and "No picture" in page
-    assert 'class="chip lc-zh"' in page and "♥ Chased" in page and "grayscale" not in page
-    assert "1 of 2 cards" in page and "1 of 3 printings" in page  # English to start (round 7): no All
-    assert 'value="en" checked' in page and 'href="/pokemon/35?show=&amp;sort=oldest&lang="' not in page
+    assert "♥ Chased" in page and "grayscale" not in page
+    assert "1 of 4 cards" in page and "1 of 7 printings" in page  # every language counts (#24)
+    assert "<b>Language</b>" not in page and "<b>Sort</b>" not in page and 'name="lang"' not in page
     art = client.get("/pokemon/35/art", params={"card": "sv03.5-035"}).text
-    assert "151 art" in art and "Reverse Holo" in art and "1 of 1" in art and 'href="/preview/ja/SV2a-035"' in art
-    assert "EN <svg" in art and ">JA<" in art and ">ZH<" in art
-    assert re.search(r'>JA</span>\s*<span class="lw-s">[^<]+ &middot; 035</span>', art)  # each language's set and number (round 7)
-    # Only Japanese: the language filter narrows the count.
-    assert "0 of 1 arts" in client.get("/pokemon/35", params={"lang": "ja"}).text
+    assert "151 art" in art and "Reverse Holo" in art and "3 cards" in art and 'href="/preview/ja/SV2a-035"' in art
+    assert 'ltg ltg-en h">EN<' in art and 'ltg ltg-ja">JA<' in art and 'ltg ltg-zh">ZH<' in art
+    assert re.search(r'>JA</span>\s*<a href="/preview/ja/SV2a-035">[^<]+ &middot; 035</a>', art)  # each card's set and number
+    assert "Not this art" in art and 'value="base1-5"' in art and "Add a card to this art" in art
 
-    zh = client.get("/pokemon/35", params={"lang": "zh"}).text  # Chinese is mainland and Taiwan
-    assert "0 of 1 arts" in zh and "151 TW" in zh
-    assert 'value="zh" checked' in client.get("/pokemon/35").text  # the last language picked is remembered
-
-    # Editing: take Chinese out, it's listed under Not this art, Undo puts it back; ＋ adds Base Set.
-    edit = client.get("/pokemon/35/art", params={"card": "sv03.5-035", "edit": 1}).text
-    assert "＋" in edit or "&#65291; Add a version" in edit
-    assert 'value="base1-5"' in edit and "Re-check" in edit
+    # Editing: take Chinese out and it's its own art, offered under Add a card; adding it and Base Set makes one art.
     r = client.post("/pokemon/35/fix/out", data={"card": "zh-tw:SV2a-035", "back": "sv03.5-035"})
     assert r.status_code == 200
     assert main.conn.execute("SELECT COUNT(*) FROM arts WHERE dex_id = 35").fetchone()[0] == 3
-    assert "Not this art (1)" in client.get("/pokemon/35/art", params={"card": "sv03.5-035", "edit": 1}).text
-    client.post("/pokemon/35/fix/undo", data={"card": "zh-tw:SV2a-035", "back": "sv03.5-035"})
-    client.post("/pokemon/35/fix/add", data={"card": "base1-5", "to": "sv03.5-035"})
+    assert 'value="zh-tw:SV2a-035"' in client.get("/pokemon/35/art", params={"card": "sv03.5-035"}).text
+    client.post("/pokemon/35/fix/add", data={"card": ["zh-tw:SV2a-035", "base1-5"], "to": "sv03.5-035"})
     assert main.conn.execute("SELECT COUNT(*) FROM arts WHERE dex_id = 35").fetchone()[0] == 1
 
     assert 'href="/pokemon/35"' not in client.get("/").text  # Your Pokémon left Home in round 24 (still on Chases)
