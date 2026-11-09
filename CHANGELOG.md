@@ -2,15 +2,28 @@
 
 Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor version, and a round shipped in parts raises the patch version for each later part. On start, a new version backs up the database before changing it; an older version won't start on a database a newer one has changed (see "Updating" in the README).
 
-## Unreleased
+## 0.29.0
+
+Round 29: one grid for a followed Pokémon's or artist's cards in every language, the release image under its new name, and images built without GitHub Actions. No database step.
+
+**After updating:** the image's name changed to `ghcr.io/mags-ob/dexstash` (the repository moved to `mags-ob`). In your copy of `docker-compose.yml`, change `ghcr.io/obiehq/dexstash` to `ghcr.io/mags-ob/dexstash` on both `image:` lines (or download the file again from `main`), then run `sudo docker compose pull && sudo docker compose up -d`. The old name no longer gets new releases.
 
 ### Changed
+- **A followed Pokémon's or artist's page is one grid**, like a set page (no rows by era), and every language counts: an art is yours when you have any card of it. Each tile has EN, JA and ZH tags for the languages it's printed in (filled when you have one) and its printings as owned of total (1/3). Sorts Value (the default), Number and Name are kept per login; the Pokémon's words start collapsed under "Tags". There's no language choice (#24).
+- **Edit arts**: a pencil on each tile opens the Edit art sheet, listing the art's cards with their printings (✓ the ones you have), Not this art, and Add a card to this art, which searches the Pokémon's cards or All cards, for a card the Pokémon is in but isn't named on (#24).
+- **Languages on the card page**: a card in an art printed in more than one language has a chip for each under Printings, ✓ when you have it (#24).
+- The release image is `ghcr.io/mags-ob/dexstash`, and links and the User-Agent name `github.com/mags-ob/dexSTASH`.
 - Release images are also pushed to the container registry, so `docker compose pull` updates (#1).
-- `docker-compose.yml` runs the release image (`ghcr.io/obiehq/dexstash`); `DEXSTASH_VERSION` in `.env` pins a version and `--build` builds from source. `DEXSTASH_IMAGE` and `DEXSTASH_PULL_POLICY` are gone (#39).
+- `docker-compose.yml` runs the release image; `DEXSTASH_VERSION` in `.env` pins a version and `--build` builds from source. `DEXSTASH_IMAGE` and `DEXSTASH_PULL_POLICY` are gone (#39).
 - **Pillow 13.0.0** (from 12.3.0) and **certifi 2026.10.18**, which fix known vulnerabilities pip-audit reported. Photo reading, pictures and thumbnails were checked with the new Pillow.
 - **Images built on GitHub.** Each release carries the image ready-built (amd64 and arm64) to load with `docker load`, and a pull request with the `test image` label gets a test image (`pr-<number>`) a host can try before it's merged. See DEPLOY.md › Using a release image.
 - GitHub Actions run less: checks on pushes to `main` and on pull requests (not every branch push), a newer push cancels the older run, a description edit reruns only the spec rule, and pull requests that only change specs or rules skip the tests (#49).
 - **New checks on every pull request** (the Checks workflow): lint, the core rules, secret scanning and known-vulnerable packages. Contributors see what each one wants in AGENTS.md and the rules folder.
+
+### Added
+- `tools/local_checks.py` runs the pull request checks on a maintainer's machine and reports them to GitHub, for while Actions is off; the tests and pip-audit run in Docker where the packages can't be installed.
+- `tools/release_image.py` builds a release's image (amd64 and arm64) on a maintainer's machine, attaches the image files to the Release and pushes it to the registry, for while Actions is off.
+- Specs for each part of the app in `docs/specs/`, and the README's longer guides moved to `docs/`.
 
 ## 0.28.0
 

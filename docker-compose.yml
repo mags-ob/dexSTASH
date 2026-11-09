@@ -15,9 +15,9 @@ x-logging: &logs
 
 services:
   app:
-    # The release image from GitHub. DEXSTASH_VERSION in .env pins one (0.28 or 0.28.0); `docker compose pull`
+    # The release image from GitHub. DEXSTASH_VERSION in .env pins one (0.29 or 0.29.0); `docker compose pull`
     # updates. `docker compose up -d --build` builds it here from the Dockerfile instead.
-    image: ghcr.io/obiehq/dexstash:${DEXSTASH_VERSION:-latest}
+    image: ghcr.io/mags-ob/dexstash:${DEXSTASH_VERSION:-latest}
     build: .
     container_name: dexstash
     restart: unless-stopped
@@ -50,7 +50,7 @@ services:
 
   scanner:
     profiles: [scanner]   # started only with the scanner profile (COMPOSE_PROFILES=scanner in .env)
-    image: ghcr.io/obiehq/dexstash:${DEXSTASH_VERSION:-latest}   # the same image as the app
+    image: ghcr.io/mags-ob/dexstash:${DEXSTASH_VERSION:-latest}   # the same image as the app
     build: .
     container_name: dexstash-scanner
     restart: unless-stopped

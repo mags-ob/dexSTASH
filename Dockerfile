@@ -3,9 +3,9 @@ FROM python:3.13-slim
 # Kept the same as app/__init__.py's __version__ (a test checks).
 LABEL org.opencontainers.image.title="dexSTASH" \
       org.opencontainers.image.description="A self-hosted Pokémon card collection app" \
-      org.opencontainers.image.version="0.28.0" \
+      org.opencontainers.image.version="0.29.0" \
       org.opencontainers.image.licenses="AGPL-3.0-only" \
-      org.opencontainers.image.source="https://github.com/obiehq/dexSTASH"
+      org.opencontainers.image.source="https://github.com/mags-ob/dexSTASH"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

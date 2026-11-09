@@ -75,6 +75,20 @@ The assistant never moves board cards; the board's workflows move the rest.
 **Tools.** Skills help where they fit: brainstorming for a vague idea, a written plan for a big change, a
 code review before asking for gate 3. No subagents or multi-agent workflows unless the maintainer asks.
 
+## Version and changelog
+
+A pull request that changes the app's code (`app/`, `Dockerfile`, `requirements.lock`, `deploy/`) checks both
+before it's pushed ([rules/project.md](rules/project.md) › Versions):
+
+- `CHANGELOG.md` has its line under `## Unreleased`, for every change people will notice.
+- `__version__` in `app/__init__.py` is newer than the last release tag. The first such pull request after a
+  release raises it: the minor version for a new feature, the patch version when there are only fixes. A later
+  one raises the minor version if it adds a feature and the version was only raised for fixes.
+
+A release renames `## Unreleased` to the version, with a one-line summary and any "After updating" steps, and
+the version is the tag (`v0.29.0` for 0.29.0). While GitHub Actions is off, the maintainer builds and publishes
+the release image with `python tools/release_image.py <tag>` once the Release is published.
+
 ## Commands
 
 ```sh

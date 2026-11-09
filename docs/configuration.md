@@ -5,7 +5,7 @@ Each setting in `.env` has a default; `.env.example` has each one with a note.
 | Setting | Default | What it does |
 |---|---|---|
 | `APP_NAME` | `dexSTASH` | The name shown in the app, the browser tab and shared binders. |
-| `DEXSTASH_VERSION` | `latest` | Which release image to run: `0.28` follows the newest 0.28.x, `0.28.0` stays on one release. |
+| `DEXSTASH_VERSION` | `latest` | Which release image to run: `0.29` follows the newest 0.29.x, `0.29.0` stays on one release. |
 | `DEXSTASH_SECRET_KEY` | made on first start | Signs sign-ins and shared-binder codes. Left empty, the app makes one in `data/secret_key`. If you set one, it must be at least 32 characters. |
 | `DEXSTASH_ADMIN_USER`, `DEXSTASH_ADMIN_PASSWORD` | unset | Creates the first admin on the first start instead of asking for the setup code. Only read while there are no accounts. |
 | `DEXSTASH_HTTPS_ONLY` | `1` | `1` sends the sign-in cookie only over HTTPS. Set `0` only to try it over plain http. |

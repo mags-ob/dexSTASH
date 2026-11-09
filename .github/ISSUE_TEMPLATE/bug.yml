@@ -33,7 +33,7 @@ body:
     attributes:
       label: Version
       description: Account › About shows it.
-      placeholder: 0.28.0
+      placeholder: 0.29.0
     validations:
       required: true
   - type: input
