@@ -46,7 +46,8 @@ OFFLINE_FILES = ("css/offline.css", "js/offline.js", "icon-192.png")
 
 def service_worker(asset) -> str:
     """The service worker, versioned with the app so a new bundle replaces the old offline page. It answers only
-    page loads, and only when the server doesn't (no connection, or the proxy says the app is down)."""
+    page loads, and only when the server doesn't (no connection, or the proxy says the app is down). The app's own
+    error pages (X-Dexstash-Page, main.py) are shown as they are."""
     files = ["/offline"] + [asset(f) for f in OFFLINE_FILES] + ["/static/fonts/nunito-latin.woff2"]
     return f"""// dexSTASH {__version__}: shows a saved "Can't reach your server" page when a page can't load. Nothing else
 // is stored: every page and all your data still come from the server.
@@ -66,7 +67,9 @@ self.addEventListener("fetch", e => {{
     return;
   }}
   if (e.request.mode !== "navigate") return;
-  e.respondWith(fetch(e.request).then(r => [502, 503, 504].includes(r.status) ? offline(r) : r, () => offline()));
+  // A 502/503/504 from the proxy means the app is down; the app's own error pages carry X-Dexstash-Page and show as sent.
+  e.respondWith(fetch(e.request).then(r => [502, 503, 504].includes(r.status) && !r.headers.has("X-Dexstash-Page") ? offline(r) : r,
+                                      () => offline()));
 }});
 const offline = r => caches.match("/offline").then(page => page || r || Response.error());
 """

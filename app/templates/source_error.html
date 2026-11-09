@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{#- A page another site (mostly TCGdex) didn't answer for (main.py _http_error). Sent with X-Dexstash-Page, so the
+    service worker shows it rather than "Can't reach your server": the server is fine. -#}
+{% block title %}Couldn't load this {{ what }} · {{ app_name }}{% endblock %}
+{% block heading %}Couldn't load this {{ what }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset("css/source-error.css") }}">
+<div class="source-error">
+  {% if what == "card" %}<p>TCGdex, where card details come from, didn't answer just now.
+  {%- elif what == "set" %}<p>TCGdex, where set lists come from, didn't answer just now.
+  {%- else %}<p>A site this page needs didn't answer just now.{% endif %} Your server and your stash are fine.</p>
+  <p>Try again in a minute.</p>
+  <a class="btn" href="{{ again }}">Try again</a>
+  <a class="btn quiet" href="/" data-go-back>Back</a>
+</div>
+{% endblock %}
