@@ -81,3 +81,7 @@ How dexSTASH is built. They may change by a reviewed pull request, but they neve
 
 - Versions stay at 0.x until the first public release, then 1.0.0. Each cycle of work raises the minor
   version, and fixes raise the patch version.
+- `main` never carries a released version number with unreleased app changes: the first pull request that
+  changes the app's code after a release raises `__version__` (minor for a feature, patch for fixes only), and
+  every one adds its `CHANGELOG.md` line under `## Unreleased`.
+- A release's tag is its version with a `v` (`v0.29.0`); the image build stops when they differ.

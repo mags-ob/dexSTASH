@@ -3,7 +3,8 @@
 # - pushes it to ghcr.io/<owner>/dexstash as <version>, <major.minor> and latest (not latest for a pre-release)
 #   for `docker compose pull` (DEPLOY.md › Using a release image).
 # Nothing is published unless the tests pass and the tag matches the app's version.
-# Actions › Image › Run workflow builds an existing release tag again.
+# Actions › Image › Run workflow builds an existing release tag again. While Actions is off,
+# `python tools/release_image.py <tag>` does the same on a maintainer's machine.
 name: Image
 
 on:
@@ -12,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to build, like v0.28.0"
+        description: "Release tag to build, like v0.29.0"
         required: true
 
 permissions:
