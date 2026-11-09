@@ -24,11 +24,15 @@ Every change starts from a GitHub issue and follows the same five steps.
 
 1. **Define.** The issue holds a user story and acceptance criteria. The spec for the part of the app it
    touches, in [docs/specs/](docs/specs/README.md), is written or updated first.
-2. **Plan.** Read the issue, the spec and the code it touches. Write the change list on the issue: what the
-   app does now, what will change, and anything that contradicts an earlier decision. Wait until the issue is
-   marked ready.
-3. **Build.** Work on a branch named `feature/<short-name>`, `fix/<short-name>`, `docs/<short-name>`,
-   `chore/<short-name>`, `refactor/<short-name>` or `test/<short-name>`, never on `main`. Code, tests and the
+2. **Plan.** Once the issue is marked ready, read the issue, the spec and the code it touches. Write the
+   change list on the issue: what the app does now, what will change, and anything that contradicts an earlier
+   decision. Add a wireframe or mockup of each screen the change adds or changes, at phone width: a published
+   page linked from the Plan section, or an image attached to the issue. A linked page must open for anyone
+   with the link. A change with no screen changes says "Wireframe: no screen changes". No code is written
+   until the plan, with its wireframe or mockup, has its go.
+3. **Build.** Start only after the go on the plan. Work on a branch named `feature/<short-name>`,
+   `fix/<short-name>`, `docs/<short-name>`, `chore/<short-name>`, `refactor/<short-name>` or
+   `test/<short-name>`, never on `main`. Code, tests and the
    spec update go in the same pull request, which says `Closes #<issue>`. One issue per pull request unless a
    maintainer asks to group related issues; a grouped pull request has one `Closes #<issue>` line for each.
    Commits and pull requests are short and say only what changed; the why is on the issue. No attribution
@@ -36,7 +40,9 @@ Every change starts from a GitHub issue and follows the same five steps.
 4. **Validate.** GitHub Actions runs the checks on every pull request. While Actions is switched off, a
    maintainer runs `python tools/local_checks.py <number>` from `main`, which reports the required checks (lint,
    rules check, gitleaks) on the pull request ([CONTRIBUTING.md](CONTRIBUTING.md)); whoever makes a code change
-   runs the whole test suite before pushing. Each acceptance criterion should have a test. Changes to pages get a look at phone width.
+   runs the whole test suite before pushing. Each acceptance criterion should have a test. Changes to pages get
+   a look at phone width. When a check or feedback finds a problem, the work goes back to step 2: update the
+   Plan section and the wireframe or mockup and get a new go before changing any more code.
 5. **Learn.** Anything non-obvious you found goes into the spec or the docs, so the next change starts
    from it.
 
@@ -49,8 +55,9 @@ bug issue first; an urgent fix gets a patch release.
 **Three gates.** The maintainer decides at each one; the assistant waits.
 
 1. **Ready:** the issue's story and criteria are right. The maintainer moves the card to Ready.
-2. **Go:** the plan is right. The plan goes in a "Plan" section of the issue body, never in a comment. The
-   maintainer moves the card to In progress.
+2. **Go:** the plan and its wireframe or mockup are right. The plan goes in a "Plan" section of the issue
+   body, never in a comment. The maintainer moves the card to In progress. Going back to Plan after a problem
+   in Validate needs a new go.
 3. **Approved:** the pull request is right. The maintainer says so or merges it.
 
 A small issue (one bug, one screen) merges gates 1 and 2: the issue and its plan come together for one go.
