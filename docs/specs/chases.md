@@ -26,12 +26,21 @@ the stash.
    English, Japanese and Taiwan Chinese, plus any loaded mainland Chinese sets, and stores what the chase
    pages need: illustrator, printings, picture and price. For a Pokémon, a card counts when its main Pokémon
    has that Pokédex number.
-8. A Pokémon's cards are grouped into arts: the same illustrator and near-identical pictures. A group can be
-   fixed by hand (take a card out, add one, undo), and the fixes are kept. ↻ Re-check compares the pictures
-   again and keeps the fixes. Check for updates adds new cards.
-9. A followed Pokémon's page shows its arts, each with language tags (EN, JA, ZH) and what you own. Sorts:
-   Newest first (the default), Oldest first, Price high to low. It can show only owned, missing, chased, full
-   art or promo cards, and one language.
+8. A Pokémon's cards are grouped into arts: the same illustrator and near-identical pictures, in every
+   language. Edit arts puts a pencil on each tile; tapping one opens the Edit art sheet: the art's cards one
+   per row (language, set and number, and the printings it comes in, ✓ the ones you have), each with Not this
+   art; and Add a card to this art, which searches either the Pokémon's cards (a row of the closest pictures,
+   then every card, newest first, however alike) or All cards (any stored card by name, set or number, for a
+   card the Pokémon is in but not named on; it joins the Pokémon's page as added by you). A card taken out is
+   found again the same way. The fixes are kept. Printings can't be changed there. ↻ Re-check, beside Following, compares the pictures again and
+   keeps the fixes. Check for updates adds new cards.
+9. A followed Pokémon's or artist's page shows every art in one grid, like a set page (no rows by era). Every
+   language counts: an art is yours when you have any card of it, in any language, and the arts, cards and
+   printings counts cover them all. Each tile has language tags (EN, JA, ZH, mainland and Taiwan together) on
+   its picture for the languages the art is printed in, filled when you have one, and its printings as owned
+   of total (1/3). The Pokémon's words start collapsed under "Tags", as on Find. Sorts, on the page and kept
+   per login: Value (the dearest printing first, the default), Number (newest set first, then card number)
+   and Name. Filters can show only owned, missing, chased, full art or promo arts. There's no language choice.
 10. Cards of followed Pokémon keep stored prices (see [prices](prices.md)), but aren't single chases: they
     have no price history and no Chase box unless they're chased too.
 11. Unfollowing removes the follow. When nobody follows it any more, its arts, fingerprints and the cards

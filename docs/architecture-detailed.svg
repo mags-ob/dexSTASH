@@ -61,7 +61,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="ds" x="286" y="200">templates and filters, sign-in</text>
 <text class="ds" x="286" y="216">checks, the workers, shared</text>
 <text class="ds" x="286" y="232">helpers for several pages</text>
-<text class="t2" x="520" y="84">app/routes/ · 216 routes in 16 modules</text>
+<text class="t2" x="520" y="84">app/routes/ · 217 routes in 16 modules</text>
 <text class="m" x="520" y="108">data_sources.py</text>
 <text class="lbl" x="662" y="108" text-anchor="end">35</text>
 <text class="m" x="520" y="126">scans.py</text>
@@ -71,7 +71,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="m" x="520" y="162">account.py</text>
 <text class="lbl" x="662" y="162" text-anchor="end">18</text>
 <text class="m" x="520" y="180">pokemon.py</text>
-<text class="lbl" x="662" y="180" text-anchor="end">15</text>
+<text class="lbl" x="662" y="180" text-anchor="end">16</text>
 <text class="m" x="520" y="198">home.py</text>
 <text class="lbl" x="662" y="198" text-anchor="end">13</text>
 <text class="m" x="678" y="108">search.py</text>
@@ -94,7 +94,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="lbl" x="978" y="144" text-anchor="end">6</text>
 <text class="m" x="836" y="162">sets.py</text>
 <text class="lbl" x="978" y="162" text-anchor="end">3</text>
-<text class="ds" x="520" y="220">63 templates in app/templates/ · app/static/ (CSS, JS, htmx, font, logo)</text>
+<text class="ds" x="520" y="220">65 templates in app/templates/ · app/static/ (CSS, JS, htmx, font, logo)</text>
 <text class="ds" x="520" y="238">Each module has its own APIRouter; app/main.py includes them all.</text>
 <path class="edge" d="M630 252 V270" marker-end="url(#ar)"/>
 <rect class="box " x="270" y="272" width="232" height="114" rx="8"/>
@@ -133,7 +133,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="ds" x="774" y="461">backup · reset · settings</text>
 <text class="ds" x="774" y="478">activity (log) · recent</text>
 <text class="ds" x="774" y="495">welcome (first-run wizard)</text>
-<text class="ds" x="270" y="532">73 Python modules in app/, each taking a database connection</text>
+<text class="ds" x="270" y="532">72 Python modules in app/, each taking a database connection</text>
 <rect class="box " x="270" y="546" width="476" height="100" rx="8"/>
 <text class="t2" x="286" y="572">Job runner · app/jobs.py · one job at a time</text>
 <rect class="k-py" x="678.0" y="557" width="56" height="20" rx="4"/><text class="kt" x="685.0" y="571">Python</text>

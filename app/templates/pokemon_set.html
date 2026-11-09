@@ -1,24 +1,16 @@
 {% extends "base.html" %}
 {% set keep_place = true %}{# Opens where you left it when you come back #}
 {% set wide = true %}
-{% from "_macros.html" import cname, lang_chips %}
+{% from "_macros.html" import cname %}
 {% from "_evolution.html" import evolution %}
 {% from "_pokemon_tags.html" import pokemon_tags %}
 {%- set here = "/artists/" ~ (artist.norm | urlencode) if artist else "/pokemon/" ~ dex -%}
 {% block title %}{{ name }}{{ "" if artist else "'s set" }} · {{ app_name }}{% endblock %}
 {% block heading %}{{ name }}{% endblock %}
-{% set filter_count = 0 if preview else (1 if show else 0) + (1 if sort and sort != (sorts | list)[0] else 0) + (1 if lang and lang != "en" else 0) %}
-{% set lang_names = {"en": "English", "ja": "Japanese", "zh": "Chinese"} %}
+{% set filter_count = 0 if preview else (1 if show else 0) %}
 {% block filters %}{% if not preview %}
 <form method="get" action="{{ here }}">
-  <h2>Filters <a href="{{ here }}?{{ qs(lang='en', era=era) }}">Clear filters</a></h2>
-  {% if era %}<input type="hidden" name="era" value="{{ era }}">{% endif %}
-  {# Sort comes first in every filter panel. #}
-  <div class="fgroup"><b>Sort</b>
-    <div class="chips">{% for key, label in sorts.items() %}<label class="chip"><input type="radio" name="sort" value="{{ key }}" {% if key == sort %}checked{% endif %}>{{ label }}</label>{% endfor %}</div>
-  </div>
-  {# The language is a filter now, remembered per login as before. #}
-  <div class="fgroup"><b>Language</b>{{ lang_chips("lang", lang) }}</div>
+  <h2>Filters <a href="{{ here }}">Clear filters</a></h2>
   <div class="fgroup"><b>Show</b>
     <div class="chips">
       <label class="chip"><input type="radio" name="show" value="" {% if not show %}checked{% endif %}>All</label>
@@ -36,7 +28,10 @@
   {% if sprite %}<img src="{{ sprite }}" alt="">{% elif artist %}<span class="artist-ic" aria-hidden="true">{{ icon("palette", 34) }}</span>{% else %}<span style="grid-row:span 2"></span>{% endif %}
   <div class="nm">{{ name }} <small>{{ "Artist" if artist else "#%03d" % dex }}</small></div>
   {% if following %}
-  <form method="post" action="/pokemon/{{ dex }}/unfollow" data-confirm="Stop following {{ name }}? Their arts and card list go; cards you have stay in your stash."><button class="quiet" title="Stop following">{{ icon("star-on", 14) }} Following</button></form>
+  <span class="pset-acts">
+    <form method="post" action="/pokemon/{{ dex }}/recheck"><button class="quiet" aria-label="Re-check pictures" title="Compare {{ name }}'s pictures again. Your own choices stay.">{{ icon("refresh", 15) }}</button></form>
+    <form method="post" action="/pokemon/{{ dex }}/unfollow" data-confirm="Stop following {{ name }}? Their arts and card list go; cards you have stay in your stash."><button class="quiet" title="Stop following">{{ icon("star-on", 14) }} Following</button></form>
+  </span>
   {% else %}
   <form method="post" action="{{ '/artists/follow' if artist else '/pokemon/follow' }}">{% if artist %}<input type="hidden" name="name" value="{{ name }}">{% else %}<input type="hidden" name="dex" value="{{ dex }}">{% endif %}<button>{{ icon("star", 16) }} Follow</button></form>
   {% endif %}
@@ -50,8 +45,10 @@
   {% else %}<span></span>
   {% endif %}
 </section>
-{% if evo %}{% call evolution(evo) %}{% if ptags %}{{ pokemon_tags(dex, ptags, "/pokemon/" ~ dex) }}{% endif %}{% endcall %}
-{% elif ptags %}<section class="evo">{{ pokemon_tags(dex, ptags, "/pokemon/" ~ dex) }}</section>{% endif %}
+{# The Pokémon's words start collapsed, as on Find. #}
+{% macro poke_tags() %}{% if ptags %}<details class="fp-tags pset-tags"><summary>Tags &middot; {{ ptags.tags | length }} &rsaquo;</summary>{{ pokemon_tags(dex, ptags, "/pokemon/" ~ dex) }}</details>{% endif %}{% endmacro %}
+{% if evo %}{% call evolution(evo) %}{{ poke_tags() }}{% endcall %}
+{% elif ptags %}<section class="evo">{{ poke_tags() }}</section>{% endif %}
 
 {% if running %}<p class="banner" style="margin-top:12px">Getting {{ name }}'s cards and comparing their pictures. It shows under Running now on Data sources; <a href="">refresh</a> to see the latest.</p>{% endif %}
 
@@ -71,54 +68,41 @@
 </div>
 {% else %}
 {% set base = here ~ "?" %}
-{% if filter_count or era %}
-<div class="sticky-block pfilters">
-  {% if era %}<div class="era-back"><a href="{{ base ~ qs(lang=lang, show=show, sort=sort) }}">{{ icon("back", 16) }} Every era</a><h2>{{ era_name }}</h2></div>{% endif %}
-  {% if filter_count %}
-  <div class="chips active-chips">
-    {% if lang and lang != "en" %}<a class="chip on" href="{{ base ~ qs(lang='en', show=show, sort=sort, era=era) }}" aria-label="Back to English">{{ lang_names[lang] }} {{ icon("x", 14) }}</a>{% endif %}
-    {% if show %}<a class="chip on" href="{{ base ~ qs(lang=lang, sort=sort, era=era) }}" aria-label="Show every art">{{ shows[show] }} {{ icon("x", 14) }}</a>{% endif %}
-    {% if sort and sort != (sorts | list)[0] %}<a class="chip on" href="{{ base ~ qs(lang=lang, show=show, era=era) }}" aria-label="Back to the usual order">{{ sorts[sort] }} {{ icon("x", 14) }}</a>{% endif %}
-  </div>
-  {% endif %}
+{% if show %}
+<div class="chips active-chips pfilters">
+  <a class="chip on" href="{{ base ~ qs(sort=sort) }}" aria-label="Show every art">{{ shows[show] }} {{ icon("x", 14) }}</a>
 </div>
 {% endif %}
-{# A tap opens the card; Modify set switches to fixing arts (tags, add, remove), Done switches back. #}
-{% if tiles %}<div class="modify-bar"><span class="muted" data-modify-hint hidden>Tap an art to fix it.</span>
-  <button type="button" class="quiet" data-modify aria-pressed="false">{{ icon("pencil", 15) }} Modify set</button></div>{% endif %}
-{% macro art_tile(t) %}
+{# Sort like a set page, and Edit arts: a pencil on each tile; a tap opens that art's Edit art sheet. #}
+{% if tiles %}<div class="pbar">
+  <nav class="seg set-sort" aria-label="Sort">{% for key, label in sorts.items() %}<a class="chip{% if key == sort %} on{% endif %}"
+     href="{{ base ~ qs(show=show, sort=key) }}"{% if key == sort %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+  <button type="button" class="quiet" data-modify aria-pressed="false">{{ icon("pencil", 15) }} Edit arts</button>
+</div>
+<p class="muted modify-hint" data-modify-hint hidden>Tap an art to edit it.</p>{% endif %}
+<div class="pgrid" id="arts" data-dex="{{ dex }}">
+  {% for t in tiles %}
   <div class="ptile" data-card="{{ t.cover.card_id }}" data-art="{{ t.art_id }}">
-    <a href="{{ t.link }}" aria-label="Open the {{ t.cover.set_name }} art">
+    <a href="{{ t.link }}" aria-label="Open the {{ t.cover.set_name or t.cover.set_code }} art">
       <span class="stack{% if t.versions == 1 %} one{% endif %}{% if t.owned %} have{% endif %}"><span class="face">
         {% if t.owned %}<span class="own">{{ icon("check", 14) }}</span>{% endif %}
         {% if t.chased %}<span class="chs" aria-label="Chasing">{{ icon("star-on", 14) }}</span>{% endif %}
+        <span class="edit-pen" aria-hidden="true">{{ icon("pencil", 14) }}</span>
         {% if t.pics %}<img class="c" src="{{ t.pics[0][0] }}" data-pics="{{ t.pics[1:] | tojson | forceescape }}" alt="{{ t.cover.name }}" loading="lazy" data-fail="art">
         {% else %}<span class="nopic">{% if sprite %}<img src="{{ sprite }}" alt="">{% endif %}<b>No picture</b></span>{% endif %}
+        {% if t.langs %}<span class="ltags" aria-label="{% for l in t.langs %}{{ l.label }} {{ 'owned' if l.owned else 'missing' }}{{ ', ' if not loop.last }}{% endfor %}">
+          {%- for l in t.langs %}<span class="ltg ltg-{{ l.key }}{% if l.owned %} h{% endif %}">{{ l.tag }}</span>{% endfor %}</span>{% endif %}
       </span></span>
       <span class="n">{% if t.by_hand %}{{ cname(t.cover.name, t.cover.card_id) }}{% else %}{{ t.cover.set_name or t.cover.set_code }}{% endif %}</span>
-      <span class="t">{% if t.by_hand %}Added by you{% else %}{{ t.prints }} print{{ "s" if t.prints != 1 }}{% if t.prints_owned %} &middot; {{ t.prints_owned }} {{ icon("check", 14) }}{% endif %}{% endif %}</span>
+      <span class="t">{% if t.by_hand %}Added by you{% else %}<span aria-label="{{ t.prints_owned }} of {{ t.prints }} printings">{{ t.prints_owned }}/{{ t.prints }}</span>{% endif %}</span>
       <span class="p">{% if t.price is not none %}{{ t.price | money }}{% else %}<span class="muted" style="font-weight:400">No price</span>{% endif %}</span>
     </a>
   </div>
-{% endmacro %}
-{% set empty %}<p class="muted" style="grid-column:1/-1">{% if running %}The cards show here when they're in.{% elif show %}No arts match.{% else %}No {{ lang_names[lang] }} cards yet.{% endif %}</p>{% endset %}
-{% if rows is not none %}
-{# One row per era, newest first; View all opens that era as the full grid. #}
-<div class="era-rows" id="arts" data-dex="{{ dex }}" data-lang="{{ lang }}">
-  {% for r in rows %}
-  <section class="era-row" aria-labelledby="era-{{ r.key }}">
-    <div class="era-head"><h2 id="era-{{ r.key }}">{{ r.name }} <small>&middot; {{ r.tiles | length }} art{{ "s" if r.tiles | length != 1 }} &middot; {{ r.owned }} owned</small></h2>
-      <a href="{{ base ~ qs(lang=lang, show=show, sort=sort, era=r.key) }}">View all &rsaquo;</a></div>
-    <div class="era-strip">{% for t in r.tiles %}{{ art_tile(t) }}{% endfor %}</div>
-  </section>
-  {% else %}{{ empty }}
+  {% else %}
+  <p class="muted" style="grid-column:1/-1">{% if running %}The cards show here when they're in.{% elif show %}No arts match.{% else %}No cards yet.{% endif %}</p>
   {% endfor %}
 </div>
-{% else %}
-<div class="pgrid" id="arts" data-dex="{{ dex }}" data-lang="{{ lang }}">
-  {% for t in tiles %}{{ art_tile(t) }}{% else %}{{ empty }}{% endfor %}
-</div>
-{% endif %}
+<dialog class="cv-add art-sheet" id="art-sheet" aria-label="Edit art"><div data-art-body>Opening…</div></dialog>
 {% if checked %}<p class="muted" style="font-size:12px;margin-top:16px">Cards last checked {{ checked | long_date }}.</p>{% endif %}
 <script src="{{ asset("js/pokemon-art-tray.js") }}" data-open-art="{{ open_art or '' }}" data-open="{{ open or '' }}"></script>
 {% endif %}

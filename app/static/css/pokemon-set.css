@@ -6,6 +6,7 @@
   .pset .nm { font-size:20px; font-weight:600; line-height:1.15; min-width:0; }
   .pset .nm small { font-size:13px; color:var(--muted); font-weight:600; }
   .pset form { margin:0; }
+  .pset-acts { display:flex; gap:6px; align-items:center; }
   .pset form button { min-height:32px; padding:3px 10px; font-size:13px; }
   .done { grid-column:2 / -1; min-width:0; }
   .done summary { list-style:none; cursor:pointer; display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center; font-size:13px; font-variant-numeric:tabular-nums; }
@@ -20,9 +21,12 @@
   .ptile { min-width:0; font-size:13px; line-height:1.3; }
   .ptile > a { all:unset; display:block; width:100%; cursor:pointer; }
   .ptile > a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:8px; }
-  .modify-bar { display:flex; justify-content:flex-end; align-items:center; gap:10px; margin:10px 0 0; }
-  .modify-bar .muted { font-size:13px; margin-right:auto; }
-  .modify-bar button { min-height:38px; padding:4px 14px; }
+  /* Sort like a set page, and Edit arts beside it. */
+  .pbar { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:12px 0 0; }
+  .pbar .set-sort { margin:0; }
+  .pbar > button { min-height:38px; padding:4px 12px; white-space:nowrap; }
+  .modify-hint { font-size:13px; margin:6px 0 0; }
+  .pgrid#arts { margin-top:12px; }
   #arts.editing .stack .face { outline:2px dashed color-mix(in srgb, var(--accent) 60%, transparent); outline-offset:2px; }
   .stack { position:relative; padding:0 6px 6px 0; }
   .stack::before, .stack::after { content:""; position:absolute; border-radius:8px; background:var(--line); box-shadow:inset 0 0 0 1px rgba(0,0,0,.1); }
@@ -31,30 +35,23 @@
   .stack .face { position:relative; z-index:1; display:block; aspect-ratio:63/88; border-radius:8px; overflow:hidden; background:var(--surface); }
   .stack .face img.c { width:100%; height:100%; object-fit:cover; display:block; }
   .stack.have .face { box-shadow:0 0 0 3px var(--own); }
-  .stack .chs { position:absolute; left:4px; bottom:4px; z-index:2; color:#f5c400; font-size:18px; text-shadow:0 0 2px rgba(0,0,0,.7); }
+  .stack .chs { position:absolute; left:4px; top:4px; z-index:2; color:#f5c400; font-size:18px; text-shadow:0 0 2px rgba(0,0,0,.7); }
   .nopic { position:absolute; inset:0; display:grid; place-items:center; background:color-mix(in srgb, var(--accent) 10%, var(--surface)); }
   .nopic img { width:72%; image-rendering:pixelated; }
   .nopic b { position:absolute; left:6px; right:6px; bottom:6px; text-align:center; font-size:11px; background:rgba(31,29,34,.82); color:#fff; border-radius:4px; padding:2px; }
   .own { position:absolute; right:4px; top:4px; width:20px; height:20px; border-radius:50%; background:var(--own); color:var(--own-on); font-size:12px; display:grid; place-items:center; font-weight:600; z-index:2; }
-  .lt { position:absolute; left:4px; top:4px; background:rgba(255,255,255,.92); color:#1f1d22; font-size:11px; font-weight:600; border-radius:4px; padding:1px 4px; z-index:2; }
+  /* The languages an art is printed in, over the picture's bottom edge: filled when you have one, outlined when not. */
+  .ltags { position:absolute; left:4px; bottom:4px; z-index:2; display:flex; gap:3px; }
+  .ltg { font-size:10px; font-weight:700; line-height:13px; padding:1px 4px; border-radius:4px; border:1px solid rgba(255,255,255,.8);
+         background:rgba(20,20,22,.78); color:#fff; letter-spacing:.02em; }
+  .ltg.h.ltg-en { background:var(--lang-en); border-color:var(--lang-en); }
+  .ltg.h.ltg-ja { background:var(--lang-ja); border-color:var(--lang-ja); }
+  .ltg.h.ltg-zh { background:var(--lang-zh); border-color:var(--lang-zh); }
+  .edit-pen { display:none; position:absolute; right:4px; bottom:4px; z-index:2; width:24px; height:24px; border-radius:50%;
+              background:var(--accent); color:#fff; place-items:center; }
+  #arts.editing .edit-pen { display:grid; }
+  .face:has(.ltags) .nopic b { bottom:24px; }
+  .pset-tags > summary { text-align:center; }  /* the Pokémon's words, under the evolution line */
   .ptile .n { display:block; font-weight:600; margin-top:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ptile .t { display:block; color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ptile .p { display:block; font-weight:600; font-variant-numeric:tabular-nums; }
-  .ptile.open .stack .face { outline:2px solid var(--accent); outline-offset:2px; }
-  .tray { grid-column:1 / -1; background:color-mix(in srgb, var(--accent) 12%, var(--surface)); border-radius:12px; padding:10px; scroll-margin-top:calc(var(--head-h, 64px) + 8px); }
-  /* Era rows, newest first, swiped sideways; View all opens one era as the full grid. */
-  .era-rows { display:grid; gap:18px; margin-top:12px; }
-  .era-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:0 2px 8px; }
-  .era-head h2 { margin:0; font-size:17px; min-width:0; }
-  .era-head h2 small { font-size:13px; color:var(--muted); font-weight:600; }
-  .era-head a { flex:none; font-size:14px; font-weight:600; }
-  .era-strip { display:grid; grid-auto-flow:column; grid-auto-columns:calc((100% - 20px) / 3.15); gap:10px; overflow-x:auto;
-               scroll-snap-type:x proximity; padding-bottom:4px; scrollbar-width:none; overscroll-behavior-x:contain; }
-  .era-strip::-webkit-scrollbar { display:none; }
-  .era-strip > .ptile { scroll-snap-align:start; }
-  @media (min-width: 600px) { .era-strip { grid-auto-columns:140px; gap:14px; } }
-  @media (min-width: 900px) { .era-strip { grid-auto-columns:150px; } }
-  .era-row > .tray { margin-top:10px; }
-  .era-back { display:flex; align-items:center; gap:12px; }
-  .era-back a { display:inline-flex; align-items:center; gap:4px; font-size:14px; font-weight:600; }
-  .era-back h2 { margin:0; font-size:18px; }
