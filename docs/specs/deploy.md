@@ -10,18 +10,19 @@ guide; this spec holds the statements a change must keep true.
 
 ### Images and installing
 
-1. A release is one image, `ghcr.io/obiehq/dexstash`, built on GitHub for amd64 and arm64 when a Release is
-   published. It's pushed as `<version>`, `<major.minor>` and `latest` (not `latest` for a pre-release). The
-   release tag must match the app's version (`v0.28.0` for 0.28.0), or the build stops.
+1. A release is one image, `ghcr.io/mags-ob/dexstash`, built for amd64 and arm64 once a Release is published:
+   by the Image workflow when GitHub Actions is on, or by `python tools/release_image.py <tag>` on a
+   maintainer's machine when it's off. It's pushed as `<version>`, `<major.minor>` and `latest` (not `latest` for a pre-release). The
+   release tag must match the app's version (`v0.29.0` for 0.29.0), or the build stops.
 2. The same build attaches one image file per architecture to the GitHub Release
    (`dexstash-<version>-amd64.tar.gz` and `-arm64`, each with a `.sha256`), for a server that can't reach the
    registry. `docker load -i` then `DEXSTASH_VERSION=<version>` runs it without the registry.
-3. Actions › Image › Run workflow builds an existing release tag again.
+3. Actions › Image › Run workflow, or `tools/release_image.py`, builds an existing release tag again.
 4. Every pull request from this repository gets a test image tagged `pr-<number>`, rebuilt on each push and
    removed when the pull request closes.
 5. An install needs only two files from `main`: `docker-compose.yml` and, optionally, `.env` (started from
    `.env.example`). `docker compose up -d` fetches the image named in the compose file.
-6. `DEXSTASH_VERSION` picks the image: unset is `latest`, `0.28` follows the newest 0.28.x, `0.28.0` stays on
+6. `DEXSTASH_VERSION` picks the image: unset is `latest`, `0.29` follows the newest 0.29.x, `0.29.0` stays on
    one release, `pr-<number>` runs a test image.
 7. Building from source is the same compose file in a clone (or an unpacked release source) with
    `docker compose up -d --build`, from the `Dockerfile`.
@@ -135,6 +136,7 @@ guide; this spec holds the statements a change must keep true.
 
 - Files: `docker-compose.yml`, `Dockerfile`, `.env.example`, `deploy/entrypoint.sh`, `deploy/Caddyfile`.
 - Workflows: `.github/workflows/image.yml` (release images and files), `pr-image.yml` (test images).
+- Tools: `tools/release_image.py` (release images and files built locally, while Actions is off).
 - Code: `app/settings.py`, `app/main.py` (proxy, https, Origin check), `app/startup.py`, `app/db.py`,
   `app/backup.py`, `app/reset.py`, `app/keys.py`, `app/activity.py`.
 - Pages: Account › Backups, Account › Data sources (Settings, Scanning, Prices › API keys, Activity log,

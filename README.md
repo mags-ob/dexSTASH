@@ -7,7 +7,7 @@
 <p align="center">
 <a href="LICENSE"><img src="https://img.shields.io/badge/licence-AGPL--3.0-blue" alt="Licence: AGPL-3.0"></a>
 <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.28.0-purple" alt="Version 0.28.0"></a>
-<a href="https://github.com/obiehq/dexSTASH/actions/workflows/tests.yml"><img src="https://github.com/obiehq/dexSTASH/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+<a href="https://github.com/mags-ob/dexSTASH/actions/workflows/tests.yml"><img src="https://github.com/mags-ob/dexSTASH/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
 </p>
 
 <p align="center">
@@ -44,8 +44,8 @@ dexSTASH is a Docker app. Download the compose file and settings, then start it:
 
 ```sh
 mkdir dexstash && cd dexstash
-curl -fsSLO https://raw.githubusercontent.com/obiehq/dexSTASH/main/docker-compose.yml
-curl -fsSL -o .env https://raw.githubusercontent.com/obiehq/dexSTASH/main/.env.example
+curl -fsSLO https://raw.githubusercontent.com/mags-ob/dexSTASH/main/docker-compose.yml
+curl -fsSL -o .env https://raw.githubusercontent.com/mags-ob/dexSTASH/main/.env.example
 docker compose up -d
 ```
 
@@ -53,7 +53,7 @@ docker compose up -d
 
 ## Where data comes from
 
-dexSTASH uses a few open sources for the card catalogue and everyday prices, plus official APIs you give it a key for. A few picture and data sites have a switch under Data sources › Price and picture sites; a new install starts with each of them off, and turning one off never deletes anything. Every request names itself with the User-Agent `dexSTASH/<version> (+https://github.com/obiehq/dexSTASH)`.
+dexSTASH uses a few open sources for the card catalogue and everyday prices, plus official APIs you give it a key for. A few picture and data sites have a switch under Data sources › Price and picture sites; a new install starts with each of them off, and turning one off never deletes anything. Every request names itself with the User-Agent `dexSTASH/<version> (+https://github.com/mags-ob/dexSTASH)`.
 
 ### Always on
 
@@ -148,7 +148,7 @@ The app is FastAPI with Jinja templates and htmx, and SQLite. There's no JavaScr
 ### Building from source
 
 ```sh
-git clone https://github.com/obiehq/dexSTASH.git dexstash
+git clone https://github.com/mags-ob/dexSTASH.git dexstash
 cd dexstash
 cp .env.example .env
 docker compose up -d --build
@@ -158,8 +158,8 @@ The rest of [Quick start](#quick-start) is the same. To update, `git pull` and r
 
 ## Getting help
 
-- **Questions and ideas:** [GitHub Discussions](https://github.com/obiehq/dexSTASH/discussions).
-- **Something broken:** [open an issue](https://github.com/obiehq/dexSTASH/issues/new/choose); the form asks for your version and what you saw.
+- **Questions and ideas:** [GitHub Discussions](https://github.com/mags-ob/dexSTASH/discussions).
+- **Something broken:** [open an issue](https://github.com/mags-ob/dexSTASH/issues/new/choose); the form asks for your version and what you saw.
 - **A security problem:** don't open an issue; [SECURITY.md](SECURITY.md) says how to report it privately.
 
 ## Contributing, security and licence
