@@ -49,6 +49,15 @@ How dexSTASH is built. They may change by a reviewed pull request, but they neve
   part does updates its spec in the same pull request, or says why the spec doesn't change.
 - A spec is written from the current code the first time an issue touches that part.
 
+## Plans
+
+- Every plan has a wireframe or mockup of each screen the change adds or changes, at phone width, linked from
+  the Plan section of the issue body or attached to it as an image. A linked page must open for anyone with the
+  link ([core rules](core.md)). A change with no screen changes says "Wireframe: no screen changes".
+- No code is written until the plan, with its wireframe or mockup, has the maintainer's go.
+- When a check or feedback on a pull request finds a problem, the work goes back to the plan: the Plan section
+  and the wireframe or mockup are updated and get a new go before any more code changes.
+
 ## Branches, commits and pull requests
 
 - Branches: `feature/`, `fix/`, `docs/`, `chore/`, `refactor/` or `test/`, then a short name for the change in
