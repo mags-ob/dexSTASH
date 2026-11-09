@@ -12,7 +12,7 @@ def test_a_card_tcgdex_cant_load_gets_the_apps_own_page(client, monkeypatch, cap
     monkeypatch.setitem(web._other_apis, "ja", OfflineAPI())
     r = client.get("/preview/ja/neo2-036")
     assert r.status_code == 502 and r.headers["x-dexstash-page"] == "error"
-    assert "Couldn't load this card" in r.text and "Your server and your stash are fine" in r.text
+    assert "Couldn't load this card" in r.text and "TCGdex is busy and page detail can't load right now. Try again in a minute." in r.text
     assert 'href="http://testserver/preview/ja/neo2-036"' in r.text and "data-go-back" in r.text
     assert 'class="tabs' in r.text or "has-tabs" in r.text  # the header and tabs, not a bare page
     assert "neo2-036" in caplog.text  # the reason is logged

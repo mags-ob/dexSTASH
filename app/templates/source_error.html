@@ -6,10 +6,7 @@
 {% block content %}
 <link rel="stylesheet" href="{{ asset("css/source-error.css") }}">
 <div class="source-error">
-  {% if what == "card" %}<p>TCGdex, where card details come from, didn't answer just now.
-  {%- elif what == "set" %}<p>TCGdex, where set lists come from, didn't answer just now.
-  {%- else %}<p>A site this page needs didn't answer just now.{% endif %} Your server and your stash are fine.</p>
-  <p>Try again in a minute.</p>
+  <p>TCGdex is busy and page detail can't load right now. Try again in a minute.</p>
   <a class="btn" href="{{ again }}">Try again</a>
   <a class="btn quiet" href="/" data-go-back>Back</a>
 </div>
