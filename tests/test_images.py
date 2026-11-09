@@ -87,7 +87,7 @@ def test_an_existing_release_can_be_built_again_by_hand():
 def test_compose_uses_the_release_image_and_can_build_it():
     services = _yaml(ROOT / "docker-compose.yml")["services"]
     for name in ("app", "scanner"):
-        assert services[name]["image"] == "ghcr.io/obiehq/dexstash:${DEXSTASH_VERSION:-latest}"
+        assert services[name]["image"] == "ghcr.io/mags-ob/dexstash:${DEXSTASH_VERSION:-latest}"
         assert services[name]["build"] == "."   # docker compose up -d --build
         assert "pull_policy" not in services[name]
         assert services[name]["env_file"] == [{"path": ".env", "required": False}]   # starts without one
@@ -107,8 +107,8 @@ def test_deploy_explains_published_and_test_images():
     deploy = (ROOT / "DEPLOY.md").read_text(encoding="utf-8")
     for heading in ("### Using a release image", "### Trying a pull request"):
         assert heading in deploy
-    assert "docker load -i dexstash-" in deploy and "DEXSTASH_VERSION=0.28.0" in deploy
+    assert "docker load -i dexstash-" in deploy and "DEXSTASH_VERSION=0.29.0" in deploy
     assert "DEXSTASH_VERSION=pr-<number>" in deploy and "docker compose pull" in deploy
     assert "`test image` label" in deploy
-    assert "raw.githubusercontent.com/obiehq/dexSTASH/main/.env.example" in deploy
+    assert "raw.githubusercontent.com/mags-ob/dexSTASH/main/.env.example" in deploy
     assert "DEXSTASH_IMAGE" not in deploy and "DEXSTASH_PULL_POLICY" not in deploy

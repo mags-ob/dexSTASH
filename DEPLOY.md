@@ -18,8 +18,8 @@ Make a folder on the server, for example `/opt/dexstash` (on a NAS, a folder in 
 
 ```sh
 cd /opt/dexstash
-sudo curl -fsSLO https://raw.githubusercontent.com/obiehq/dexSTASH/main/docker-compose.yml
-sudo curl -fsSL -o .env https://raw.githubusercontent.com/obiehq/dexSTASH/main/.env.example
+sudo curl -fsSLO https://raw.githubusercontent.com/mags-ob/dexSTASH/main/docker-compose.yml
+sudo curl -fsSL -o .env https://raw.githubusercontent.com/mags-ob/dexSTASH/main/.env.example
 ```
 
 That's all the app needs: the image comes ready-built (see Using a release image). To build it on your server instead, clone the repository (or unpack a release's source) into the folder and start it with `--build`.
@@ -159,17 +159,17 @@ With an image file (below), updating is loading the new release's file and chang
 
 ### Using a release image
 
-Each release is built on GitHub, so your server doesn't have to build it. `docker-compose.yml` names it, `ghcr.io/obiehq/dexstash`, and `docker compose up -d` fetches it.
+Each release is built on GitHub, so your server doesn't have to build it. `docker-compose.yml` names it, `ghcr.io/mags-ob/dexstash`, and `docker compose up -d` fetches it.
 
-**Pick a version** (optional) in `.env`: `DEXSTASH_VERSION=0.28` follows the newest 0.28.x, `0.28.0` stays on one release, and left out it's `latest`, which follows every release. To update, run `sudo docker compose pull && sudo docker compose up -d`.
+**Pick a version** (optional) in `.env`: `DEXSTASH_VERSION=0.29` follows the newest 0.29.x, `0.29.0` stays on one release, and left out it's `latest`, which follows every release. To update, run `sudo docker compose pull && sudo docker compose up -d`.
 
 **Or load the file** attached to the release (the repository's Releases page), for a server that can't reach the registry: `dexstash-<version>-amd64.tar.gz` for most servers and NAS boxes, or `-arm64` for ARM ones (a Raspberry Pi, say). Copy it into the app's folder and load it:
 
 ```sh
-sudo docker load -i dexstash-0.28.0-amd64.tar.gz      # prints: Loaded image: ghcr.io/obiehq/dexstash:0.28.0
+sudo docker load -i dexstash-0.29.0-amd64.tar.gz      # prints: Loaded image: ghcr.io/mags-ob/dexstash:0.29.0
 ```
 
-Then set `DEXSTASH_VERSION=0.28.0` in `.env` and run `sudo docker compose up -d`: it uses the loaded image without reaching the registry. To update, load the next release's file and change the version. You still need `docker-compose.yml` and `.env` in the folder (and `deploy/Caddyfile` for the bundled Caddy). `sudo docker image prune` removes old versions once you no longer need to go back to them.
+Then set `DEXSTASH_VERSION=0.29.0` in `.env` and run `sudo docker compose up -d`: it uses the loaded image without reaching the registry. To update, load the next release's file and change the version. You still need `docker-compose.yml` and `.env` in the folder (and `deploy/Caddyfile` for the bundled Caddy). `sudo docker image prune` removes old versions once you no longer need to go back to them.
 
 ### Trying a pull request
 

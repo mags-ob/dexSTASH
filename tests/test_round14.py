@@ -107,7 +107,7 @@ def test_one_user_agent_for_every_site(switches):
     with sites.client(transport=transport, headers={"User-Agent": "Mozilla/5.0"}) as c:
         c.get("https://api.tcgdex.net/v2/en/sets")
         c.get("https://tcgcsv.com/tcgplayer/3/groups")
-    assert seen == [f"dexSTASH/{__version__} (+https://github.com/obiehq/dexSTASH)"] * 2
+    assert seen == [f"dexSTASH/{__version__} (+https://github.com/mags-ob/dexSTASH)"] * 2
     for path in (ROOT / "app").rglob("*.py"):
         text = path.read_text()
         assert "Mozilla" not in text and "httpx.get(" not in text and "httpx.Client(" not in text or path.name == "sites.py", path
