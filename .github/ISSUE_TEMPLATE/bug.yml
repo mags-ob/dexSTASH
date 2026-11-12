@@ -1,68 +1,21 @@
 name: Bug
-description: Something dexSTASH does wrong.
+description: Something doesn't work as expected
 labels: ["bug"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        For a security problem, don't open an issue: see SECURITY.md. Leave out server names, addresses,
-        passwords, keys and anything else personal, including in screenshots and logs.
   - type: textarea
-    id: what
+    id: repro
     attributes:
-      label: What happened
+      label: Steps to reproduce
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: What you expected
+      label: Expected and actual behaviour
     validations:
       required: true
   - type: textarea
-    id: steps
+    id: plan
     attributes:
-      label: Steps to make it happen
-      placeholder: |
-        1. Open ...
-        2. Tap ...
-    validations:
-      required: true
-  - type: input
-    id: version
-    attributes:
-      label: Version
-      description: Account › About shows it.
-      placeholder: 0.29.0
-    validations:
-      required: true
-  - type: input
-    id: device
-    attributes:
-      label: Device and browser
-      placeholder: iPhone, Safari, added to Home Screen
-  - type: dropdown
-    id: area
-    attributes:
-      label: Part of the app
-      multiple: true
-      options:
-        - scanning
-        - prices
-        - collection (My Stash)
-        - binders
-        - chases
-        - sets and search
-        - sharing
-        - accounts and setup
-        - data model
-        - data sources
-        - design system
-        - deploy
-        - not sure
-  - type: textarea
-    id: logs
-    attributes:
-      label: Logs
-      description: From `docker compose logs app`, with anything personal removed.
-      render: text
+      label: Plan
+      description: Optional for reporters. The maintainer or an assistant fills this in during Define.

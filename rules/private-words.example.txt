@@ -1,0 +1,5 @@
+# Copy to rules/private-words.txt (git-ignored) and add your own.
+# One word or phrase per line, matched case-insensitively against added lines.
+# Examples: your full name, home address, personal email, phone, employer.
+example-name
+example@example.com

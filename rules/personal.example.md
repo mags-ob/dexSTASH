@@ -2,7 +2,7 @@
 
 Copy this file to `rules/personal.md` to add your own preferences for the AI assistant you work with. That
 file is ignored by git, so it never reaches the repository. Personal rules can add to the
-[core](core.md) and [project](project.md) rules but never loosen them.
+[core](core.md) rules and the project rules in [AGENTS.md](../AGENTS.md) but never loosen them.
 
 Things that belong here:
 

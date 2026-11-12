@@ -1,0 +1,36 @@
+name: Process change
+description: Change how the workflow, agents, concepts, lifecycle or contribution rules work
+labels: ["process"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this only to change the process itself (AGENTS.md, agents/, docs/lifecycle.md,
+        docs/github-setup.md, CONTRIBUTING.md, issue and PR templates, tools/).
+        Product work is a Bug or a Feature. Process files can't be changed from those.
+  - type: textarea
+    id: change
+    attributes:
+      label: What should change in the process
+      description: Which rule, agent, phase, template or concept, and what it should say instead.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: What went wrong or got in the way. Link the issue or pull request where it came up.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: What changes for the maintainer, contributors and assistants, and anything that must be re-set up (labels, board, settings).
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Plan
+      description: The files to edit and the wording of the change. Filled in during Define.
