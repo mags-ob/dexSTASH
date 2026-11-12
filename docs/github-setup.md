@@ -6,7 +6,7 @@ GitHub Actions. Do it once, in this order.
 
 ## 1. Repository
 
-- The repository is `obiehq/dexSTASH`. `.github/CODEOWNERS` names the maintainer.
+- The repository is `mags-ob/dexSTASH`. `.github/CODEOWNERS` names the maintainer.
 - **Settings > General > Features:** turn on Issues, Projects and (optional)
   Discussions. Turn off Wikis.
 - **Pull Requests:** allow squash merging only, default to the pull request
