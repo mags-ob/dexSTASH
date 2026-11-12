@@ -4,9 +4,9 @@ These rules protect the people who run dexSTASH, the sources it takes data from,
 No project or personal rule may loosen them, and no task is a reason to work around them. If a change would
 break one, stop and raise it on the issue.
 
-Each rule says how it is checked. "Actions" means a check in the Checks workflow
-(`.github/workflows/checks.yml`, using `tools/check_rules.py` and gitleaks) fails the pull request. "Review" means
-a person or assistant checks it while reviewing.
+Each rule says how it is checked. "The scan" means `tools/scan.sh`, which runs on your machine (a commit hook,
+and before every push) using `tools/check_rules.py` and gitleaks, and reports what it finds. "Review" means a
+person or assistant checks it while reviewing.
 
 ## 1. Nothing personal in the repository
 
@@ -18,7 +18,7 @@ a person or assistant checks it while reviewing.
   Commit messages, pull requests and issues carry no links to pages only one person can open, such as an AI
   assistant's sessions or projects.
 - Examples use the user `misty`, the domain `cards.example.com` and paths like `/srv/docker/dexstash`.
-- Checked by: Actions (patterns such as home-server paths, private addresses and e-mail addresses, in every file
+- Checked by: the scan (patterns such as home-server paths, private addresses and e-mail addresses, in every file
   and every commit's author, committer and message; the check never lists anyone's real details, since the check
   itself is public) and review.
 
@@ -27,7 +27,7 @@ a person or assistant checks it while reviewing.
 - No passwords, API keys, tokens, secret keys or `.env` files. A key a host enters in the app lives in their
   `data/` folder (`api_keys.json`), never in code, logs or backups.
 - Never read or print a host's `.env` or `data/` files while helping them.
-- Checked by: Actions (gitleaks scans every commit; a false alarm goes in `.gitleaks.toml`, matched by file and line, with a reason) and
+- Checked by: the scan (gitleaks scans every commit; a false alarm goes in `.gitleaks.toml`, matched by file and line, with a reason) and
   review.
 
 ## 3. Respect the data sources
@@ -42,7 +42,7 @@ a person or assistant checks it while reviewing.
 - **Downloaded data is never committed.** That covers card data, card pictures, sprites, Pokédex text,
   Bulbapedia text, the Chinese datasets, prices and models. NOTICE.md lists each source and its terms. Add a
   row there for any new source.
-- Checked by: Actions (tests in `tests/test_core_rules.py` keep the blocked sites blocked; the rules check refuses
+- Checked by: tests (`tests/test_core_rules.py` keeps the blocked sites blocked), the scan (refuses
   databases, the data folder, models and bundles) and review.
 
 ## 4. Licence and credit

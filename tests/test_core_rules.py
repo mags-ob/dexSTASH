@@ -75,12 +75,17 @@ def test_private_words_are_reported_without_being_printed():
     assert not _problems("a rainbowboxes word", [r"(?<![\w-])rainbowbox(?![\w-])"])
 
 
-def test_private_words_come_from_the_environment(monkeypatch):
+def test_private_words_come_from_the_environment_and_the_list_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(check_rules, "ROOT", tmp_path)
     monkeypatch.setenv("DEXSTASH_PRIVATE_WORDS", " Rainbowbox , ,Other Name ")
     words = check_rules.private_words()
     assert len(words) == 2 and words[1].search("see other name here")
     monkeypatch.delenv("DEXSTASH_PRIVATE_WORDS")
     assert check_rules.private_words() == []
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "private-words.txt").write_text("# a comment\nWaterflower\n\nthird word\n")
+    words = check_rules.private_words()
+    assert len(words) == 2 and words[0].search("Misty WATERFLOWER") and words[1].search("a third word")
 
 
 @pytest.mark.parametrize("path", [".env", "deploy/.env", "data/dexstash.db", "x.sqlite3-wal", "app/models/clip.onnx",
@@ -130,35 +135,3 @@ def test_a_commit_with_noreply_addresses_passes(tmp_path, monkeypatch):
 def test_a_private_word_in_a_commit_is_found(tmp_path, monkeypatch):
     _repo_with_commit(tmp_path, monkeypatch, "Misty Waterflower", "1+m@users.noreply.github.com", "Add a thing")
     assert check_rules.check_history([re.compile("waterflower", re.I)])
-
-
-# --- The spec rule ------------------------------------------------------------------------------------------------
-
-def test_an_app_change_needs_a_spec_change_or_a_reason():
-    assert check_rules.spec_problem(["app/prices.py", "tests/test_x.py"], "Fixes rounding.")
-    assert check_rules.spec_problem(["app/prices.py"], "") is not None
-
-
-@pytest.mark.parametrize("changed,body", [
-    (["app/prices.py", "docs/specs/prices.md"], ""),
-    (["app/prices.py"], "Fixes rounding.\n\nSpec: no change, the rule was already in prices.md"),
-    (["app/prices.py"], "- **Spec:** no change, internal tidy-up"),
-    (["README.md", "tests/test_x.py"], ""),
-    ([], ""),
-])
-def test_the_spec_rule_passes(changed, body):
-    assert check_rules.spec_problem(changed, body) is None
-
-
-def test_an_empty_spec_line_is_not_a_reason():
-    assert check_rules.spec_problem(["app/prices.py"], "Spec:\n")
-
-
-@pytest.mark.parametrize("name", ["feature/release-image-files", "fix/login-lockout", "chore/bump-pillow"])
-def test_branches_named_for_their_change_pass(name):
-    assert check_rules.branch_problem(name) is None
-
-
-@pytest.mark.parametrize("name", ["claude/project-thread-jcy2ot", "main", "feature/Release_Images", "round29"])
-def test_other_branch_names_are_refused(name):
-    assert check_rules.branch_problem(name)

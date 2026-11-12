@@ -2,6 +2,11 @@
 
 Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor version, and a round shipped in parts raises the patch version for each later part. On start, a new version backs up the database before changing it; an older version won't start on a database a newer one has changed (see "Updating" in the README).
 
+## Unreleased
+
+### Changed
+- **A new way of working:** issues are Bug, Feature or Process change, and move through Define, Build, Validate and Done ([docs/lifecycle.md](docs/lifecycle.md)). The old required checks are gone; the secrets and personal-details scan runs on your machine (`tools/scan.sh`, from the git hooks). Private words now live in the git-ignored `rules/private-words.txt` instead of a repository secret. `rules/project.md` moved into AGENTS.md, and the Checks workflow, the description workflow and `tools/local_checks.py` are removed.
+
 ## 0.29.0
 
 Round 29: one grid for a followed Pokémon's or artist's cards in every language, the release image under its new name, and images built without GitHub Actions. No database step.

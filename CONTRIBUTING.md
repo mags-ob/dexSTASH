@@ -1,18 +1,33 @@
 # Contributing
 
-Thanks for helping. Bug reports, ideas and pull requests are all welcome. If you work with an AI coding assistant, point it at [AGENTS.md](AGENTS.md), which lists the rules every change follows. For a security problem, see [SECURITY.md](SECURITY.md) instead.
+Everyone, including AI assistants, follows the same path. See
+[docs/lifecycle.md](docs/lifecycle.md) for detail.
 
-## Issues, labels and the board
+1. **Open an issue** with the Bug, Feature or Process change form. There are no
+   other options. A Process change is for changing the workflow, agents,
+   concepts or lifecycle themselves; only the maintainer approves those.
+2. **Define:** the issue gets acceptance criteria, UI/UX and a plan. The
+   maintainer says **go** before any code is written.
+3. **Build:** work on a branch (`feature/`, `fix/`, `docs/`, `chore/`,
+   `refactor/` or `test/` plus a short name) and open a pull request that
+   says `Closes #<issue>`, with tests and the spec updated.
+4. **Validate:** review and checks. The maintainer approves and merges.
+5. **Done:** merged work is bundled into a release.
 
-Every change starts as an issue, opened from one of the three forms: **Feature**, **Bug** or **Spec**. Each
-form adds its type label. Other labels:
+Contributors may propose and discuss at any stage. Only the maintainer passes
+the Go and Approved gates, merges, and publishes releases. Nothing else blocks
+a merge: there are no required status checks, and the Validate checklist is
+advisory.
 
-- `area: ...` says which part of the app it touches, matching the specs in [docs/specs/](docs/specs/README.md).
-- `db-step` marks a change with a database step: older versions won't start on the upgraded database.
-- `needs-decision` and `blocked` say why an issue can't move yet.
-
-Where an issue is in its life lives on the project board, not in labels: **Backlog** (written, not planned),
-**Ready** (planned and approved), **In progress**, **In review** (a pull request is open) and **Done**.
+- Write access is by invitation. Everyone else forks and opens a pull request.
+- Open the issue and wait for a go before sending a pull request for a feature;
+  small fixes can go straight to a pull request.
+- Run `git config core.hooksPath tools/hooks` once. Commits are scanned locally
+  for secrets and personal information (`tools/scan.sh`), and a push also runs
+  ruff, the rules check and the tests (`git push --no-verify` skips it once).
+  Install gitleaks (`brew install gitleaks`). Copy
+  `rules/private-words.example.txt` to `rules/private-words.txt` and add your
+  own words; that file is never committed.
 
 ## Running it
 
@@ -23,36 +38,20 @@ python -m pytest
 DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
 ```
 
-The tests need no network: every outside request is replaced with a fake one. `tools/demo_data.py` makes a demo collection to click around in. Every pull request and every push to `main` runs the same tests on GitHub Actions, and a release image is only built after they pass (while Actions is off, a maintainer builds it with `python tools/release_image.py <tag>` after the release's pull request has merged). The Checks workflow also runs `ruff check .`, `python tools/check_rules.py` (personal details, files that must never be committed, and the spec rule), gitleaks and pip-audit.
-
-Run the quick ones before you push. `git config core.hooksPath tools/hooks` turns on a hook that runs ruff, the rules check and the tests on every `git push` (and gitleaks, if it's installed), so a failure shows up on your machine instead of on GitHub. `git push --no-verify` skips it once.
-
-When GitHub Actions is switched off for the repository, a maintainer runs the checks for a pull request on their own machine instead: `python tools/local_checks.py <number>`, from any branch. It checks out the pull request's last commit in a temporary folder. It runs each check and reports the result on the pull request under the same name as the Actions job, so the checks `main` requires still pass or fail. It needs the GitHub CLI signed in, gitleaks, `pip install ruff`, and `DEXSTASH_PRIVATE_WORDS` set the same as the repository secret. The tests and pip-audit run directly when the project's packages are installed, and in Docker when they can't be (onnxruntime has nothing for Intel Macs). Where neither works, those two are left out: `main` requires only lint, the rules check and gitleaks, so whoever makes a change runs the tests before pushing.
-
-On Windows, set `PYTHONUTF8=1` first (PowerShell: `$env:PYTHONUTF8 = "1"`). The few Linux-only tests (file permissions, process priority, open files) are skipped there.
-
-## How the code is laid out
-
-[docs/architecture.md](docs/architecture.md) has the diagrams and a map from each page to its route, logic and tables. In short:
-
-- `app/routes/` has one module of pages per topic; `app/web.py` holds what they share (templates, sign-in checks, background workers).
-- Logic lives in plain modules in `app/` and takes a database connection, so it can be tested without the web layer.
-- Templates are Jinja with htmx in `app/templates/`. There's no JavaScript build step.
-- A database change is a new numbered `_step_N` in `app/db.py`, raising `LATEST`. Never change an existing step.
-- Your own data's tables are in `app/schema.sql`; downloaded data that can be fetched again (card lists, price quotes, Find's card catalog) goes in `app/catalog.sql`, which lives in `dexstash-catalog.db` and is never backed up.
-- A shown price comes only from `prices.resolve`: a new price source writes quotes to `price_quotes`, and the main price is the average of a printing's sources.
-- Every request to another site goes through `app/sites.py`, which sets the User-Agent and refuses sites that are switched off.
-
-## Style
-
-- Match the code around you: short functions, plain names, and a docstring saying what a function gives back.
-- Comments and anything the app shows people are plain English: full sentences, no jargon.
-- Add a test for each change, next to the tests for that area in `tests/`.
-- Searches and page loads come first. Slow work goes to a background worker.
+The tests need no network: every outside request is replaced with a fake one.
+`tools/demo_data.py` makes a demo collection to click around in. On Windows, set
+`PYTHONUTF8=1` first. The code is mapped in
+[docs/architecture.md](docs/architecture.md), and the project's code rules are in
+[AGENTS.md](AGENTS.md#project).
 
 ## What must never be committed
 
-- Card data, card pictures, sprites, Pokédex text, Bulbapedia text, Chinese dataset files, prices or models. They're downloaded into `data/` while the app runs, under their owners' terms (see [NOTICE.md](NOTICE.md)).
-- `.env`, `data/`, or anything with a real domain, server name, password or key in it. Examples use `misty` and `cards.example.com`.
+- Card data, card pictures, sprites, Pokédex text, Bulbapedia text, Chinese
+  dataset files, prices or models. They're downloaded into `data/` while the app
+  runs, under their owners' terms (see [NOTICE.md](NOTICE.md)).
+- `.env`, `data/`, or anything with a real domain, server name, password or key
+  in it. Examples use `misty` and `cards.example.com`.
 
-By contributing you agree that your contribution is licensed under the [AGPL-3.0](LICENSE), like the rest of dexSTASH.
+Using an AI assistant? Point it at [AGENTS.md](AGENTS.md). For a security
+problem, see [SECURITY.md](SECURITY.md). By contributing you agree that your
+contribution is licensed under the [AGPL-3.0](LICENSE).
