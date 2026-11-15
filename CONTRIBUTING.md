@@ -54,7 +54,7 @@ The tests need no network: every outside request is replaced with a fake one.
 - A database change is a new numbered `_step_N` in `app/db.py`, raising `LATEST`. Never change an existing step.
 - Your own data's tables are in `app/schema.sql`; downloaded data that can be fetched again (card lists, price quotes, Find's card catalog) goes in `app/catalog.sql`, which lives in `dexstash-catalog.db` and is never backed up.
 - A shown price comes only from `prices.resolve`: a new price source writes quotes to `price_quotes`, and the main price is the average of a printing's sources.
-- Every request to another site goes through `app/sites.py`, which sets the User-Agent and refuses sites that are switched off.
+- Every request to another site goes through `app/sites.py`, which sets the User-Agent, refuses sites that are switched off, and paces background requests per site.
 
 ## What must never be committed
 

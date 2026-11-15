@@ -1,0 +1,5 @@
+/* The page another site didn't answer for (source_error.html). */
+.source-error { text-align:center; padding:24px 0; }
+.source-error p { margin:0 0 12px; }
+.source-error .btn { display:flex; width:min(260px, 100%); margin:10px auto 0; }
+.source-error .btn.quiet { background:var(--surface); color:var(--fg); border:1px solid var(--line); }
