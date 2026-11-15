@@ -46,7 +46,7 @@ deleted. Phase is not a label: it is the board column.
 | Label | Kind | Set by | Meaning |
 | --- | --- | --- | --- |
 | `bug` | Type | Bug form | Something doesn't work as expected |
-| `feature` | Type | Feature form | A new capability or change. Docs, chores, refactors and tests also use this |
+| `feature` | Type | Feature form | A new capability, change, docs, chore or refactor |
 | `process` | Type | Process change form | A change to the workflow, agents, lifecycle or other process files (not product.md or concepts.md). The only type that may edit them |
 | `small` | Size | Maintainer | Short Define: the issue body is the plan (see [Small changes](lifecycle.md#small-changes)) |
 | `docs` | Scope | Maintainer | Documentation only; no code changes |
@@ -70,9 +70,9 @@ them, and they never replace the type labels or describe the phase.
 | Label | Kind | Set by | Meaning |
 | --- | --- | --- | --- |
 | `db-step` | Scope | Maintainer | The change adds a database step: older versions won't start on the upgraded database |
-| `accessibility` | Scope | Maintainer | About keyboard use, labels, contrast or screen readers |
+| `accessibility` | Scope | Maintainer | Barrier affecting people with disabilities |
 | `help wanted` | Community | Maintainer | Open for a contributor to take |
-| `good first issue` | Community | Maintainer | A good start for a new contributor |
+| `good first issue` | Community | Maintainer | Good for newcomers |
 
 Remove the old labels `area: ...`, `spec`, `chore`, `documentation`, `enhancement`, `invalid`, `question`,
 `already-built`, `test image` and `needs-decision` (use `needs-info`) after relabelling any issue that has them.
@@ -98,8 +98,8 @@ Merged and Released are not columns. Releases are tags on `main`.
 
 ## 6. Local tools (each contributor)
 
-- `git config core.hooksPath tools/hooks` (the commit hook runs the scan; the push hook runs ruff, the rules
-  check, gitleaks and the tests)
+- `git config core.hooksPath tools/hooks` (the commit hook runs the scan; the push hook runs ruff and the
+  rules check, then gitleaks and pip-audit when installed, then the tests)
 - Install gitleaks (`brew install gitleaks`).
 - Copy `rules/private-words.example.txt` to `rules/private-words.txt` and add
   your own words. This file is git-ignored.

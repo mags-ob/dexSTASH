@@ -25,4 +25,4 @@ body:
     id: plan
     attributes:
       label: Plan
-      description: UI/UX (wireframe or "no screen changes") and development plan. Filled in during Define.
+      description: 'Changes (what the app does now and what will change), UI/UX (wireframe or "UI/UX: no screen changes"), development plan and Docs impact. Filled in during Define.'
