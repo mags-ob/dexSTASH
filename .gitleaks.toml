@@ -1,4 +1,4 @@
-# gitleaks settings for the Secrets check (.github/workflows/checks.yml): the built-in rules, plus the known
+# gitleaks settings for the secrets scan (tools/scan.sh, tools/hooks/pre-push): the built-in rules, plus the known
 # false alarms below. Each one is matched by file and by the words on its line, never by commit id, so it
 # keeps working when history is rewritten.
 [extend]

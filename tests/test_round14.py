@@ -49,7 +49,7 @@ def test_no_address_is_answered_by_a_different_page_than_before():
 
 
 # --- 3: the old name is gone ----------------------------------------------------------------------
-# The old name is out of the code and its history; the Checks workflow's private word list (a repository secret,
+# The old name is out of the code and its history; the local private word list (rules/private-words.txt,
 # see tools/check_rules.py) keeps it, and anyone's personal details, from coming back.
 
 OLD = "oldapp"  # any name other than dexstash stands in for the old one

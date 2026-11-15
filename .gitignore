@@ -7,3 +7,4 @@ __pycache__/
 export.csv
 .pytest_cache/
 rules/personal.md
+rules/private-words.txt
