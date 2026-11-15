@@ -4,8 +4,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
@@ -56,7 +58,11 @@ def _failed_page() -> Response:
                                 "database from before the upgrade (if there's none, your database wasn't changed).")
     return HTMLResponse(FAILED_PAGE.format(name=html.escape(settings.app_name()), version=__version__,
                                            error=html.escape(failed["error"]), backup=backup_line),
-                        status_code=503, headers={"Cache-Control": "no-store", "Retry-After": "60"})
+                        status_code=503, headers={"Cache-Control": "no-store", "Retry-After": "60", **APP_ERROR})
+
+
+# On an error page the app itself sends, so the service worker shows it instead of "Can't reach your server" (pwa.py).
+APP_ERROR = {"X-Dexstash-Page": "error"}
 
 
 # No /docs, /redoc or /openapi.json.
@@ -191,6 +197,23 @@ def _to_welcome(request: Request, exc: SetupPending):
     if request.headers.get("HX-Request"):
         return Response(status_code=204, headers={"HX-Redirect": "/welcome"})
     return RedirectResponse("/welcome", status_code=303)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _http_error(request: Request, exc: StarletteHTTPException):
+    """A 502 (another site, mostly TCGdex, didn't answer) on a page load: the app's own "Couldn't load this card"
+    page, marked so the service worker doesn't swap it for the offline page. Everything else as FastAPI does it."""
+    if exc.status_code != 502 or request.method != "GET" or request.headers.get("HX-Request"):
+        return await http_exception_handler(request, exc)
+    log.warning("%s: %s", request.url.path, exc.detail)
+    try:
+        user = web.signed_in(request)
+    except LoginRequired:
+        user = None
+    path = request.url.path
+    what = "card" if path.startswith(("/preview/", "/cards/")) else "set" if path.startswith(("/set-preview/", "/sets/")) else "page"
+    return web.templates.TemplateResponse(request, "source_error.html", {"user": user, "what": what, "again": str(request.url)},
+                                          status_code=502, headers={**APP_ERROR, "Cache-Control": "no-store"})
 
 
 # In the order the pages were first written, so no address reaches a different page than before.

@@ -79,7 +79,7 @@
       let fromHere = false;
       try { fromHere = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (err) {}
       document.addEventListener("click", e => {
-        const b = e.target.closest("a.back-fab");
+        const b = e.target.closest("a.back-fab, a[data-go-back]");
         if (!b || e.metaKey || e.ctrlKey || e.shiftKey) return;
         e.preventDefault();
         if ((fromHere || seen) && history.length > 1) history.back();

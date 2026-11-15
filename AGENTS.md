@@ -122,7 +122,10 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
   pull request (a newer database refuses to start on older code). Each price
   source writes its quotes to `price_quotes`; the main price is the average of
   a printing's sources, and each source keeps its own history. Searches and
-  page loads come first; slow work goes to a background worker. Match the code
+  page loads come first; slow work goes to a background worker. Every request
+  to another site goes through `sites.client()`, where background requests
+  take turns per site at a rate that never slows the pages down; never add a
+  way around the queue. Match the code
   around you: short functions, plain names, a docstring saying what a function
   gives back. Don't reformat lines you aren't changing. Everything the app
   shows is plain English, and comments explain why, in plain English.
