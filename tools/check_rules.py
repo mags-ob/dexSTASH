@@ -5,9 +5,9 @@
 It prints each problem with its file and line and exits with 1 when there is any. The checks:
 
 - Nothing personal: paths from someone's own machine or home server, e-mail addresses and DuckDNS names
-  that aren't examples, and any word listed in rules/private-words.txt (git-ignored, one per line) or in
-  the DEXSTASH_PRIVATE_WORDS environment variable (comma separated). The list never goes in the repository,
-  because this check is public too.
+  that aren't examples (or, for e-mail, published by their owner in ALLOWED_EMAILS), and any word listed in
+  rules/private-words.txt (git-ignored, one per line) or in the DEXSTASH_PRIVATE_WORDS environment variable
+  (comma separated). The word list never goes in the repository, because this check is public too.
 - Nothing that must never be committed: .env files, databases, the data folder, models and bundles.
 - Every commit's author, committer and message, the same way, plus links to private pages (an AI assistant's
   sessions or projects). A merge made on github.com is written with the merger's profile name and e-mail, so
@@ -33,6 +33,9 @@ PATTERNS = [
     ("an e-mail address", re.compile(r"[\w.%+-]+@(?!(?:[\w-]+\.)*example\.(?:com|org|net)\b|users\.noreply\.github\.com\b|github\.com\b|anthropic\.com\b)[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}\b")),
     ("a DuckDNS name", re.compile(r"(?<![\w.-])(?!your-name\.|example\.|your-subdomain\.)[a-z0-9-]+\.duckdns\.org\b", re.I)),
 ]
+
+# E-mail addresses their owner has chosen to publish (rules/core.md, rule 1): the maintainer's own.
+ALLOWED_EMAILS = {"mmdmo2090@gmail.com"}
 
 # Pages only their owner can open: links to them say nothing to a reader and point at someone's account.
 PRIVATE_LINK = re.compile(r"claude\.ai/code/(?:session|project)|claude\.ai/project/")
@@ -75,7 +78,7 @@ def check_text(path: str, text: str, words: list[re.Pattern]) -> list[str]:
         if ALLOW in line:
             continue
         for what, pattern in PATTERNS:
-            m = pattern.search(line)
+            m = next((m for m in pattern.finditer(line) if m.group(0).lower() not in ALLOWED_EMAILS), None)
             if m:
                 problems.append(f"{path}:{n}: {what} ({m.group(0)})")
         if any(w.search(line) for w in words):
