@@ -74,9 +74,9 @@ them, and they never replace the type labels or describe the phase.
 | `help wanted` | Community | Maintainer | Open for a contributor to take |
 | `good first issue` | Community | Maintainer | A good start for a new contributor |
 
-Remove the old labels `spec`, `chore`, `documentation`, `enhancement`, `invalid`, `question`, `already-built`,
-`test image` and `needs-decision` (use `needs-info`) after relabelling any issue that has them. Spec work is a
-Feature with the `docs` label.
+Remove the old labels `area: ...`, `spec`, `chore`, `documentation`, `enhancement`, `invalid`, `question`,
+`already-built`, `test image` and `needs-decision` (use `needs-info`) after relabelling any issue that has them.
+Spec work is a Feature with the `docs` label.
 
 ## 5. Project board
 

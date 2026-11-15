@@ -13,5 +13,9 @@ if command -v gitleaks >/dev/null 2>&1; then
   echo "pre-push: gitleaks"
   gitleaks git --no-banner --redact .
 fi
+if "$py" -c "import pip_audit" 2>/dev/null; then
+  echo "pre-push: pip-audit"
+  "$py" -m pip_audit --requirement requirements.lock --progress-spinner off
+fi
 echo "pre-push: tests"
 "$py" -m pytest -q

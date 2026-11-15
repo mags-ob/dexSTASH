@@ -40,7 +40,7 @@ Priority: R1 and R5 Must; R2 and R3 Should; R4 Could (scanning is off by default
 
 ## Out of scope
 
-- Selling, trading or marketplace features.
+- Buying, selling or arranging trades online (a marketplace).
 - Paid price feeds as a requirement (a source that needs a key is optional and uses the host's own key).
 - Reading other sites' web pages; the app uses official APIs and open datasets, and otherwise links out.
 - Sending the collection or photos to a cloud service.

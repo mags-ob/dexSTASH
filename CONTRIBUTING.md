@@ -20,11 +20,12 @@ a merge: there are no required status checks, and the Validate checklist is
 advisory.
 
 - Write access is by invitation. Everyone else forks and opens a pull request.
-- Open the issue and wait for a go before sending a pull request for a feature;
-  small fixes can go straight to a pull request.
+- Open the issue and wait for a go before sending a pull request. A small fix
+  (labelled `small`) can use the issue body as its plan, but still needs a go.
 - Run `git config core.hooksPath tools/hooks` once. Commits are scanned locally
   for secrets and personal information (`tools/scan.sh`), and a push also runs
-  ruff, the rules check and the tests (`git push --no-verify` skips it once).
+  ruff, the rules check, gitleaks and pip-audit (when installed) and the tests
+  (`git push --no-verify` skips it once).
   Install gitleaks (`brew install gitleaks`). Copy
   `rules/private-words.example.txt` to `rules/private-words.txt` and add your
   own words; that file is never committed.
@@ -40,9 +41,20 @@ DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
 
 The tests need no network: every outside request is replaced with a fake one.
 `tools/demo_data.py` makes a demo collection to click around in. On Windows, set
-`PYTHONUTF8=1` first. The code is mapped in
-[docs/architecture.md](docs/architecture.md), and the project's code rules are in
+`PYTHONUTF8=1` first. The project's code rules are in
 [AGENTS.md](AGENTS.md#project).
+
+## How the code is laid out
+
+[docs/architecture.md](docs/architecture.md) has the diagrams and a map from each page to its route, logic and tables. In short:
+
+- `app/routes/` has one module of pages per topic; `app/web.py` holds what they share (templates, sign-in checks, background workers).
+- Logic lives in plain modules in `app/` and takes a database connection, so it can be tested without the web layer.
+- Templates are Jinja with htmx in `app/templates/`. There's no JavaScript build step.
+- A database change is a new numbered `_step_N` in `app/db.py`, raising `LATEST`. Never change an existing step.
+- Your own data's tables are in `app/schema.sql`; downloaded data that can be fetched again (card lists, price quotes, Find's card catalog) goes in `app/catalog.sql`, which lives in `dexstash-catalog.db` and is never backed up.
+- A shown price comes only from `prices.resolve`: a new price source writes quotes to `price_quotes`, and the main price is the average of a printing's sources.
+- Every request to another site goes through `app/sites.py`, which sets the User-Agent and refuses sites that are switched off.
 
 ## What must never be committed
 

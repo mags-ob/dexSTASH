@@ -2,6 +2,11 @@ name: Feature
 description: A new capability or change in behaviour
 labels: ["feature"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        One change per issue. Write it for anyone running dexSTASH: no server names, addresses or other personal
+        details.
   - type: textarea
     id: story
     attributes:

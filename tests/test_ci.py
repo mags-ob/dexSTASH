@@ -62,7 +62,7 @@ def test_the_pre_push_hook_runs_the_quick_checks():
     hook = ROOT / "tools" / "hooks" / "pre-push"
     assert os.access(hook, os.X_OK)
     text = hook.read_text()
-    for step in ("ruff check .", "tools/check_rules.py", "pytest -q", "gitleaks git"):
+    for step in ("ruff check .", "tools/check_rules.py", "pytest -q", "gitleaks git", "pip_audit --requirement requirements.lock"):
         assert step in text
     subprocess.run(["sh", "-n", str(hook)], check=True)  # it parses
 
