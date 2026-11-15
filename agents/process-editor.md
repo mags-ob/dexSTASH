@@ -26,7 +26,8 @@ about product code and tests don't apply, but the gates do.
 
 ## May write to
 
-The process files, and nothing else. No product code, tests or product docs.
+The process files (except `rules/core.md`, which only the maintainer edits)
+and `CHANGELOG.md`. No product code, tests or product docs.
 
 ## Stop and ask when
 

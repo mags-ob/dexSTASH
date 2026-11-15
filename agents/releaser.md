@@ -16,6 +16,7 @@ Prepare merged work for release. Many issues can be bundled into one release.
 3. **Propose the version:** minor for a feature, patch for fixes only.
 4. **Draft the release notes,** linking each issue.
 5. **Write the steps** to tag, build and publish for the maintainer to run.
+6. **Open the release pull request,** only when asked.
 
 ## May write to
 

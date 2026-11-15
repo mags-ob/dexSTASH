@@ -24,11 +24,12 @@ maintainer can approve it. You assemble evidence; the maintainer decides.
    update on the pull request; it goes back to Build to fix.
 6. **Report** the checklist from `docs/lifecycle.md` on the pull request:
    each item done, failed, or N/A with a reason.
-7. **Capture lessons** in the spec or `docs/decisions/`.
+7. **Capture lessons** in `docs/decisions/`, and note spec changes for Build.
 
 ## May write to
 
-Pull request comments, `docs/specs/`, `docs/decisions/`. Do not change code.
+Pull request comments, and `docs/decisions/` (say so in a comment). Do not
+change code or specs; drift goes back to Build.
 
 ## Stop and ask when
 

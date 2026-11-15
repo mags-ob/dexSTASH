@@ -5,7 +5,7 @@ Everyone, including AI assistants, follows the same path. See
 
 1. **Open an issue** with the Bug, Feature or Process change form. There are no
    other options. A Process change is for changing the workflow, agents,
-   concepts or lifecycle themselves; only the maintainer approves those.
+   lifecycle or rules themselves; only the maintainer approves those.
 2. **Define:** the issue gets acceptance criteria, UI/UX and a plan. The
    maintainer says **go** before any code is written.
 3. **Build:** work on a branch (`feature/`, `fix/`, `docs/`, `chore/`,
@@ -25,7 +25,8 @@ advisory.
 - Run `git config core.hooksPath tools/hooks` once. Commits are scanned locally
   for secrets and personal information (`tools/scan.sh`), and a push also runs
   ruff, the rules check, gitleaks and pip-audit (when installed) and the tests
-  (`git push --no-verify` skips it once).
+  (`git push --no-verify` skips it once, for people only and still running
+  `tools/scan.sh --branch` first. Assistants never skip it.)
   Install gitleaks (`brew install gitleaks`). Copy
   `rules/private-words.example.txt` to `rules/private-words.txt` and add your
   own words; that file is never committed.
@@ -34,7 +35,7 @@ advisory.
 
 ```sh
 python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt pytest
+pip install -r requirements.lock pytest
 python -m pytest
 DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
 ```
