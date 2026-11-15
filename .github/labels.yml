@@ -1,0 +1,44 @@
+- name: bug
+  color: d73a4a
+  description: Something doesn't work as expected (set by the Bug form)
+- name: feature
+  color: 0e8a16
+  description: A new capability, change, docs, chore or refactor (set by the Feature form)
+- name: process
+  color: 1d76db
+  description: Changes how the workflow, agents or lifecycle work (set by the Process change form)
+- name: small
+  color: c5def5
+  description: Short Define; the issue body is the plan
+- name: docs
+  color: 0075ca
+  description: Documentation only; no code changes
+- name: priority:high
+  color: b60205
+  description: Do before other work
+- name: needs-info
+  color: fbca04
+  description: Waiting on an answer before it can move on
+- name: blocked
+  color: 5319e7
+  description: Waiting on something outside the issue
+- name: duplicate
+  color: cfd3d7
+  description: Already covered by another issue
+- name: wontfix
+  color: ffffff
+  description: Decided not to do
+
+# Project labels (listed in docs/github-setup.md under "Project labels").
+- name: db-step
+  color: 115d14
+  description: Adds a database step; older versions won't start on the upgraded database
+- name: accessibility
+  color: f143ab
+  description: Barrier affecting people with disabilities
+- name: help wanted
+  color: 008672
+  description: Open for a contributor to take
+- name: good first issue
+  color: 7057ff
+  description: Good for newcomers

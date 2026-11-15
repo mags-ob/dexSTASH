@@ -1,6 +1,6 @@
 #!/bin/sh
-# Runs the quick checks from GitHub Actions before a push, so a failure shows up here first.
-# Turn it on with: git config core.hooksPath tools/hooks    Skip it once with: git push --no-verify
+# Runs the quick checks before a push, so a failure shows up here first. The pre-commit hook runs the scan.
+# Turn hooks on with: git config core.hooksPath tools/hooks    Skip it once with: git push --no-verify
 set -e
 cd "$(git rev-parse --show-toplevel)"
 py=python3
@@ -12,6 +12,10 @@ echo "pre-push: core rules"
 if command -v gitleaks >/dev/null 2>&1; then
   echo "pre-push: gitleaks"
   gitleaks git --no-banner --redact .
+fi
+if "$py" -c "import pip_audit" 2>/dev/null; then
+  echo "pre-push: pip-audit"
+  "$py" -m pip_audit --requirement requirements.lock --progress-spinner off
 fi
 echo "pre-push: tests"
 "$py" -m pytest -q
