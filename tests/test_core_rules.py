@@ -135,3 +135,9 @@ def test_a_commit_with_noreply_addresses_passes(tmp_path, monkeypatch):
 def test_a_private_word_in_a_commit_is_found(tmp_path, monkeypatch):
     _repo_with_commit(tmp_path, monkeypatch, "Misty Waterflower", "1+m@users.noreply.github.com", "Add a thing")
     assert check_rules.check_history([re.compile("waterflower", re.I)])
+
+
+def test_the_maintainer_s_published_email_passes_and_others_do_not(tmp_path, monkeypatch):
+    _repo_with_commit(tmp_path, monkeypatch, "Maintainer", "mmdmo2090@gmail.com", "Merge pull request #1")
+    assert check_rules.check_history([]) == []
+    assert check_rules.check_text("x", "mmdmo2090@gmail.com and misty@" + "gmail.com", [])

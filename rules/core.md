@@ -15,12 +15,13 @@ person or assistant checks it while reviewing.
   docs, commit messages, issues and pull requests, since all of them are public.
 - Commits are part of this. A merge pressed on github.com is written with the merger's profile name and e-mail,
   so whoever merges keeps their e-mail private (Settings › Emails) and a profile name they're happy to publish.
+  The one exception is the maintainer's own e-mail, which they have chosen to publish.
   Commit messages, pull requests and issues carry no links to pages only one person can open, such as an AI
   assistant's sessions or projects.
 - Examples use the user `misty`, the domain `cards.example.com` and paths like `/srv/docker/dexstash`.
 - Checked by: the scan (patterns such as home-server paths, private addresses and e-mail addresses, in every file
-  and every commit's author, committer and message; the check never lists anyone's real details, since the check
-  itself is public) and review.
+  and every commit's author, committer and message; the check lists no one's real details, since the check
+  itself is public, except the maintainer's published e-mail, which it allows) and review.
 
 ## 2. No secrets
 
