@@ -114,36 +114,49 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
 - **Stack:** no front-end framework and no JavaScript build step. CSS and
   JavaScript live in `app/static/css` and `app/static/js`, one file per
   template, linked through `asset()`. New packages are pinned in
-  `requirements.lock`, need a reason in the pull request, and must work on a
-  small home server (amd64 and arm64).
+  `requirements.lock`, need a reason in the pull request, must work on a
+  small home server (amd64 and arm64), and must pass `pip-audit`.
 - **Code:** logic lives in plain modules in `app/` that take a database
   connection. A database change is a new numbered `_step_N` in `app/db.py` that
   raises `LATEST`; never change an existing step, and say so at the top of the
-  pull request (a newer database refuses to start on older code). Slow work
-  goes to a background worker. Match the code around you; don't reformat lines
-  you aren't changing. Everything the app shows is plain English.
+  pull request (a newer database refuses to start on older code). Each price
+  source writes its quotes to `price_quotes`; the main price is the average of
+  a printing's sources, and each source keeps its own history. Searches and
+  page loads come first; slow work goes to a background worker. Match the code
+  around you: short functions, plain names, a docstring saying what a function
+  gives back. Don't reformat lines you aren't changing. Everything the app
+  shows is plain English, and comments explain why, in plain English.
 - **Tests:** tests sit next to the tests for their area in `tests/` and never
   touch the network. Each acceptance criterion maps to at least one test. Never
   skip, disable or loosen a test to get green; Linux-only behaviour is skipped
   on other systems, not removed.
 - **Specs:** each part of the app has a spec in [docs/specs/](docs/specs/README.md).
   Update it in the same pull request, or say in the pull request why it
-  doesn't change.
+  doesn't change. A spec is written from the current code the first time an
+  issue touches that part.
 - **Plans:** every plan has a wireframe or mockup of each screen it adds or
   changes, at phone width, linked or attached in the issue's Plan section (a
   linked page must open for anyone). No screen changes: "Wireframe: no screen
   changes".
 - **Commits and pull requests:** short, saying only what changed; the why is on
-  the issue. The pull request has `Closes #<issue>` and a `Host:` line only
-  when someone running dexSTASH must act (a database step, a new setting).
-  `CHANGELOG.md` gets a line under `## Unreleased` for every change people
-  will notice.
-- **Versions:** `__version__` in `app/__init__.py`. The releaser raises it when
-  preparing a release (minor for a feature, patch for fixes only) and tags it
-  `vX.Y.Z`; `tools/release_image.py <tag>` refuses a tag that differs from the
-  version. Pull requests don't change the version.
+  the issue. A commit is one summary line (`Add image files to releases`), at
+  most a few short lines more if needed, and the issue (`#12`). The pull
+  request has `Closes #<issue>` and a `Host:` line only when someone running
+  dexSTASH must act (a database step, a new setting). `CHANGELOG.md` gets a
+  line under `## Unreleased` for every change people will notice. Branch names
+  after the prefix are lower case with dashes, never a tool's own session name.
+- **One team:** commits, pull requests, issues and comments carry no
+  attribution lines (`Co-Authored-By`, "Generated with ..."), no sign-offs, no
+  links to anyone's assistant sessions or projects, and no "requested by". Who
+  wrote a commit is in its author field.
+- **Versions:** `__version__` in `app/__init__.py`, at 0.x until the first
+  public release (1.0.0). The releaser raises it when preparing a release
+  (minor for a feature, patch for fixes only) and tags it `vX.Y.Z`;
+  `tools/release_image.py <tag>` refuses a tag that differs from the version.
+  Pull requests don't change the version.
 - **Hooks:** `git config core.hooksPath tools/hooks`. `pre-commit` runs the
-  scan; `pre-push` runs ruff, the rules check, gitleaks and the tests.
+  scan; `pre-push` runs ruff, the rules check, gitleaks, pip-audit (each when
+  installed) and the tests.
 - **Project labels:** see [docs/github-setup.md](docs/github-setup.md#project-labels).
 - **Project scan:** `tools/project-scan.sh` runs `tools/check_rules.py`
   (personal paths, e-mails, DuckDNS names, files that must never be committed,
