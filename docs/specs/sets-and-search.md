@@ -38,7 +38,10 @@ it on a page that says what it is, what you have of it and what it's worth.
 ### Previews and the card page
 
 12. A result opens a preview of the card before it's stored: picture, printings, price, and buttons to add or
-    chase it. A card from a stored set opens its own card page instead.
+    chase it. A card from a stored set opens its own card page instead. When TCGdex doesn't answer for a
+    preview (or a set preview), the page says "Couldn't load this card" (or set) with Try again and Back, and
+    the reason goes to the log; it's sent with `X-Dexstash-Page`, so the phone's offline helper doesn't swap it
+    for "Can't reach your server" (#77).
 13. The card page shows the card's picture (tap for full size), set, number, rarity and printings, its
     prices per printing with where each came from (see [prices](prices.md)), what the household has of it
     (by printing and condition) with add and remove, binders, tags, notes, the Chase box when chased, links

@@ -25,6 +25,8 @@ How dexSTASH is built. They may change by a reviewed pull request, but they neve
   The main price is the average of the sources a printing has, and each source keeps its own history.
 - **Speed:** searches and page loads come first. Slow work (downloads, scans, price runs) goes to a background
   worker at low priority.
+- **Pacing:** every request to another site goes through `sites.client()`, where background requests take turns
+  per site at a rate that never slows the pages down. Never add a way around the queue.
 - Match the code around you: short functions, plain names, and a docstring saying what a function gives back.
 - `ruff check .` must pass (settings in `ruff.toml`). Code is not auto-formatted, so don't reformat lines you
   aren't changing.
