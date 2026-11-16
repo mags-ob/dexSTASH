@@ -1,12 +1,13 @@
 name: Process change
-description: Change how the workflow, agents, concepts, lifecycle or contribution rules work
+description: Change how the workflow, agents, lifecycle or contribution rules work
 labels: ["process"]
 body:
   - type: markdown
     attributes:
       value: |
         Use this only to change the process itself (AGENTS.md, agents/, docs/lifecycle.md,
-        docs/github-setup.md, CONTRIBUTING.md, issue and PR templates, tools/).
+        docs/github-setup.md, CONTRIBUTING.md, .github/, tools/ and rules/).
+        docs/product.md and docs/concepts.md are not process files.
         Product work is a Bug or a Feature. Process files can't be changed from those.
   - type: textarea
     id: change

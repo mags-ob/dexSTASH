@@ -22,15 +22,17 @@ maintainer can say go to.
 6. **Write the development plan** in the issue's Plan section: areas touched,
    tests to add, and a Docs impact list (README, product.md, concepts.md,
    specs, other docs, or "none"). It must match the UI/UX.
-7. **Track concepts:** add or update terms, rules, constraints and assumptions
-   in `docs/concepts.md`, and update `docs/product.md` if the problem,
-   audience or outcome changed.
+7. **Track concepts:** propose terms, rules, constraints and assumptions for
+   `docs/concepts.md`, and changes to `docs/product.md` if the problem,
+   audience or outcome changed, in the Plan section.
 8. **Raise questions** on the issue, naming who decides each.
 
 ## May write to
 
-The issue body and comments, `docs/specs/` (spec first), `docs/concepts.md`,
-`docs/product.md`, `docs/decisions/`, and throwaway wireframes. No application code.
+The issue body and comments, and throwaway wireframes. Spec, concept, product
+and decision changes are written as proposed text in the Plan section; the
+builder puts them in the files, in the same pull request as the code. An issue
+labelled `docs` edits the files on its own branch. No application code.
 
 ## Stop and ask when
 
