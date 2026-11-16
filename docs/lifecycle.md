@@ -158,7 +158,8 @@ Done has two states.
 - **Released:** merged work is bundled into a release. Many issues can ride in
   one release.
 
-**Release steps (maintainer):**
+**Release steps (maintainer):** the first two arrive in the releaser's release
+pull request (changelog and version only); merge it, then tag.
 - [ ] `CHANGELOG.md` has a line for each noticeable change, then the section
       is renamed to the new version
 - [ ] The version is bumped (minor for a feature, patch for fixes only)

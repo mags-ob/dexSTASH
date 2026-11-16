@@ -24,7 +24,8 @@ advisory.
   (labelled `small`) can use the issue body as its plan, but still needs a go.
 - Run `git config core.hooksPath tools/hooks` once. Commits are scanned locally
   for secrets and personal information (`tools/scan.sh`), and a push also runs
-  ruff, the rules check, gitleaks and pip-audit (when installed) and the tests
+  ruff and the rules check, then gitleaks and pip-audit when installed, then the
+  tests
   (`git push --no-verify` skips it once, for people only and still running
   `tools/scan.sh --branch` first. Assistants never skip it.)
   Install gitleaks (`brew install gitleaks`). Copy
