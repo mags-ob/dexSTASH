@@ -139,7 +139,7 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
   issue touches that part.
 - **Plans:** every plan has a wireframe or mockup of each screen it adds or
   changes, at phone width, linked or attached in the issue's Plan section (a
-  linked page must open for anyone). No screen changes: "Wireframe: no screen
+  linked page must open for anyone). No screen changes: "UI/UX: no screen
   changes".
 - **Commits and pull requests:** short, saying only what changed; the why is on
   the issue. A commit is one summary line (`Add image files to releases`), at
@@ -153,13 +153,14 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
   links to anyone's assistant sessions or projects, and no "requested by". Who
   wrote a commit is in its author field.
 - **Versions:** `__version__` in `app/__init__.py`, at 0.x until the first
-  public release (1.0.0). The releaser raises it when preparing a release
-  (minor for a feature, patch for fixes only) and tags it `vX.Y.Z`;
+  public release (1.0.0). The releaser raises it in a release pull request
+  (changelog and version only, on `chore/release-x-y-z`), minor for a feature,
+  patch for fixes only. The maintainer merges it and tags `vX.Y.Z`;
   `tools/release_image.py <tag>` refuses a tag that differs from the version.
-  Pull requests don't change the version.
+  No other pull request changes the version.
 - **Hooks:** `git config core.hooksPath tools/hooks`. `pre-commit` runs the
-  scan; `pre-push` runs ruff, the rules check, gitleaks, pip-audit (each when
-  installed) and the tests.
+  scan; `pre-push` runs ruff and the rules check, then gitleaks and pip-audit when
+  installed, then the tests.
 - **Project labels:** see [docs/github-setup.md](docs/github-setup.md#project-labels).
 - **Project scan:** `tools/project-scan.sh` runs `tools/check_rules.py`
   (personal paths, e-mails, DuckDNS names, files that must never be committed,
@@ -170,7 +171,7 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
 ## Before you push
 
 Run `tools/scan.sh --branch` (secrets and personal words, all local, plus the
-project scan if there is one). Fix any hit. Never bypass the scan, edit `rules/private-words.txt`, or print its
+project scan if there is one). Fix any hit. Never bypass the scan or the git hooks (no `--no-verify`), edit `rules/private-words.txt`, or print its
 contents. There are no other required checks; the Validate checklist is
 advisory ([docs/lifecycle.md](docs/lifecycle.md)).
 

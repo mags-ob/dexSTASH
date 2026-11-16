@@ -1,7 +1,7 @@
 # The test suite: on pushes to main, on pull requests, when started by hand
 # (Actions > Tests > Run workflow), and before a release image is built (image.yml calls it).
 # A pull request that only changes files no test reads (specs, rules, assistant notes, templates) skips the
-# suite. The tests job is then "skipped", which a required check counts as passed.
+# suite. The tests job is then "skipped".
 name: Tests
 
 on:

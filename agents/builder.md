@@ -26,8 +26,9 @@ Turn the approved plan into tested code in a draft pull request.
 
 ## May write to
 
-Code, tests and configuration the plan names, `docs/specs/`, `CHANGELOG.md`,
-and `docs/concepts.md`.
+Code, tests and configuration the plan names, `docs/specs/`,
+`docs/concepts.md`, `docs/product.md`, `docs/decisions/`, `README.md` and
+`CHANGELOG.md`.
 
 ## Stop and ask when
 

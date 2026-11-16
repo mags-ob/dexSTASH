@@ -19,8 +19,9 @@ judgment decides. The one check that always runs is the local
 ## Small changes
 
 A typo, a doc fix or a tiny bug can skip a long Define (label it `small`): the
-issue is one sentence, the plan is "fix X in Y", and the maintainer's go can
-be a thumbs-up.
+issue is one sentence, the plan is "fix X in Y", and the maintainer's go is
+still moving the card to Build; a thumbs-up can come with it, but the card move
+is what counts.
 It still gets a branch, a pull request and the local scan.
 
 ## Where state lives
@@ -49,9 +50,9 @@ Scale this to the size of the change.
 | Feature | User story, acceptance criteria, UI/UX, development plan |
 
 There are three issue types: Bug, Feature and Process change. Docs, chores,
-refactors and tests are filed as a Feature (usually with the `small` and `docs`
-labels) or as a Bug if something is broken. A change to how the process itself
-works is a Process change. See [github-setup.md](github-setup.md#labels).
+refactors and tests are filed as a Feature (`small` when tiny, `docs` only when
+nothing but documentation changes) or as a Bug if something is broken. A change
+to how the process itself works is a Process change. See [github-setup.md](github-setup.md#labels).
 
 Write down:
 
@@ -82,8 +83,8 @@ Write down:
   `test/` plus a short name. Never work on `main`.
 - Change the code, add unit tests (one per acceptance criterion where
   practical), and update the spec in the same change.
-- Open a draft pull request that says `Closes #<issue>`. Keep commits and the
-  pull request short: what changed; the why is on the issue.
+- When asked, open a draft pull request that says `Closes #<issue>`. Keep
+  commits and the pull request short: what changed; the why is on the issue.
 
 **If the plan turns out wrong:** stop, update the issue's Plan section (and
 the wireframe if it changes), and get a new go before changing more code.
@@ -157,7 +158,8 @@ Done has two states.
 - **Released:** merged work is bundled into a release. Many issues can ride in
   one release.
 
-**Release steps (maintainer):**
+**Release steps (maintainer):** the first two arrive in the releaser's release
+pull request (changelog and version only); merge it, then tag.
 - [ ] `CHANGELOG.md` has a line for each noticeable change, then the section
       is renamed to the new version
 - [ ] The version is bumped (minor for a feature, patch for fixes only)
