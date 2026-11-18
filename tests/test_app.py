@@ -765,6 +765,29 @@ def test_pack_costs_are_shared(client, monkeypatch):
     assert inventory.holdings(main.conn, user_id, "t1-1")[0]["quantity"] == 2  # cards stay
 
 
+def _top_title(html):
+    """The phone top bar's title, the <h1> inside <header class="top">."""
+    return re.search(r'<header class="top">.*?<h1>(.*?)</h1>', html, re.S).group(1)
+
+
+def test_home_title_on_phones_is_the_logo_and_app_name(client, monkeypatch):
+    _setup_with_set(client)
+    monkeypatch.setitem(web.templates.env.globals, "app_name", "Test PR 78 0d0fd04")
+    page = client.get("/").text
+    title = _top_title(page)
+    assert 'class="home-brand"' in title and 'href="/"' in title and "logo" in title
+    assert "Test PR 78 0d0fd04" in title and "Home" not in title
+    assert 'class="page-head"' not in page  # iPad and PC: still only the brand in the top bar, no page heading
+    assert "generic-title" in page
+
+
+def test_home_title_shows_the_default_name_and_other_pages_keep_theirs(client):
+    _setup_with_set(client)
+    assert "dexSTASH" in _top_title(client.get("/").text)
+    stash = _top_title(client.get("/collection").text)
+    assert "My Stash" in stash and "home-brand" not in stash
+
+
 def test_home_lists_only_sets_with_cards_and_remove_set(client):
     user_id = _setup_with_set(client)
     assert "Test Set" not in client.get("/").text  # loaded, but nothing owned yet
