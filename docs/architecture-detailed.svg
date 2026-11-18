@@ -48,7 +48,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="d" x="36" y="286">→ dexstash:8000</text>
 <rect class="ctr" x="250" y="20" width="760" height="640" rx="12"/>
 <text class="t" x="268" y="48">Container “dexstash” · one Uvicorn worker</text>
-<text class="lbl" x="994" y="48" text-anchor="end">version 0.29.0</text>
+<text class="lbl" x="994" y="48" text-anchor="end">version 0.29.1</text>
 <rect class="box hot" x="270" y="56" width="720" height="196" rx="8"/>
 <text class="t" x="286" y="82">Web layer</text>
 <rect class="k-html" x="929.0" y="67" width="49" height="20" rx="4"/><text class="kt" x="936.0" y="81">Jinja</text>
@@ -61,9 +61,9 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="ds" x="286" y="200">templates and filters, sign-in</text>
 <text class="ds" x="286" y="216">checks, the workers, shared</text>
 <text class="ds" x="286" y="232">helpers for several pages</text>
-<text class="t2" x="520" y="84">app/routes/ · 217 routes in 16 modules</text>
+<text class="t2" x="520" y="84">app/routes/ · 218 routes in 16 modules</text>
 <text class="m" x="520" y="108">data_sources.py</text>
-<text class="lbl" x="662" y="108" text-anchor="end">35</text>
+<text class="lbl" x="662" y="108" text-anchor="end">36</text>
 <text class="m" x="520" y="126">scans.py</text>
 <text class="lbl" x="662" y="126" text-anchor="end">32</text>
 <text class="m" x="520" y="144">cards.py</text>
@@ -94,7 +94,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="lbl" x="978" y="144" text-anchor="end">6</text>
 <text class="m" x="836" y="162">sets.py</text>
 <text class="lbl" x="978" y="162" text-anchor="end">3</text>
-<text class="ds" x="520" y="220">65 templates in app/templates/ · app/static/ (CSS, JS, htmx, font, logo)</text>
+<text class="ds" x="520" y="220">68 templates in app/templates/ · app/static/ (CSS, JS, htmx, font, logo)</text>
 <text class="ds" x="520" y="238">Each module has its own APIRouter; app/main.py includes them all.</text>
 <path class="edge" d="M630 252 V270" marker-end="url(#ar)"/>
 <rect class="box " x="270" y="272" width="232" height="114" rx="8"/>

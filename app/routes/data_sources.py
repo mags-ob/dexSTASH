@@ -19,6 +19,13 @@ from ..web import (_Route, _build_describe, _group_in_scanner, _index_pictures, 
 router = APIRouter(route_class=_Route)
 
 
+RUN_WORDS = {
+    "run_words": {"ok": "all fine", "partial": "some problems", "failed": "stopped", None: "done"},
+    "source_names": {"tcgcsv": "TCGCSV (TCGplayer)", "tcgdex": "TCGdex (TCGplayer)", "cardtrader": "CardTrader",
+                     "followed": "Cards of Pokémon you follow", "catalog": "Find's card catalog"},
+}
+
+
 def _data_context(request: Request, user, message: str | None = None, error: bool = False) -> dict:
     languages = conn.execute(
         """SELECT s.language, COUNT(DISTINCT s.set_id) AS sets, COUNT(c.id) AS cards FROM sets s
@@ -69,10 +76,8 @@ def _data_context(request: Request, user, message: str | None = None, error: boo
         "no_source": _no_price_source(),
         "api_keys": keys.rows(), "pc": pricecharting.status(conn),
         "typed_guessed": _typed_guessed(),
-        "price_runs": sync.runs(conn), "short_run": sync.last_short_run(conn),
-        "run_words": {"ok": "all fine", "partial": "some problems", "failed": "stopped", None: "done"},
-        "source_names": {"tcgcsv": "TCGCSV (TCGplayer)", "tcgdex": "TCGdex (TCGplayer)", "cardtrader": "CardTrader",
-                         "followed": "Cards of Pokémon you follow", "catalog": "Find's card catalog"},
+        "price_runs": sync.runs(conn, 1), "older_runs": max(sync.run_count(conn) - 1, 0),
+        "short_run": sync.last_short_run(conn), **RUN_WORDS,
         "coverage": prices.coverage(conn, user["collection_id"]), "stale_days": prices.stale_days(conn),
         "ebay_sites": prices.EBAY_SITES, "ebay_site": prices.ebay_site(conn),
         "names_choices": english.CHOICES, "names_shown": english.shown(conn),
@@ -86,8 +91,9 @@ def _data_context(request: Request, user, message: str | None = None, error: boo
     }
 
 
-def _data_page(request: Request, user, message: str | None = None, error: bool = False):
-    return templates.TemplateResponse(request, "data_sources.html", _data_context(request, user, message, error),
+def _data_page(request: Request, user, message: str | None = None, error: bool = False, key_said: dict | None = None):
+    return templates.TemplateResponse(request, "data_sources.html",
+                                      {**_data_context(request, user, message, error), "key_said": key_said},
                                       status_code=400 if error else 200)
 
 
@@ -102,7 +108,17 @@ def data_no_pictures(request: Request, all: str = "", user=Depends(owner_user)):
 
 @router.get("/account/data")
 def data_sources(request: Request, user=Depends(owner_user)):
-    return _data_page(request, user, request.query_params.get("message"))
+    q = request.query_params
+    key_said = ({"site": q["key_site"], "message": q.get("key_message", ""), "ok": q.get("key_ok") == "1"}
+                if q.get("key_site") in keys.SITES else None)
+    return _data_page(request, user, q.get("message"), key_said=key_said)
+
+
+@router.get("/account/data/price-updates")
+def older_price_updates(request: Request, user=Depends(owner_user)):
+    """The full price runs before the newest (Data sources shows that one), newest first."""
+    return templates.TemplateResponse(request, "price_updates.html",
+                                      {"user": user, "runs": sync.runs(conn, sync.RUNS_KEPT, skip=1), **RUN_WORDS})
 
 
 @router.get("/account/data/log")
@@ -455,8 +471,10 @@ def _no_price_source() -> list[dict]:
 
 
 def _key_back(site: str, message: str, error: bool = False) -> RedirectResponse:
-    """Back to the key's row; the message shows at the top, and a test's result on the row itself (red when it failed)."""
-    return RedirectResponse(f"/account/data?message={quote(message)}#key-{site}", status_code=303)
+    """Back to the key's row, with what happened shown on the row itself (red when it failed): the page jumps
+    there, so a message at the top of the page would be out of view."""
+    return RedirectResponse(f"/account/data?key_site={site}&key_ok={0 if error else 1}&key_message={quote(message)}"
+                            f"#key-{site}", status_code=303)
 
 
 @router.post("/account/data/keys/{site}")

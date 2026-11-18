@@ -35,6 +35,7 @@ SITES = {
     "ebay": {"label": "eBay sold prices", "what": "Recent sold prices.", "soon": True},
 }
 FILE_NAME = "api_keys.json"
+MAX_LENGTH = 4000  # CardTrader's token is a signed JWT, well over 500 characters
 _lock = threading.Lock()
 folder: Path | None = None  # tests point this elsewhere
 
@@ -112,11 +113,16 @@ def get(site: str) -> str | None:
 
 
 def save(site: str, value: str) -> None:
-    value = (value or "").strip()
+    """Store a site's key, sealed. Spaces and line breaks a paste brings along are dropped (no key has any);
+    raises ValueError with words to show when there's nothing to save or it's far too long for a key."""
+    value = "".join((value or "").split())
     if site not in SITES or SITES[site].get("soon"):
         raise ValueError("That site doesn't take a key yet.")
-    if not value or len(value) > 500 or any(ch.isspace() for ch in value):
-        raise ValueError("Paste the key on its own, with no spaces.")
+    label = SITES[site]["label"]
+    if not value:
+        raise ValueError(f"Not saved: the box was empty. Copy your key from {label} and paste it here.")
+    if len(value) > MAX_LENGTH:
+        raise ValueError(f"Not saved: that's longer than any key. Copy only the key from {label} and paste it here.")
     with _lock:
         data = _read()
         data[site] = {"sealed": seal(value), "last4": value[-4:], "added_at": clock.now()}
