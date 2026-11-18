@@ -476,8 +476,36 @@ def regroup(conn: sqlite3.Connection, dex: int, vectors: dict, threshold: float 
 
 # --- your fixes --------------------------------------------------------------------
 
-def take_out(conn: sqlite3.Connection, dex: int, card_id: str, by: int | None) -> None:
-    """✕: the card becomes its own art. The art it left is remembered for Undo."""
+def _move_hand_joins(conn: sqlite3.Connection, dex: int, card_id: str, leaving: set[str]) -> None:
+    """Cards added by hand to card_id's art are saved as "join card_id". Before card_id
+    leaves, point them at a card that stays, so they stay in the art. When none of the
+    art's other cards stays, the first becomes an art of its own (still placed by you)
+    and the rest join it."""
+    movers = [r[0] for r in conn.execute(
+        "SELECT card_id FROM art_fixes WHERE dex_id = ? AND join_card_id = ? AND card_id <> ? ORDER BY at, card_id",
+        (dex, card_id, card_id))]
+    movers = [m for m in movers if m not in leaving]
+    if not movers:
+        return
+    art = conn.execute("""SELECT ac.art_id FROM art_cards ac JOIN arts a ON a.id = ac.art_id
+                          WHERE a.dex_id = ? AND ac.card_id = ?""", (dex, card_id)).fetchone()
+    others = [r[0] for r in conn.execute(
+        "SELECT card_id FROM art_cards WHERE art_id = ? ORDER BY how = 'manual', score DESC, card_id",
+        (art[0] if art else -1,))]
+    stayer = next((c for c in others if c != card_id and c not in leaving and c not in movers), None)
+    if stayer is None:  # only hand-added cards are left: the first holds the art together
+        stayer = movers.pop(0)
+        conn.execute("UPDATE art_fixes SET join_card_id = NULL, left_card_id = ? WHERE dex_id = ? AND card_id = ?",
+                     (card_id, dex, stayer))
+    conn.executemany("UPDATE art_fixes SET join_card_id = ? WHERE dex_id = ? AND card_id = ?",
+                     [(stayer, dex, m) for m in movers])
+
+
+def take_out(conn: sqlite3.Connection, dex: int, card_id: str, by: int | None,
+             leaving: set[str] | frozenset = frozenset()) -> None:
+    """✕: the card becomes its own art; cards added to the art by hand stay in it.
+    leaving: other cards taken out with this one. The art it left is remembered for Undo."""
+    _move_hand_joins(conn, dex, card_id, set(leaving) | {card_id})
     row = conn.execute("""SELECT a.cover_card_id FROM arts a JOIN art_cards ac ON ac.art_id = a.id
                           WHERE a.dex_id = ? AND ac.card_id = ?""", (dex, card_id)).fetchone()
     left = row[0] if row else None

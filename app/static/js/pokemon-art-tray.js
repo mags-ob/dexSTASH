@@ -97,10 +97,33 @@
     e.preventDefault();
     open(a.parentNode.dataset.card);
   }));
-  // Back from a fix (Not this art, Add, Undo, Re-check): the same art's sheet opens again.
+  // A fix (Not this art, Add, Undo, Re-check) is sent from the page, and the page it leads to takes the
+  // current one's place, so a fix adds no step to Back. If sending fails, the form is posted as before.
+  const FIX = /^\/pokemon\/-?\d+\/(fix\/|recheck$)/;
+  document.addEventListener("submit", async e => {
+    const form = e.target;
+    if (e.defaultPrevented || form.dataset.sent || !FIX.test(new URL(form.action, location.href).pathname)) return;
+    e.preventDefault();
+    try {
+      const r = await fetch(form.action, {method: "POST", body: new FormData(form, e.submitter)});
+      if (!r.ok) throw new Error(r.status);
+      location.replace(r.url);
+    } catch {
+      form.dataset.sent = "1";
+      form.submit();
+    }
+  });
+  // Back from a fix: the same art's sheet opens again. Then open and message leave the address, so a
+  // refresh or Back shows the page as it was: the grid, Edit arts off, no sheet.
   if (me.dataset.openArt) {
     const tile = grid.querySelector(`.ptile[data-art="${me.dataset.openArt}"]`);
     editing(true);
     open(me.dataset.open || tile?.dataset.card);
+  }
+  const here = new URL(location.href);
+  if (here.searchParams.has("open") || here.searchParams.has("message")) {
+    here.searchParams.delete("open");
+    here.searchParams.delete("message");
+    history.replaceState(history.state, "", here.pathname + here.search + here.hash);
   }
 })();
