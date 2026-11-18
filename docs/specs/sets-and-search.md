@@ -28,6 +28,8 @@ it on a page that says what it is, what you have of it and what it's worth.
    someone searches in it, and checked nightly for new sets), searches and the rarity and kind filters are
    answered locally. Until then Find asks TCGdex. `DEXSTASH_CARD_INDEX=0` always asks TCGdex.
 10. Prices on results come from stored prices only; a page never fetches one (see [prices](prices.md)).
+    An empty Find shows Recently viewed, the cards opened last, as picture and name only, with no price line
+    (#66).
 
 ### Don't know the name?
 
@@ -49,6 +51,11 @@ it on a page that says what it is, what you have of it and what it's worth.
     copies. When the card is in an art of a Pokémon or artist you follow, and that art is printed in more than
     one language, Languages (under Printings) has a chip for each, ✓ when you have it; a tap opens that
     language's card.
+    A tag chip opens Find with every card tagged with it, except the artist's automatic tag, which searches
+    Find for the artist's name, the same as typing it (#67). The artist's tag is the automatic tag whose name
+    is on TCGdex's illustrator list kept here; the card page never asks TCGdex for it.
+    A name typed in Find counts as an artist when it is a whole artist's name and not a Pokémon, digits
+    included ("5ban Graphics").
 14. A Japanese or Chinese card shows its English name beside its own, and its set's English name, when one
     is known (TCGCSV's or CardTrader's set lists, or the app's own list). A name is never machine-translated.
     Data sources › Settings picks which names show on Japanese and Chinese cards.
