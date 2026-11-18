@@ -32,8 +32,13 @@ the stash.
    art; and Add a card to this art, which searches either the Pokémon's cards (a row of the closest pictures,
    then every card, newest first, however alike) or All cards (any stored card by name, set or number, for a
    card the Pokémon is in but not named on; it joins the Pokémon's page as added by you). A card taken out is
-   found again the same way. The fixes are kept. Printings can't be changed there. ↻ Re-check, beside Following, compares the pictures again and
-   keeps the fixes. Check for updates adds new cards.
+   found again the same way. Not this art moves only that card: a card added to the art by hand stays in it,
+   even when the card taken out is the one it was added to (the art's cover). The fixes are kept: cards added
+   or taken out by hand keep their place after ↻ Re-check and Check for updates, whatever the pictures say.
+   Printings can't be changed there. ↻ Re-check, beside Following, compares the pictures again. Check for
+   updates adds new cards. After a fix or Re-check the page comes back with the same art's sheet open, in
+   place of the page before, so a fix adds no step to Back; a refresh or Back shows the page as it was, with
+   Edit arts off and no sheet open.
 9. A followed Pokémon's or artist's page shows every art in one grid, like a set page (no rows by era). Every
    language counts: an art is yours when you have any card of it, in any language, and the arts, cards and
    printings counts cover them all. Each tile has language tags (EN, JA, ZH, mainland and Taiwan together) on
