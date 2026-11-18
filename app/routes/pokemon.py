@@ -208,9 +208,9 @@ async def pokemon_fix_out(request: Request, dex: int, user=Depends(current_user)
         taken = [c for c in form.getlist("card") if c]
         back = form.get("back", "")
         if taken:
-            chase.take_out(conn, dex, taken[0], user["id"])
+            chase.take_out(conn, dex, taken[0], user["id"], set(taken))
             for other in taken[1:]:
-                chase.take_out(conn, dex, other, user["id"])
+                chase.take_out(conn, dex, other, user["id"], set(taken))
                 chase.put_with(conn, dex, other, taken[0], user["id"])
             _regroup(dex)
         return _back_to_art(dex, back if back not in taken else (form.get("stay") or back))
