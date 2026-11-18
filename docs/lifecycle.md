@@ -20,8 +20,8 @@ judgment decides. The one check that always runs is the local
 
 A typo, a doc fix or a tiny bug can skip a long Define (label it `small`): the
 issue is one sentence, the plan is "fix X in Y", and the maintainer's go is
-still moving the card to Build; a thumbs-up can come with it, but the card move
-is what counts.
+still required before Build. Once it is given, the card moves to Build (the
+maintainer or an assistant may move it).
 It still gets a branch, a pull request and the local scan.
 
 ## Where state lives
@@ -30,7 +30,8 @@ It still gets a branch, a pull request and the local scan.
   criteria, wireframe and plan all live in its body (the plan in a "Plan"
   section, never in a comment).
 - The **project board column** is the phase (Define, Build, Validate, Done).
-  Moving a card is the gate decision. Assistants never move cards.
+  The maintainer's go and approval are the gate decisions; the card follows
+  them. Assistants may move cards, but only after the gate is passed.
 - **Labels** describe the issue, not the phase. See
   [github-setup.md](github-setup.md#labels).
 - Behaviour that outlives the issue goes in [specs/](specs/); decisions worth
@@ -72,7 +73,7 @@ Write down:
 - [ ] UI/UX is attached, or says no screen changes
 - [ ] A development plan exists and matches the UI/UX
 - [ ] Open questions are answered or listed with who decides
-- [ ] A maintainer has said go (moved the card to Build)
+- [ ] A maintainer has said go (the card is in Build)
 
 ### 2. Build
 
@@ -214,7 +215,7 @@ request as the work, with no extra approval step.
   playbook. It still needs a go before editing and the maintainer's approval
   to merge, and it takes effect only once merged.
 - It may not weaken the gates: assistants still never pass Go or Approved,
-  move cards, merge, or skip the local scan.
+  merge, or skip the local scan.
 
 ## Docs-only changes
 

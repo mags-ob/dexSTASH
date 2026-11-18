@@ -31,11 +31,11 @@ and `CHANGELOG.md`. No product code, tests or product docs.
 
 ## Stop and ask when
 
-- The change would let an assistant pass the Go or Approved gate, move a
-  card, merge, or skip the local scan. Those stay the maintainer's.
+- The change would let an assistant pass the Go or Approved gate, merge, or
+  skip the local scan. Those stay the maintainer's.
 - A rule is being loosened with no reason on the issue.
-- The change needs repository settings, labels or the board changed. Write
-  the steps for the maintainer to run.
+- The change needs repository settings changed. Write the steps for the
+  maintainer to run. Labels and board cards you may change yourself.
 
 ## Hand-off
 
