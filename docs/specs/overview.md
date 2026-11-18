@@ -21,6 +21,7 @@ to date, without sending your collection anywhere.
 2. One install holds one collection. The first account is the admin; everyone the admin adds shares that
    collection.
 3. The app works from a phone browser and as a Home Screen app. Every page also works on a computer.
+   On a phone, Home's header shows the logo and the app name (`APP_NAME`); other pages show their own title.
 4. A new install starts with a first-run wizard (password, time zone and currency, languages, sites, downloads),
    then a Getting started list on Home.
 5. Card data comes from open sources, downloaded and kept on the server. Prices come from the sources in

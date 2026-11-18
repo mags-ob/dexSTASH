@@ -13,6 +13,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 
 ### Changed
 - **"Last price update" on Data sources › Prices shows the latest full run only.** Older ones (the last 30) are on a new Older price updates page, linked under it. A latest run with problems still opens by itself (#65).
+- **Home on a phone shows the logo and the app's name** in place of "Home", as the top bar does on an iPad or computer. A test copy's name ("Test PR 78 0d0fd04") now shows on a phone too (#93).
 - **Assistants keep the board and labels up to date.** They move an issue's card once the maintainer has said go or approved, and may add, remove and create labels. Go and Approved stay the maintainer's (#98).
 - **Process docs agree with each other.** A release comes as its own pull request, and assistants never skip the git hooks (#84).
 - **Background work goes easy on every source.** Downloads (following a Pokémon, loading sets, price runs) send each site at most 5 requests a second, and wait when a site says to slow down, so the pages you're using keep working. Big downloads take a little longer (#77).
