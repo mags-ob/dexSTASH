@@ -24,8 +24,10 @@ Two gates belong to the maintainer, and you wait for them:
 1. **Go:** the definition, UI/UX and plan are right. Moves Define to Build.
 2. **Approved:** the pull request is right. Moves Validate to Done.
 
-Never move a board card, and never treat a phase as passed because you
-think it is.
+Never treat a phase as passed because you think it is. You keep the board
+current: move the card to Build once the maintainer has said go, to Validate
+when the pull request is ready for review, and to Done once the maintainer has
+approved or merged. Say in the thread or on the issue which card you moved.
 
 ## Before every task
 
@@ -178,16 +180,16 @@ advisory ([docs/lifecycle.md](docs/lifecycle.md)).
 ## Labels
 
 Labels (including any project labels) are defined in
-[docs/github-setup.md](docs/github-setup.md#labels). Use
-only labels that already exist: don't create, rename, edit or delete them.
-You may add or remove `needs-info`. Suggest `small`, `docs`, `priority:high`,
-`blocked`, `duplicate` and `wontfix` in a comment and let the maintainer apply
-them. Never change `bug`, `feature` or `process`. After any label change, comment which
-label and why.
+[docs/github-setup.md](docs/github-setup.md#labels). You may add and remove any
+label on an issue or pull request, and create, rename, edit or delete labels.
+If a new or changed label should last, also list it in `.github/labels.yml` and
+`docs/github-setup.md` on a `process` issue. Every issue keeps exactly
+one of `bug`, `feature` or `process`. After any label change, say which label
+and why.
 
 ## Never
 
-- Move a card, push to `main`, or merge a pull request.
+- Pass the Go or Approved gate yourself, push to `main`, or merge a pull request.
 - Run a command that changes a shared environment (deploy, publish,
   configure). Write the steps for a person to run.
 - Invent requirements, rules or decisions that aren't written down.
