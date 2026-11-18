@@ -55,6 +55,10 @@
     .top h1 a { color:inherit; text-decoration:none; }
     .brand { display:none; align-items:center; gap:10px; font-weight:600; font-size:19px; color:var(--fg); text-decoration:none; flex:none; }
     .brand img { width:32px; height:32px; display:block; image-rendering:pixelated; }
+    /* Home on a phone: the logo and the app name, so a test copy's name (and its pull request) shows there too. */
+    .top h1 .home-brand { display:flex; align-items:center; gap:8px; min-width:0; font-size:19px; }
+    .home-brand img { width:28px; height:28px; flex:none; image-rendering:pixelated; }
+    .home-brand span { min-width:0; overflow:hidden; text-overflow:ellipsis; }
     .box-icon { width:32px; height:32px; display:block; image-rendering:pixelated; flex:none; }
     .top nav .box-icon { width:22px; height:22px; }
     .head-refresh { width:40px; padding:0; justify-content:center; border-radius:50% !important; }

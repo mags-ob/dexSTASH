@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import cname, card_image, card_picture, set_image, sname %}
 {% block title %}{{ app_name }}{% endblock %}
-{% block heading %}Home{% endblock %}
+{% block heading %}<a href="/" class="home-brand"><img src="{{ asset("logo.svg") }}" alt="" width="28" height="28"><span>{{ app_name }}</span></a>{% endblock %}{# Phones: the name, as the top bar shows it on iPad and PC #}
 {% block header_actions %}
 <form method="post" action="/prices/refresh" class="pc-only">
   <button class="head-btn pop" {% if updating %}disabled data-updating{% endif %}>{{ icon("refresh", 16) }} {{ 'Updating prices…' if updating else 'Update prices' }}</button>
