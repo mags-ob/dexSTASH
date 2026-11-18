@@ -73,3 +73,26 @@ def test_artist_pages_are_unchanged(client, artists):
     _tag("t1-1", ARITA)
     client.post("/pokemon/follow", data={"kind": "artist", "artist": ARITA, "dex": ""})
     assert client.get("/artists/mitsuhiro%20arita").status_code == 200
+
+
+def test_an_artist_name_with_a_digit_searches_by_artist(client, artists, monkeypatch):
+    monkeypatch.setattr(tcgdex, "artist_names", lambda api=None, max_age=0: [ARITA, "5ban Graphics"])
+    _setup_with_set(client)
+    _tag("t1-1", "5ban Graphics")
+    assert 'href="/search?q=5ban+Graphics"' in client.get("/cards/t1-1").text  # tapped
+    page = client.get("/search", params={"q": "5ban graphics"}).text  # or typed
+    assert "Cards drawn by <strong>5ban Graphics</strong>" in page and 'href="/artists/5ban%20graphics"' in page
+    assert "Cards drawn by" not in client.get("/search", params={"q": "5ban"}).text  # only the whole name
+
+
+def test_the_artist_list_is_compared_once_per_list(monkeypatch):
+    from app import chase
+    names = [ARITA, "5ban Graphics"]
+    monkeypatch.setattr(tcgdex, "artist_names", lambda api=None, max_age=86400: names)
+    monkeypatch.setattr(web, "_artist_norms_cache", [None])
+    seen = []
+    real = chase.artist_norm
+    monkeypatch.setattr(chase, "artist_norm", lambda n: seen.append(n) or real(n))
+    assert web._artist_norms() == {"mitsuhiro arita", "5ban graphics"}
+    web._artist_norms()
+    assert len(seen) == 2  # the second page reused the first's work

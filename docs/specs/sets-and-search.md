@@ -54,6 +54,8 @@ it on a page that says what it is, what you have of it and what it's worth.
     A tag chip opens Find with every card tagged with it, except the artist's automatic tag, which searches
     Find for the artist's name, the same as typing it (#67). The artist's tag is the automatic tag whose name
     is on TCGdex's illustrator list kept here; the card page never asks TCGdex for it.
+    A name typed in Find counts as an artist when it is a whole artist's name and not a Pokémon, digits
+    included ("5ban Graphics").
 14. A Japanese or Chinese card shows its English name beside its own, and its set's English name, when one
     is known (TCGCSV's or CardTrader's set lists, or the app's own list). A name is never machine-translated.
     Data sources › Settings picks which names show on Japanese and Chinese cards.
