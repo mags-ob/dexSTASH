@@ -137,7 +137,7 @@
 {% if recent_views %}{# An empty Find shows the cards opened last #}
 <h2 style="font-size:16px;margin:10px 0 8px">Recently viewed</h2>
 <div class="cgrid recent-views">
-  {% for r in recent_views %}{{ tile(r.href, card_pics(r.card_id, r.image_url), cname(r.name, r.card_id), r.number) }}{% endfor %}
+  {% for r in recent_views %}{{ tile(r.href, card_pics(r.card_id, r.image_url), cname(r.name, r.card_id), r.number, priced=False) }}{% endfor %}
 </div>
 {% endif %}
 

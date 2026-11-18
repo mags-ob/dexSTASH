@@ -1248,8 +1248,22 @@ _FORMS = re.compile(r"^(?:.+'s |mega |dark |light |radiant |shining |galarian |a
                     r"(?: (?:ex|gx|v|vmax|vstar|break|lv\.x|prime|star|δ|◇|☆))+$", re.IGNORECASE)
 
 
+_artist_norms_cache: list = [None]  # (the list it was worked out from, its names as compared)
+
+
+def _artist_norms(api=None) -> frozenset:
+    """TCGdex's artist names as artist_norm compares them. Worked out again only when the list changes (at most
+    daily), so pages don't redo it each time. With api, a stale list is asked for again (see tcgdex.artist_names)."""
+    names = tcgdex.artist_names(api)
+    done = _artist_norms_cache[0]
+    if done is None or done[0] is not names:  # one swap, so other requests see the old pair or the new one
+        done = (names, frozenset(chase.artist_norm(n) for n in names))
+        _artist_norms_cache[0] = done
+    return done[1]
+
+
 def _card_tags_with_pokemon(card_id: str, card) -> dict:
-    """The card's tags, plus your own words on its Pokémon, carried onto the card."""
+    """The card's tags, plus your own words on its Pokémon, carried onto the card, and which tags are its artist."""
     entry = tags.for_card(conn, card_id)
     dex = (_card_pokemon({"collection_id": 0}, card["name"], card_id if ":" in card_id else card["language"],
                          card["twin_name"]) or {}).get("dex")
@@ -1258,6 +1272,10 @@ def _card_tags_with_pokemon(card_id: str, card) -> dict:
         for (word,) in conn.execute("SELECT tag FROM pokemon_tags WHERE dex = ? ORDER BY rowid", (dex,)):
             if word.casefold() not in have:
                 entry["tags"].append((word, "pokemon"))
+    # The artist's automatic tag searches Find for them, the same as typing the name. Only the list already
+    # kept is read (never TCGdex), so the page doesn't wait.
+    known = _artist_norms()
+    entry["artists"] = {t for t, kind in entry["tags"] if kind == "auto" and chase.artist_norm(t) in known}
     return entry
 
 
