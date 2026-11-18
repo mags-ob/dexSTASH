@@ -48,31 +48,32 @@ deleted. Phase is not a label: it is the board column.
 | `bug` | Type | Bug form | Something doesn't work as expected |
 | `feature` | Type | Feature form | A new capability, change, docs, chore or refactor |
 | `process` | Type | Process change form | A change to the workflow, agents, lifecycle or other process files (not product.md or concepts.md). The only type that may edit them |
-| `small` | Size | Maintainer | Short Define: the issue body is the plan (see [Small changes](lifecycle.md#small-changes)) |
-| `docs` | Scope | Maintainer | Documentation only; no code changes |
-| `priority:high` | Priority | Maintainer | Do before other work. No label means normal |
+| `small` | Size | Maintainer or an assistant | Short Define: the issue body is the plan (see [Small changes](lifecycle.md#small-changes)) |
+| `docs` | Scope | Maintainer or an assistant | Documentation only; no code changes |
+| `priority:high` | Priority | Maintainer or an assistant | Do before other work. No label means normal |
 | `needs-info` | Status | Anyone | Waiting on an answer before it can move on |
-| `blocked` | Status | Maintainer | Waiting on something outside the issue |
-| `duplicate` | Close reason | Maintainer | Already covered by another issue |
-| `wontfix` | Close reason | Maintainer | Decided not to do |
+| `blocked` | Status | Maintainer or an assistant | Waiting on something outside the issue |
+| `duplicate` | Close reason | Maintainer or an assistant | Already covered by another issue |
+| `wontfix` | Close reason | Maintainer or an assistant | Decided not to do |
 
 Every issue has exactly one of `bug`, `feature` or `process`. The rest are optional.
-Assistants only use existing labels and say why when they change one.
+Assistants may add, remove, create, rename and delete labels, and say why when they change one.
 
 ### Project labels
 
 A project may add its own labels (for example `area:api`) for things the
 template doesn't cover. Add them to `.github/labels.yml` and list each one in
 the table below with its meaning and who sets it, through a `process` issue.
-They follow the same rules as the template labels: assistants only suggest
-them, and they never replace the type labels or describe the phase.
+They follow the same rules as the template labels: anyone, assistants
+included, may apply them, and they never replace the type labels or describe
+the phase.
 
 | Label | Kind | Set by | Meaning |
 | --- | --- | --- | --- |
-| `db-step` | Scope | Maintainer | The change adds a database step: older versions won't start on the upgraded database |
-| `accessibility` | Scope | Maintainer | Barrier affecting people with disabilities |
-| `help wanted` | Community | Maintainer | Open for a contributor to take |
-| `good first issue` | Community | Maintainer | Good for newcomers |
+| `db-step` | Scope | Maintainer or an assistant | The change adds a database step: older versions won't start on the upgraded database |
+| `accessibility` | Scope | Maintainer or an assistant | Barrier affecting people with disabilities |
+| `help wanted` | Community | Maintainer or an assistant | Open for a contributor to take |
+| `good first issue` | Community | Maintainer or an assistant | Good for newcomers |
 
 Remove the old labels `area: ...`, `spec`, `chore`, `documentation`, `enhancement`, `invalid`, `question`,
 `already-built`, `test image` and `needs-decision` (use `needs-info`) after relabelling any issue that has them.
@@ -86,9 +87,9 @@ Backlog becomes Define, Ready and In progress both become Build, In review becom
 | Column | Phase | Moved by |
 | --- | --- | --- |
 | Define | Define | New issues land here |
-| Build | Build | Maintainer, at the **Go** gate |
-| Validate | Validate | Maintainer, when the pull request is ready for review (a manual move; GitHub's built-in workflows don't do this) |
-| Done | Done | Maintainer, at the **Approved** gate; closing the issue does it automatically |
+| Build | Build | Maintainer or an assistant, after the maintainer's **Go** |
+| Validate | Validate | Maintainer or an assistant, when the pull request is ready for review (a manual move; GitHub's built-in workflows don't do this) |
+| Done | Done | After the maintainer's **Approved**; closing the issue does it automatically |
 
 Turn on the built-in Project workflows (free): **Item added to project** sets
 Status to Define, **Item closed** sets Status to Done, and **Auto-add to
