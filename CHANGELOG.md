@@ -11,6 +11,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 - **A card or set TCGdex doesn't answer for no longer shows "Can't reach your server".** The app's own page says "Couldn't load this card" (or set) with Try again and Back, and writes why to the log. The offline screen is only for a server that really can't be reached, and the "upgrade didn't finish" page now shows on a phone too (#77).
 
 ### Changed
+- **Home on a phone shows the logo and the app's name** in place of "Home", as the top bar does on an iPad or computer. A test copy's name ("Test PR 78 0d0fd04") now shows on a phone too (#93).
 - **Assistants keep the board and labels up to date.** They move an issue's card once the maintainer has said go or approved, and may add, remove and create labels. Go and Approved stay the maintainer's (#98).
 - **Process docs agree with each other.** A release comes as its own pull request, and assistants never skip the git hooks (#84).
 - **Background work goes easy on every source.** Downloads (following a Pokémon, loading sets, price runs) send each site at most 5 requests a second, and wait when a site says to slow down, so the pages you're using keep working. Big downloads take a little longer (#77).
