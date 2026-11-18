@@ -123,6 +123,19 @@ guide; this spec holds the statements a change must keep true.
     back means putting the `-upgrade.db` backup back by hand, then running the older image. Restoring a
     newer version's backup in an older version is refused the same way.
 
+### Test copy
+
+34. `deploy/test-copy/` runs a second copy of the app next to the live one (container `dexstash-test`, image
+    `dexstash:test`, its own `data/`), for trying a pull request with a copy of the live data. The image is
+    built on the server and never pushed. `try-pr.sh` builds a pull request, commit or `main`;
+    `reset-test-data.sh` copies the live databases in (SQLite backup inside the live container) without
+    backups, logs, scan photos, API keys or the secret key, and turns the nightly price update off.
+35. Its watcher container asks GitHub's public API, every `CHECK_MINUTES` (5), for open pull requests with the
+    `TEST_LABEL` label (`test`), without a token. The one labelled most recently is built with `try-pr.sh`;
+    when it differs from the one running, `reset-test-data.sh` runs after a good build. A commit already tried
+    (built, failed or skipped) isn't tried again; a pull request from a fork is never built. Removing the label
+    changes nothing.
+
 ## Rules and limits
 
 - One Uvicorn worker, on purpose (see [architecture](architecture.md)). Never scale the app container.
@@ -137,6 +150,8 @@ guide; this spec holds the statements a change must keep true.
 - Files: `docker-compose.yml`, `Dockerfile`, `.env.example`, `deploy/entrypoint.sh`, `deploy/Caddyfile`.
 - Workflows: `.github/workflows/image.yml` (release images and files), `pr-image.yml` (test images).
 - Tools: `tools/release_image.py` (release images and files built locally, while Actions is off).
+- Test copy: `deploy/test-copy/` (`docker-compose.yml`, `try-pr.sh`, `reset-test-data.sh`, `watch_prs.py`,
+  `Dockerfile`, `README.md`).
 - Code: `app/settings.py`, `app/main.py` (proxy, https, Origin check), `app/startup.py`, `app/db.py`,
   `app/backup.py`, `app/reset.py`, `app/keys.py`, `app/activity.py`.
 - Pages: Account › Backups, Account › Data sources (Settings, Scanning, Prices › API keys, Activity log,

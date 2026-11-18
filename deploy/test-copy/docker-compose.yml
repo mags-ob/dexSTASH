@@ -1,0 +1,61 @@
+name: dexstash-test
+# A test copy of dexSTASH next to the live one. Its own container, image and data folder:
+# nothing here touches the live container or its data. See README.md.
+#   sudo ./try-pr.sh 70         build pull request 70 and run it here
+#   sudo ./try-pr.sh main       the newest main
+#   sudo ./reset-test-data.sh   fresh copy of the live data (live keeps running)
+# The watcher does the same by itself for a pull request with the "test" label.
+# Caddy reaches the test copy at dexstash-test:8000.
+
+services:
+  app:
+    image: dexstash:test          # built on this server by try-pr.sh, never pulled or pushed
+    container_name: dexstash-test
+    restart: unless-stopped
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    env_file:
+      - path: pr.env              # written by try-pr.sh (the name shown in the app)
+        required: false
+      - path: .env                # your own test settings, optional
+        required: false
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Etc/UTC}
+      DEXSTASH_SCANNER: ${DEXSTASH_SCANNER:-inside}   # scans read inside this container, no second scanner
+    volumes:
+      # The watcher runs this file from inside its own container, so it passes this folder's real path
+      - ${DEXSTASH_TEST_DIR:-.}/data:/srv/data
+    mem_limit: 2g                 # room for the photo reader; it's a cap, not what it uses
+    cpu_shares: 256               # the live app (512) wins when the CPU is busy
+    cpus: 1
+    networks: [proxy]
+
+  watcher:
+    build: .                      # a small image built on this server from Dockerfile, never pushed
+    image: dexstash-test-watcher
+    container_name: dexstash-test-watcher
+    restart: unless-stopped
+    logging: *logging
+    working_dir: /work
+    command: ["python", "-u", "watch_prs.py"]
+    environment:
+      DEXSTASH_REPO: ${DEXSTASH_REPO:-mags-ob/dexSTASH}
+      TEST_LABEL: ${TEST_LABEL:-test}           # the label that picks the pull request to test
+      CHECK_MINUTES: ${CHECK_MINUTES:-5}        # how often to ask GitHub
+      LIVE_CONTAINER: ${LIVE_CONTAINER:-dexstash}
+    volumes:
+      - .:/work                                 # this folder: scripts, data and the watcher's state
+      - /var/run/docker.sock:/var/run/docker.sock   # to build the test image and restart the test copy
+    mem_limit: 256m
+    cpu_shares: 128
+    network_mode: bridge          # only needs to reach GitHub
+
+networks:
+  proxy:
+    name: ${DEXSTASH_NETWORK:-docker_proxy}   # the network your Caddy and the live app are on
+    external: true

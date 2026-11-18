@@ -1,0 +1,2 @@
+# The watcher's image copies nothing from this folder; keep the data and sources out of the build.
+*

@@ -1,0 +1,8 @@
+# Made by the scripts and the watcher on the server; never committed.
+data/
+src/
+src.new/
+src.tar.gz
+pr.env
+.env
+.watch-state.json
