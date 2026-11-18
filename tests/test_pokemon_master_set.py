@@ -152,3 +152,66 @@ def test_add_a_card_offers_every_card_and_all_cards(client, monkeypatch):
     assert main.conn.execute("SELECT how FROM pokemon_cards WHERE dex_id = 35 AND card_id = 'sv03.5-150'").fetchone()[0] == "manual"
     art = next(a for a in chase_pages.arts(main.conn, 35) if "sv03.5-035" in a["card_ids"])
     assert "sv03.5-150" in art["card_ids"]
+
+
+def _art_of(card: str) -> set[str]:
+    return set(next(a for a in chase_pages.arts(main.conn, 35) if card in a["card_ids"])["card_ids"])
+
+
+def test_a_card_added_by_hand_stays_when_the_cover_is_taken_out(client, monkeypatch):
+    """#71: Not this art moves only that card, even when it's the cover a hand-added card was joined to."""
+    _clefairy(client, monkeypatch)
+    client.post("/pokemon/35/fix/add", data={"card": "base1-5", "to": "sv03.5-035"})  # joins the cover
+    assert _art_of("sv03.5-035") == {"sv03.5-035", "zh-tw:SV2a-035", "ja:SV2a-035", "base1-5"}
+    client.post("/pokemon/35/fix/out", data={"card": "sv03.5-035", "back": "sv03.5-035", "stay": "ja:SV2a-035"})
+    assert _art_of("sv03.5-035") == {"sv03.5-035"}
+    assert _art_of("base1-5") == {"zh-tw:SV2a-035", "ja:SV2a-035", "base1-5"}
+    client.post("/pokemon/35/fix/out", data={"card": "ja:SV2a-035", "back": "ja:SV2a-035", "stay": "base1-5"})
+    assert _art_of("ja:SV2a-035") == {"ja:SV2a-035"} and _art_of("base1-5") == {"zh-tw:SV2a-035", "base1-5"}
+
+
+def test_hand_added_cards_left_alone_keep_together(client, monkeypatch):
+    """#71: when only cards added by hand are left, they stay one art, apart from the card taken out."""
+    _clefairy(client, monkeypatch)
+    client.post("/pokemon/35/fix/out", data={"card": "ja:SV2a-035", "back": "sv03.5-035"})
+    client.post("/pokemon/35/fix/add", data={"card": ["base1-5", "sv03.5-035"], "to": "ja:SV2a-035"})
+    assert _art_of("ja:SV2a-035") == {"ja:SV2a-035", "base1-5", "sv03.5-035"}
+    client.post("/pokemon/35/fix/out", data={"card": "ja:SV2a-035", "back": "ja:SV2a-035"})
+    assert _art_of("ja:SV2a-035") == {"ja:SV2a-035"} and _art_of("base1-5") == {"base1-5", "sv03.5-035"}
+
+
+def test_hand_choices_outlast_recheck_and_updates(client, monkeypatch):
+    """#71: cards added or taken out by hand keep their place after ↻ Re-check and Check for updates,
+    even when the pictures say otherwise."""
+    _clefairy(client, monkeypatch)
+    client.post("/pokemon/35/fix/out", data={"card": "zh-tw:SV2a-035", "back": "sv03.5-035"})
+    client.post("/pokemon/35/fix/add", data={"card": "base1-5", "to": "sv03.5-035"})
+    # The pictures now say the opposite: the taken-out card matches, the added one doesn't.
+    other = {"sv03.5-035": _vec(1, 0, 0), "zh-tw:SV2a-035": _vec(1, 0, 0), "ja:SV2a-035": _vec(1, 0.01, 0),
+             "base1-5": _vec(0, 1, 0)}
+    monkeypatch.setattr(chase, "fingerprints", lambda conn, dex, encoder, *a, **k: other)
+    chase.run_recheck(main.conn, 35, None)
+    assert _art_of("sv03.5-035") == {"sv03.5-035", "ja:SV2a-035", "base1-5"} and _art_of("zh-tw:SV2a-035") == {"zh-tw:SV2a-035"}
+    chase.save_cards(main.conn, 35, _chase_rows())  # Check for updates stores the cards again
+    chase.regroup(main.conn, 35, other)
+    assert _art_of("sv03.5-035") == {"sv03.5-035", "ja:SV2a-035", "base1-5"} and _art_of("zh-tw:SV2a-035") == {"zh-tw:SV2a-035"}
+
+
+def test_refresh_and_back_dont_reopen_the_edit_art_sheet():
+    """#79: a fix is sent from the page and replaces it (no new step for Back), and open and message leave the
+    address once read, so a refresh or Back shows the plain grid. The server's redirect is unchanged."""
+    from pathlib import Path
+    js = (Path(__file__).resolve().parents[1] / "app/static/js/pokemon-art-tray.js").read_text()
+    assert "location.replace(r.url)" in js and "location.assign" not in js
+    assert 'here.searchParams.delete("open")' in js and 'here.searchParams.delete("message")' in js
+    assert "history.replaceState(" in js and "history.pushState(" not in js
+    assert "form.submit()" in js  # if sending fails, the form is posted as before
+    assert r"(fix\/|recheck$)" in js  # Not this art, Add a card, Undo and Re-check
+
+
+def test_the_chasing_section_fits_a_phone():
+    """#68: the Chasing box's one column is never wider than the box, so nothing is cut off at 375px."""
+    from pathlib import Path
+    css = (Path(__file__).resolve().parents[1] / "app/static/css/card.css").read_text()
+    rule = re.search(r"\.copy-body \{([^}]*)\}", css).group(1)
+    assert "grid-template-columns:minmax(0, 1fr)" in rule
