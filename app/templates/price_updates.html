@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Older price updates · {{ app_name }}{% endblock %}
+{% block heading %}Older price updates{% endblock %}
+{% block back %}{% from "_macros.html" import back_to %}{{ back_to("/account/data#prices", "Data sources") }}{% endblock %}
+{% block content %}
+{# The full price runs before the newest, which Data sources › Prices shows. #}
+<p class="muted" style="font-size:13px;margin:0 0 10px">Full price updates before the latest, newest first. The last 30 are kept; the latest is on Data sources › Prices.</p>
+{% if runs %}
+<div class="panel ds">
+  {% for r in runs %}{% include "_price_run.html" %}{% endfor %}
+</div>
+{% else %}
+<p class="muted">No older price updates yet.</p>
+{% endif %}
+{% endblock %}
