@@ -207,3 +207,11 @@ def test_refresh_and_back_dont_reopen_the_edit_art_sheet():
     assert "history.replaceState(" in js and "history.pushState(" not in js
     assert "form.submit()" in js  # if sending fails, the form is posted as before
     assert r"(fix\/|recheck$)" in js  # Not this art, Add a card, Undo and Re-check
+
+
+def test_the_chasing_section_fits_a_phone():
+    """#68: the Chasing box's one column is never wider than the box, so nothing is cut off at 375px."""
+    from pathlib import Path
+    css = (Path(__file__).resolve().parents[1] / "app/static/css/card.css").read_text()
+    rule = re.search(r"\.copy-body \{([^}]*)\}", css).group(1)
+    assert "grid-template-columns:minmax(0, 1fr)" in rule

@@ -6,6 +6,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 
 ### Fixed
 - **Cards you add to an art by hand stay there.** Taking a card out with Not this art moves only that card, even when it's the card the others were added to. Your hand choices keep their place after ↻ Re-check and Check for updates (#71).
+- **The Chasing section on a card page fits a phone.** The remove (×), Add and Add photo buttons are no longer cut off at the right edge (#68).
 - **Refresh and Back on a Pokémon or artist page no longer reopen Edit art.** A fix in the Edit art sheet adds no step to Back, and a refresh shows the page as it was (#79).
 - **A card or set TCGdex doesn't answer for no longer shows "Can't reach your server".** The app's own page says "Couldn't load this card" (or set) with Try again and Back, and writes why to the log. The offline screen is only for a server that really can't be reached, and the "upgrade didn't finish" page now shows on a phone too (#77).
 
