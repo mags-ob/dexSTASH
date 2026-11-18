@@ -130,9 +130,10 @@
    number on a set page). Owned cards get the ring and ✓ in the theme's second colour; chased ones (star) a rose
    heart, and a rose ring unless owned. pending: the price is being read ("Checking price…", filled in by
    find-prices.js under the key pending gives).
+   priced=False leaves the price line out (Recently viewed: picture and name only).
    caller(), when given, adds things on top of the tile (a checkbox, a remove button). #}
 {% macro tile(href, pics, name, number, logo=None, price=None, third="", owned=False, title="", qty=0, tag="", star=False,
-              price_html=None, lang_tag="", pic_id=None, pending=None) -%}
+              price_html=None, lang_tag="", pic_id=None, pending=None, priced=True) -%}
 <div class="ctile{% if owned %} owned{% elif star %} chased{% endif %}"{% if pic_id %} data-pic-id="{{ pic_id }}"{% endif %}{% if pending %} data-price-pending="{{ pending }}"{% endif %}>
   {% if caller %}{{ caller() }}{% endif %}
   <a href="{{ href }}"{% if title %} title="{{ title }}"{% endif %}>
@@ -143,7 +144,7 @@
       {% if qty > 1 %}<span class="badge-q">&times;{{ qty }}</span>{% endif %}
       {% if tag %}<span class="badge-l">{{ tag }}</span>{% endif %}</span>
     <span class="n">{{ name }}</span>
-    <span class="p">{% if price_html %}{{ price_html }}{% elif price is number %}{{ price | money }}{% elif pending %}<span class="muted">Checking price…</span>{% else %}<span class="muted">No price</span>{% endif %}</span>
+    {% if priced %}<span class="p">{% if price_html %}{{ price_html }}{% elif price is number %}{{ price | money }}{% elif pending %}<span class="muted">Checking price…</span>{% else %}<span class="muted">No price</span>{% endif %}</span>{% endif %}
     {% if third %}<span class="t">{{ third }}</span>{% endif %}
   </a>
 </div>
