@@ -11,7 +11,7 @@ maintainer can approve it. You assemble evidence; the maintainer decides.
 ## Activities
 
 1. **Compare** the pull request with the issue: acceptance criteria, UI/UX,
-   plan, spec. Note anything built without a source, and any criterion with
+   plan, plan file, spec. Note anything built without a source, and any criterion with
    no test.
 2. **Run** `tools/scan.sh --branch`, the tests and lint.
 3. **Ask the [reviewer](reviewer.md)** for the code, security, AI-slop and
@@ -28,7 +28,8 @@ maintainer can approve it. You assemble evidence; the maintainer decides.
 
 ## May write to
 
-Pull request comments, and `docs/decisions/` (say so in a comment). Do not
+Pull request comments, and `docs/decisions/` (say so in a comment). Keep
+issue comments short; detail and test output go on the pull request. Do not
 change code or specs; drift goes back to Build.
 
 ## Stop and ask when
@@ -37,6 +38,9 @@ change code or specs; drift goes back to Build.
 - A risk or exception needs the maintainer to accept it.
 - Something fails. Comment what failed and which criterion it breaks, and say
   whether it goes back to Build (code) or Define (plan).
+- Something new turns up that the issue never asked for. Ask whether to amend
+  the issue or open a new one
+  ([Amending an issue](../docs/lifecycle.md#amending-an-issue)).
 
 The checklist is advisory: report it honestly, don't block on it. The
 maintainer decides.

@@ -6,8 +6,7 @@ It prints each problem with its file and line and exits with 1 when there is any
 
 - Nothing personal: paths from someone's own machine or home server, e-mail addresses and DuckDNS names
   that aren't examples (or, for e-mail, published by their owner in ALLOWED_EMAILS), and any word listed in
-  rules/private-words.txt (git-ignored, one per line) or in the DEXSTASH_PRIVATE_WORDS environment variable
-  (comma separated). The word list never goes in the repository, because this check is public too.
+  rules/private-words.txt (git-ignored, one per line). The word list never goes in the repository, because this check is public too.
 - Nothing that must never be committed: .env files, databases, the data folder, models and bundles.
 - Every commit's author, committer and message, the same way, plus links to private pages (an AI assistant's
   sessions or projects). A merge made on github.com is written with the merger's profile name and e-mail, so
@@ -18,7 +17,6 @@ A line that has to break a pattern on purpose (a test of this check, say) ends w
 `rules: allow`.
 """
 
-import os
 import re
 import subprocess
 import sys
@@ -61,12 +59,11 @@ def tracked_files() -> list[str]:
 
 
 def private_words() -> list[re.Pattern]:
-    """The words in rules/private-words.txt (one per line) and DEXSTASH_PRIVATE_WORDS (comma separated),
-    each matched as a whole word in any case."""
-    words = [w.strip() for w in os.environ.get("DEXSTASH_PRIVATE_WORDS", "").split(",") if w.strip()]
+    """The words in rules/private-words.txt (one per line), each matched as a whole word in any case."""
+    words = []
     listed = ROOT / "rules" / "private-words.txt"
     if listed.is_file():
-        words += [w.strip() for w in listed.read_text(encoding="utf-8").splitlines()
+        words = [w.strip() for w in listed.read_text(encoding="utf-8").splitlines()
                   if w.strip() and not w.lstrip().startswith("#")]
     return [re.compile(r"(?<![\w-])" + re.escape(w) + r"(?![\w-])", re.I) for w in words]
 

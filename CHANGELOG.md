@@ -5,9 +5,23 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 ## Unreleased
 
 ### Fixed
+- **A CardTrader token saves.** A key can be up to 4,000 characters (CardTrader's is over 500, which was turned away, so Data sources kept saying "no key"). Spaces and line breaks that come with a paste are dropped, and what Save, Test or Remove did now shows in green or red on the key's own row instead of at the top of the page, out of view (#64).
+- **opentelemetry-api raised to 1.45.2**, which fixes a known vulnerability pip-audit reported in 1.45.1 (#101).
+- **Cards you add to an art by hand stay there.** Taking a card out with Not this art moves only that card, even when it's the card the others were added to. Your hand choices keep their place after ↻ Re-check and Check for updates (#71).
+- **The Chasing section on a card page fits a phone.** The remove (×), Add and Add photo buttons are no longer cut off at the right edge (#68).
+- **Refresh and Back on a Pokémon or artist page no longer reopen Edit art.** A fix in the Edit art sheet adds no step to Back, and a refresh shows the page as it was (#79).
 - **A card or set TCGdex doesn't answer for no longer shows "Can't reach your server".** The app's own page says "Couldn't load this card" (or set) with Try again and Back, and writes why to the log. The offline screen is only for a server that really can't be reached, and the "upgrade didn't finish" page now shows on a phone too (#77).
 
 ### Changed
+- **The project scan reads private words only from `rules/private-words.txt`**, no longer from the `DEXSTASH_PRIVATE_WORDS` variable; move any words still set there into the file. It also finds Python on Windows (#108).
+- **"Last price update" on Data sources › Prices shows the latest full run only.** Older ones (the last 30) are on a new Older price updates page, linked under it. A latest run with problems still opens by itself (#65).
+- **The contributing and security guides moved to `.github/`, and the install guide to [docs/deploy.md](docs/deploy.md).** Lint settings moved from ruff.toml into pyproject.toml, and requirements.txt and requirements.lock into `requirements/`, so a build from source installs with `pip install -r requirements/requirements.lock`. Links to the old DEPLOY.md stop working (#101).
+- **Find's first page is quicker to scan.** Recently viewed shows each card's picture and name, without the "No price" line. Search results and set pages keep their prices (#66).
+- **Tapping a card's artist tag searches Find for the artist**, the same as typing their name: "Cards drawn by …", the link to their page, and every card they drew. Other tags still open a tag search. Typing an artist's whole name with a digit in it, like "5ban Graphics", now finds their cards too (#67).
+- **Home on a phone shows the logo and the app's name** in place of "Home", as the top bar does on an iPad or computer. A test copy's name ("Test PR 78 0d0fd04") now shows on a phone too (#93).
+- **Issues are short and easy to read.** Detail an assistant needs goes in a plan file in [docs/plans/](docs/plans/), linked from the issue and kept as a record of design context (#106).
+- **An issue in progress can be amended.** When the maintainer says new work joins an open issue, it's added to that issue and its pull request instead of a new issue, after a go on the addition (#103).
+- **Assistants keep the board and labels up to date.** They move an issue's card once the maintainer has said go or approved, and may add, remove and create labels. Go and Approved stay the maintainer's (#98).
 - **Process docs agree with each other.** A release comes as its own pull request, and assistants never skip the git hooks (#84).
 - **Background work goes easy on every source.** Downloads (following a Pokémon, loading sets, price runs) send each site at most 5 requests a second, and wait when a site says to slow down, so the pages you're using keep working. Big downloads take a little longer (#77).
 - **A new way of working:** issues are Bug, Feature or Process change, and move through Define, Build, Validate and Done ([docs/lifecycle.md](docs/lifecycle.md)). The old required checks are gone; the secrets and personal-details scan runs on your machine (`tools/scan.sh`, from the git hooks). Private words now live in the git-ignored `rules/private-words.txt` instead of a repository secret. `rules/project.md` moved into AGENTS.md, and the Checks workflow, the description workflow and `tools/local_checks.py` are removed.

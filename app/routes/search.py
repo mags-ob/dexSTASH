@@ -40,16 +40,17 @@ def search_view(
         langs = [set_lang] if set_lang in langs else langs
 
     translation, translate_error = None, None
-    # Search by artist. The Artist chip (by=artist), or a name that is an artist and not a Pokémon.
+    # Search by artist. The Artist chip (by=artist), or a name that is an artist and not a Pokémon. Only a whole
+    # artist name counts, so a name with a digit can be one ("5ban Graphics") without catching "pikachu 25".
     by = by if by == "artist" else ""
     picked_by = by  # the Artist chip sticks to the next search; an artist found by name doesn't
     artist_q = " ".join(q.split())
-    if not by and len(artist_q) >= 3 and not any(ch.isdigit() for ch in artist_q):
+    if not by and len(artist_q) >= 3 and any(ch.isalpha() for ch in artist_q):
         try:
             is_pokemon = web.names.species_id(artist_q) is not None or web.names.species_id(web.names.to_english(artist_q) or "") is not None
         except Exception:
             is_pokemon = False
-        if not is_pokemon and chase.artist_norm(artist_q) in {chase.artist_norm(n) for n in tcgdex.artist_names(web.api)}:
+        if not is_pokemon and chase.artist_norm(artist_q) in web._artist_norms(web.api):
             by = "artist"
     reading = _read_words(q, lang) if not by else smart.Reading(q=q, rest=q)
     if reading.set and not set:  # a set name typed in the search: that set only
@@ -250,7 +251,7 @@ def search_view(
         "filter_count": sum(1 for v in (lang not in BUTTON_LANGS, by, set, rarity, kind, owned, sort, tag) if v),
         "by": by, "by_chip": picked_by, "artist_hits": artist_hits,
         "artist_link": "/artists/" + quote(chase.artist_norm(artist_q)) if by and artist_q and (
-            artist_here or chase.artist_norm(artist_q) in {chase.artist_norm(n) for n in tcgdex.artist_names(web.api)}) else None,
+            artist_here or chase.artist_norm(artist_q) in web._artist_norms(web.api)) else None,
         "artist_name": (artist_here or {}).get("name") or next(
             (n for n in tcgdex.artist_names(web.api) if chase.artist_norm(n) == chase.artist_norm(artist_q)), artist_q) if by else "",
         "tag": tag, "my_tags": tags.mine(conn),

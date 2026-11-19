@@ -46,7 +46,7 @@ pre{{white-space:pre-wrap;background:#f3f3f3;padding:12px;border-radius:8px}}</s
 <pre>{error}</pre>
 <p>{backup}</p>
 <p>To go back: stop the app, copy that backup over <code>data/dexstash.db</code>, and install the version you had
-before. DEPLOY.md's Backups section has the steps. To get help, send the error above and the server's log.</p>
+before. docs/deploy.md's Backups section has the steps. To get help, send the error above and the server's log.</p>
 </body></html>"""
 
 

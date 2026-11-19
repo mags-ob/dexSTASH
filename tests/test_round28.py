@@ -219,7 +219,7 @@ def test_a_key_is_sealed_never_shown_and_not_in_backups(client, key_folder, monk
     made = backup.make(main.conn, key_folder / "backups")
     assert b"test-token" not in made.read_bytes() and b"sealed" not in made.read_bytes()
     with pytest.raises(ValueError):
-        keys.save("pricecharting", "has a space")
+        keys.save("pricecharting", "   ")  # nothing pasted (spaces a paste brings along are dropped, #64)
     with pytest.raises(ValueError):
         keys.save("ebay", "anything")  # coming soon: no key yet
     keys.remove("pricecharting")
@@ -241,7 +241,7 @@ def test_data_sources_keys_save_test_and_remove(client, key_folder, monkeypatch)
     page = client.get("/account/data").text
     assert '<h2 id="keys">API keys</h2>' in page and "Coming soon" in page and "eBay sold prices" in page
     r = client.post("/account/data/keys/cardtrader", data={"key": "test-token-not-a-real-one"}, follow_redirects=False)
-    assert "message=Saved.%20Works" in r.headers["location"]
+    assert "key_ok=1" in r.headers["location"] and "key_message=Saved.%20Works" in r.headers["location"]
     page = client.get("/account/data").text
     assert "test-token-not-a-real-one" not in page and "&bull;&bull;&bull;&bull;-one" in page and "Works (Misty" in page
     assert client.post("/account/data/keys/nowhere", data={"key": "x"}).status_code == 404

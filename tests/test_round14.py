@@ -269,7 +269,7 @@ def test_workflows_run_only_when_asked():
 
 # --- Item 4: docs for strangers -------------------------------------------------------------------------------
 
-DOCS = ["README.md", "DEPLOY.md", "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md", "NOTICE.md", "docs/architecture.md",
+DOCS = ["README.md", "docs/deploy.md", ".github/CONTRIBUTING.md", ".github/SECURITY.md", "CHANGELOG.md", "NOTICE.md", "docs/architecture.md",
         "docs/configuration.md", "docs/updating.md", "docs/backups.md", "docs/scanning.md"]
 
 
@@ -289,7 +289,7 @@ def test_no_dated_design_history_in_the_repository():
     """Design history stays out of the repository (personal details are tools/check_rules.py's job)."""
     assert not (ROOT / "pokemon-card-app.md").exists()
     assert not [p for p in (ROOT / "docs").glob("*.md") if re.search(r"\d{4}-\d{2}-\d{2}", p.name)]
-    assert not re.search(r"\bround \d", (ROOT / "README.md").read_text() + (ROOT / "DEPLOY.md").read_text(), re.I)
+    assert not re.search(r"\bround \d", (ROOT / "README.md").read_text() + (ROOT / "docs" / "deploy.md").read_text(), re.I)
 
 
 def test_the_diagrams_match_the_code():

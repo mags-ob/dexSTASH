@@ -3,7 +3,7 @@
 ## Purpose
 
 How a host installs, configures, updates and backs up dexSTASH, so every setting has one documented meaning
-and an install on any small server behaves the same way. [DEPLOY.md](../../DEPLOY.md) is the step-by-step
+and an install on any small server behaves the same way. [docs/deploy.md](../deploy.md) is the step-by-step
 guide; this spec holds the statements a change must keep true.
 
 ## Behaviour
@@ -26,7 +26,7 @@ guide; this spec holds the statements a change must keep true.
    one release, `pr-<number>` runs a test image.
 7. Building from source is the same compose file in a clone (or an unpacked release source) with
    `docker compose up -d --build`, from the `Dockerfile`.
-8. The image installs the exact versions in `requirements.lock`, runs as the user `PUID`/`PGID` (1000 unless
+8. The image installs the exact versions in `requirements/requirements.lock`, runs as the user `PUID`/`PGID` (1000 unless
    set) after making `data/` theirs, and reports healthy once `/healthz` answers.
 
 ### Containers and profiles
@@ -141,12 +141,12 @@ guide; this spec holds the statements a change must keep true.
   `app/backup.py`, `app/reset.py`, `app/keys.py`, `app/activity.py`.
 - Pages: Account › Backups, Account › Data sources (Settings, Scanning, Prices › API keys, Activity log,
   Running now), `/healthz`.
-- Guides: [DEPLOY.md](../../DEPLOY.md), [docs/configuration.md](../configuration.md),
+- Guides: [docs/deploy.md](../deploy.md), [docs/configuration.md](../configuration.md),
   [CHANGELOG.md](../../CHANGELOG.md).
 - Related specs: [overview](overview.md), [architecture](architecture.md), [prices](prices.md).
 
 ## Open questions
 
-- DEPLOY.md's opening still gives the app 1 CPU and 1 GB; the compose file now caps it at 2 GB. Which one the
+- docs/deploy.md's opening still gives the app 1 CPU and 1 GB; the compose file now caps it at 2 GB. Which one the
   guide should lead with (the 1 GB advice for hosts that don't scan inside) needs settling.
 - `.env.example` says `DEXSTASH_EURO_RATE=0` turns off "Cardmarket prices"; Cardmarket is no longer a source.

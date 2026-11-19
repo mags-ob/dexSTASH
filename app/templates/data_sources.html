@@ -126,17 +126,9 @@
   {% endif %}
   {% if price_runs or short_run %}
   <details class="ds-runs" style="margin-top:10px"{% if price_runs and price_runs[0].status != "ok" %} open{% endif %}>
-    <summary>Last price updates{% if price_runs %}: {{ run_words[price_runs[0].status] }}, {{ price_runs[0].ran_at | when }}{% endif %}</summary>
-    {% for r in price_runs %}
-    <div class="ds-run" style="margin:8px 0">
-      <b>{{ r.ran_at | when }}</b> <span class="muted">· {{ run_words[r.status] }}{% if r.fx_date %} · rates of {{ r.fx_date | short_date }}{% endif %}</span>
-      {% if r.error %}<div class="error" style="font-size:13px">{{ r.error }}</div>{% endif %}
-      <ul class="muted" style="margin:2px 0 0;padding-left:18px;font-size:13px">{% for name, s in (r.sources or {}).items() %}
-        <li>{{ source_names.get(name, name) }}: {% if s.sets is defined %}{{ s.sets }} sets read{% elif s.cards is defined %}{{ s.cards }} cards{% elif not s.errors %}done{% endif %}{% if s.skipped %}, {{ s.skipped }} TCGCSV already priced (asked weekly){% endif %}{% if s.slowed %}, slowed down {{ s.slowed }}×{% endif %}{% if s.no_language %}, {{ s.no_language }} listings with no language left out{% endif %}{% if s.too_high %}, {{ s.too_high }} far too high left out{% endif %}{% if s.errors %}{{ ", " if s.sets is defined or s.cards is defined }}{{ s.errors }} problem{{ "" if s.errors == 1 else "s" }}{% for e in s.first_errors %}<br><span style="font-size:12px">{{ e }}</span>{% endfor %}{% endif %}</li>{% endfor %}{% if r.other_errors %}
-        <li>{{ r.other_errors }} other problem{{ "" if r.other_errors == 1 else "s" }} (see the activity log)</li>{% endif %}
-      </ul>
-    </div>
-    {% endfor %}
+    <summary>Last price update{% if price_runs %}: {{ run_words[price_runs[0].status] }}, {{ price_runs[0].ran_at | when }}{% endif %}</summary>
+    {% for r in price_runs %}{% include "_price_run.html" %}{% endfor %}
+    {% if older_runs %}<p style="font-size:13px;margin:4px 0 8px"><a href="/account/data/price-updates">Older price updates ({{ older_runs }}) &rsaquo;</a></p>{% endif %}
     {% if short_run %}<p class="muted" style="font-size:13px">Last update for cards just added: {{ short_run.ran_at | when }}, {{ short_run.sets }} set{{ "" if short_run.sets == 1 else "s" }}, {{ run_words[short_run.status] }}{% if short_run.errors %} ({{ short_run.first_errors | join("; ") }}){% endif %}.</p>{% endif %}
   </details>
   {% endif %}
@@ -190,7 +182,8 @@
     <p class="muted" style="margin:2px 0 6px;font-size:13px">{{ k.what }}{% if k.how %} {{ k.how }}{% endif %}</p>
     {% if not k.soon %}
       {% if k.unreadable %}<p class="error" style="font-size:13px">The saved key can't be read (the app's secret key changed). Enter it again.</p>{% endif %}
-      {% if k.tested_at %}<p class="{{ 'ok' if k.test_ok else 'error' }}" style="font-size:13px;margin:0 0 6px">Test {{ k.tested_at | when }}: {{ k.test_message }}</p>{% endif %}
+      {% if key_said and key_said.site == k.site %}<p class="{{ 'ok' if key_said.ok else 'error' }}" role="status" style="font-size:13px;margin:0 0 6px">{{ key_said.message }}</p>
+      {% elif k.tested_at %}<p class="{{ 'ok' if k.test_ok else 'error' }}" style="font-size:13px;margin:0 0 6px">Test {{ k.tested_at | when }}: {{ k.test_message }}</p>{% endif %}
       <form method="post" action="/account/data/keys/{{ k.site }}" class="ds-key-form" autocomplete="off">
         <input type="password" name="key" placeholder="{{ 'Paste a new key to replace it' if k.set else 'Paste your key' }}" aria-label="{{ k.label }} key" autocomplete="off" spellcheck="false">
         <button class="quiet">Save</button></form>

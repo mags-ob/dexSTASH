@@ -24,8 +24,10 @@ Two gates belong to the maintainer, and you wait for them:
 1. **Go:** the definition, UI/UX and plan are right. Moves Define to Build.
 2. **Approved:** the pull request is right. Moves Validate to Done.
 
-Never move a board card, and never treat a phase as passed because you
-think it is.
+Never treat a phase as passed because you think it is. You keep the board
+current: move the card to Build once the maintainer has said go, to Validate
+when the pull request is ready for review, and to Done once the maintainer has
+approved or merged. Say in the thread or on the issue which card you moved.
 
 ## Before every task
 
@@ -35,14 +37,15 @@ think it is.
    `gh issue view <number> --json title,body,labels,comments`
 3. Find the phase from the board column, and read that agent's file.
 4. Read [rules/core.md](rules/core.md), [docs/product.md](docs/product.md) and
-   [docs/concepts.md](docs/concepts.md), and the spec in
-   [docs/specs/](docs/specs/) for the area. If a document is still a blank
+   [docs/concepts.md](docs/concepts.md), the spec in
+   [docs/specs/](docs/specs/) for the area, and earlier plan files in
+   [docs/plans/](docs/plans/) for the same area. If a document is still a blank
    template, don't fill the gaps with assumptions; ask.
 
 ## Process files
 
 `AGENTS.md`, `agents/`, `docs/lifecycle.md`, `docs/github-setup.md`,
-`CONTRIBUTING.md`, `.github/`, `tools/` and `rules/` define the process. Edit
+`.github/CONTRIBUTING.md`, `.github/`, `tools/` and `rules/` define the process. Edit
 them only for an issue labelled `process`, following
 [agents/process-editor.md](agents/process-editor.md). On a Bug or Feature, don't
 touch them: open or link a Process change issue instead. A process change still
@@ -64,10 +67,33 @@ maintainer's go is still required.
 If the plan turns out wrong while building, stop. Update the issue's Plan
 section and get a new go before changing more code.
 
+If the maintainer says a change can join an existing open issue, amend that
+issue instead of opening a new one
+([docs/lifecycle.md](docs/lifecycle.md#amending-an-issue)). The amendment
+needs a go before its code; keep the same branch and pull request.
+
 ## Validate never fixes silently
 
 Validation reports problems; it does not quietly fix them. Comment what
 failed, then send a code fix back to Build, or the plan back to Define.
+
+## Issues and comments are for people
+
+Write issues and issue comments short, in plain words, easy to skim: a few
+lines per section, about a minute to read the whole issue. The definition,
+acceptance criteria, UI/UX and a short plan stay in the issue, and the go and
+approval are given there.
+
+Detail an assistant needs (file lists, step-by-step build plans, test notes,
+design context) goes in a plan file, `docs/plans/<issue>-<short-name>.md`,
+linked from the issue's Plan section. Write one when the work needs more than
+the issue holds. It goes on the issue's branch, merges with the work and is
+kept as the record of design context
+([docs/plans/README.md](docs/plans/README.md)). If the plan file changes what
+the issue says, update the issue and get a new go.
+
+Comments say what happened, what's next and who needs to act. Logs and test
+output go in the pull request or the plan file, not on the issue.
 
 ## Concepts, product and specs
 
@@ -98,9 +124,9 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
 - **Commands:**
   ```sh
   python3 -m venv .venv && . .venv/bin/activate
-  pip install -r requirements.lock pytest
+  pip install -r requirements/requirements.lock pytest
   python -m pytest -q                              # the whole suite; no network needed
-  ruff check .                                     # settings in ruff.toml
+  ruff check .                                     # settings in pyproject.toml
   DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
   python tools/demo_data.py                        # a demo collection to click around in
   ```
@@ -114,7 +140,7 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
 - **Stack:** no front-end framework and no JavaScript build step. CSS and
   JavaScript live in `app/static/css` and `app/static/js`, one file per
   template, linked through `asset()`. New packages are pinned in
-  `requirements.lock`, need a reason in the pull request, must work on a
+  `requirements/requirements.lock`, need a reason in the pull request, must work on a
   small home server (amd64 and arm64), and must pass `pip-audit`.
 - **Code:** logic lives in plain modules in `app/` that take a database
   connection. A database change is a new numbered `_step_N` in `app/db.py` that
@@ -178,16 +204,16 @@ advisory ([docs/lifecycle.md](docs/lifecycle.md)).
 ## Labels
 
 Labels (including any project labels) are defined in
-[docs/github-setup.md](docs/github-setup.md#labels). Use
-only labels that already exist: don't create, rename, edit or delete them.
-You may add or remove `needs-info`. Suggest `small`, `docs`, `priority:high`,
-`blocked`, `duplicate` and `wontfix` in a comment and let the maintainer apply
-them. Never change `bug`, `feature` or `process`. After any label change, comment which
-label and why.
+[docs/github-setup.md](docs/github-setup.md#labels). You may add and remove any
+label on an issue or pull request, and create, rename, edit or delete labels.
+If a new or changed label should last, also list it in `.github/labels.yml` and
+`docs/github-setup.md` on a `process` issue. Every issue keeps exactly
+one of `bug`, `feature` or `process`. After any label change, say which label
+and why.
 
 ## Never
 
-- Move a card, push to `main`, or merge a pull request.
+- Pass the Go or Approved gate yourself, push to `main`, or merge a pull request.
 - Run a command that changes a shared environment (deploy, publish,
   configure). Write the steps for a person to run.
 - Invent requirements, rules or decisions that aren't written down.
@@ -207,10 +233,10 @@ label and why.
   with `Closes #<issue>` (one issue per pull request unless the maintainer
   groups them).
 - Keep changes small and in scope. List anything outside the plan in the pull
-  request.
+  request. To add something, ask whether to amend the issue or open a new one.
 - Say which skill or command you're using, in one line, before using it.
 
 ## When you finish
 
-Comment on the issue: what you did, what's left, and any questions with who
-should answer them.
+Leave a short comment on the issue: what you did, what's left, and any
+questions with who should answer them.

@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        For a security problem, don't open an issue: see SECURITY.md. Leave out server names, addresses,
+        For a security problem, don't open an issue: see .github/SECURITY.md. Leave out server names, addresses,
         passwords, keys and anything else personal, including in screenshots and logs.
   - type: textarea
     id: repro
@@ -45,4 +45,4 @@ body:
     id: plan
     attributes:
       label: Plan
-      description: Optional for reporters. The maintainer or an assistant fills this in during Define.
+      description: Optional for reporters. Filled in during Define, short; detail goes in a linked plan file in docs/plans/.
