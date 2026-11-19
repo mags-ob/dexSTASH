@@ -75,12 +75,9 @@ def test_private_words_are_reported_without_being_printed():
     assert not _problems("a rainbowboxes word", [r"(?<![\w-])rainbowbox(?![\w-])"])
 
 
-def test_private_words_come_from_the_environment_and_the_list_file(tmp_path, monkeypatch):
+def test_private_words_come_only_from_the_list_file(tmp_path, monkeypatch):
     monkeypatch.setattr(check_rules, "ROOT", tmp_path)
-    monkeypatch.setenv("DEXSTASH_PRIVATE_WORDS", " Rainbowbox , ,Other Name ")
-    words = check_rules.private_words()
-    assert len(words) == 2 and words[1].search("see other name here")
-    monkeypatch.delenv("DEXSTASH_PRIVATE_WORDS")
+    monkeypatch.setenv("DEXSTASH_PRIVATE_WORDS", "Rainbowbox")
     assert check_rules.private_words() == []
     (tmp_path / "rules").mkdir()
     (tmp_path / "rules" / "private-words.txt").write_text("# a comment\nWaterflower\n\nthird word\n")
