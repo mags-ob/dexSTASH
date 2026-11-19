@@ -13,6 +13,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 - **A card or set TCGdex doesn't answer for no longer shows "Can't reach your server".** The app's own page says "Couldn't load this card" (or set) with Try again and Back, and writes why to the log. The offline screen is only for a server that really can't be reached, and the "upgrade didn't finish" page now shows on a phone too (#77).
 
 ### Changed
+- **The project scan reads private words only from `rules/private-words.txt`**, no longer from the `DEXSTASH_PRIVATE_WORDS` variable; move any words still set there into the file. It also finds Python on Windows (#108).
 - **"Last price update" on Data sources › Prices shows the latest full run only.** Older ones (the last 30) are on a new Older price updates page, linked under it. A latest run with problems still opens by itself (#65).
 - **The contributing and security guides moved to `.github/`, and the install guide to [docs/deploy.md](docs/deploy.md).** Lint settings moved from ruff.toml into pyproject.toml, and requirements.txt and requirements.lock into `requirements/`, so a build from source installs with `pip install -r requirements/requirements.lock`. Links to the old DEPLOY.md stop working (#101).
 - **Find's first page is quicker to scan.** Recently viewed shows each card's picture and name, without the "No price" line. Search results and set pages keep their prices (#66).
