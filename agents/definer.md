@@ -26,6 +26,9 @@ maintainer can say go to.
    `docs/concepts.md`, and changes to `docs/product.md` if the problem,
    audience or outcome changed, in the Plan section.
 8. **Raise questions** on the issue, naming who decides each.
+9. **Amend** an open issue when the maintainer says new work joins it: write
+   the change into each section it touches, marked "Added <date>:", and wait
+   for the go ([Amending an issue](../docs/lifecycle.md#amending-an-issue)).
 
 ## May write to
 

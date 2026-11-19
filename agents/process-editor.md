@@ -24,6 +24,10 @@ about product code and tests don't apply, but the gates do.
 6. **Open a draft pull request** with `Closes #<issue>`, only when asked.
    Say which rules changed.
 
+A process issue can be amended like any other
+([Amending an issue](../docs/lifecycle.md#amending-an-issue)): the change goes
+in the issue body, gets a go, and stays on the same branch and pull request.
+
 ## May write to
 
 The process files (except `rules/core.md`, which only the maintainer edits)
