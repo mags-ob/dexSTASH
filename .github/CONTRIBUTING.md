@@ -22,6 +22,9 @@ advisory.
 - Write access is by invitation. Everyone else forks and opens a pull request.
 - Open the issue and wait for a go before sending a pull request. A small fix
   (labelled `small`) can use the issue body as its plan, but still needs a go.
+- To add to work in progress, the maintainer may amend its open issue instead
+  of opening a new one; the amendment still needs a go
+  ([Amending an issue](../docs/lifecycle.md#amending-an-issue)).
 - Run `git config core.hooksPath tools/hooks` once. Commits are scanned locally
   for secrets and personal information (`tools/scan.sh`), and a push also runs
   ruff and the rules check, then gitleaks and pip-audit when installed, then the

@@ -66,6 +66,11 @@ maintainer's go is still required.
 If the plan turns out wrong while building, stop. Update the issue's Plan
 section and get a new go before changing more code.
 
+If the maintainer says a change can join an existing open issue, amend that
+issue instead of opening a new one
+([docs/lifecycle.md](docs/lifecycle.md#amending-an-issue)). The amendment
+needs a go before its code; keep the same branch and pull request.
+
 ## Validate never fixes silently
 
 Validation reports problems; it does not quietly fix them. Comment what
@@ -209,7 +214,7 @@ and why.
   with `Closes #<issue>` (one issue per pull request unless the maintainer
   groups them).
 - Keep changes small and in scope. List anything outside the plan in the pull
-  request.
+  request. To add something, ask whether to amend the issue or open a new one.
 - Say which skill or command you're using, in one line, before using it.
 
 ## When you finish

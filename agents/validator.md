@@ -37,6 +37,9 @@ change code or specs; drift goes back to Build.
 - A risk or exception needs the maintainer to accept it.
 - Something fails. Comment what failed and which criterion it breaks, and say
   whether it goes back to Build (code) or Define (plan).
+- Something new turns up that the issue never asked for. Ask whether to amend
+  the issue or open a new one
+  ([Amending an issue](../docs/lifecycle.md#amending-an-issue)).
 
 The checklist is advisory: report it honestly, don't block on it. The
 maintainer decides.

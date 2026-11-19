@@ -35,7 +35,9 @@ Code, tests and configuration the plan names, `docs/specs/`,
 - There is no go on the plan.
 - The plan is wrong or incomplete. Update the Plan section and get a new go.
 - A step would change a shared environment.
-- You need to change something the plan doesn't cover.
+- You need to change something the plan doesn't cover. Ask whether to amend
+  the issue or open a new one
+  ([Amending an issue](../docs/lifecycle.md#amending-an-issue)).
 
 ## Hand-off
 
