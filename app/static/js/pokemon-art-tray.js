@@ -1,111 +1,121 @@
-// Edit arts: a pencil on each tile; a tap opens that art's Edit art sheet (its cards, Add a card, Taken out).
-// Without Edit arts on, a tap opens the card.
+// Edit arts, on the grid: a tap ticks a tile, the bar merges the ticked arts, and the pencil opens
+// the art's sheet (its cards, each with Not this art). Without Edit arts on, a tap opens the card.
+// Edit mode is edit=1 in the address, so sorts and filters keep it; the ticks live in session storage.
+// A reload turns edit mode off and clears the ticks. After a merge, "Merged N arts" shows for a few seconds.
 (() => {
   const grid = document.getElementById("arts");
   const sheet = document.getElementById("art-sheet");
   if (!grid || !sheet) return;
   const body = sheet.querySelector("[data-art-body]");
+  const me = document.currentScript;
+  const store = (() => { try { return window.sessionStorage; } catch { return null; } })();
+  const TICKS = `arts-ticks:${location.pathname}`;
+  const read = key => { try { return JSON.parse(store?.getItem(key) || "null"); } catch { return null; } };
+  const write = (key, value) => { try { value == null ? store?.removeItem(key) : store?.setItem(key, JSON.stringify(value)); } catch { /* private mode */ } };
+
   async function open(card) {
     body.textContent = "Opening…";
     if (!sheet.open) sheet.showModal();
     const r = await fetch(`/pokemon/${grid.dataset.dex}/art?` + new URLSearchParams({card}));
     body.innerHTML = r.ok ? await r.text() : "Couldn't open this art. Refresh and try again.";
     body.querySelector("[data-close]")?.addEventListener("click", () => sheet.close());
-    const add = body.querySelector("[data-add]");
-    if (add) adding(add);
-  }
-  // Add a card to this art: this Pokémon's cards (filtered as you type, 30 at a time) or All cards (searched).
-  const SHOWN = 30;
-  const fold = s => (s || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  function adding(form) {
-    const q = form.querySelector("[data-q]"), go = form.querySelector("[data-go]");
-    const mine = form.querySelector('[data-pane="mine"]'), all = form.querySelector('[data-pane="all"]');
-    const more = mine.querySelector("[data-more]"), none = mine.querySelector("[data-none]");
-    const strip = mine.querySelector(".as-strip"), stripHead = strip?.previousElementSibling;
-    let scope = "mine", open = false, timer = null, asked = "";
-    const count = () => {
-      const n = new Set([...form.querySelectorAll('input[name="card"]:checked')].map(i => i.value)).size;
-      go.disabled = !n;
-      go.textContent = n ? `Add ${n} to this art` : "Add to this art";
-    };
-    form.addEventListener("change", e => {  // one card can show twice (Closest pictures and Every card): keep both ticks alike
-      if (e.target.name !== "card") return;
-      form.querySelectorAll(`input[name="card"][value="${CSS.escape(e.target.value)}"]`).forEach(i => { i.checked = e.target.checked; });
-      count();
-    });
-    const filter = () => {
-      const words = fold(q.value).split(/\s+/).filter(Boolean);
-      let shown = 0, matched = 0;
-      mine.querySelectorAll(".as-every .cand").forEach(c => {
-        const hit = words.every(w => fold(c.dataset.find).includes(w));
-        matched += hit;
-        const show = hit && (open || words.length || shown < SHOWN);
-        c.hidden = !show;
-        shown += show;
-      });
-      if (strip) { strip.hidden = words.length > 0; stripHead.hidden = words.length > 0; }
-      if (more) more.hidden = open || words.length > 0 || matched <= SHOWN;
-      if (none) none.hidden = matched > 0;
-    };
-    const search = async () => {
-      const text = q.value.trim();
-      if (text === asked) return;
-      asked = text;
-      const kept = [...all.querySelectorAll('input[name="card"]:checked')].map(i => i.closest(".cand"));
-      const r = await fetch(all.dataset.search + "&" + new URLSearchParams({q: text}));
-      if (asked !== text) return;  // a newer search is on its way
-      all.innerHTML = r.ok ? await r.text() : '<p class="muted as-none">Couldn\'t search. Try again.</p>';
-      if (kept.length) {  // ticked cards stay ticked through a new search
-        const grid = all.querySelector(".as-every") || all.appendChild(Object.assign(document.createElement("div"), {className: "pgrid as-every"}));
-        kept.forEach(c => { grid.querySelector(`input[value="${CSS.escape(c.querySelector("input").value)}"]`)?.closest(".cand").remove(); grid.prepend(c); });
-      }
-      count();
-    };
-    form.querySelectorAll("[data-scope]").forEach(b => b.addEventListener("click", () => {
-      scope = b.dataset.scope;
-      form.querySelectorAll("[data-scope]").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", String(x === b)); });
-      mine.hidden = scope !== "mine";
-      all.hidden = scope !== "all";
-      if (scope === "all") search(); else filter();
-      q.focus();
-    }));
-    q.addEventListener("input", () => {
-      if (scope === "mine") return filter();
-      clearTimeout(timer);
-      timer = setTimeout(search, 250);
-    });
-    q.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); if (scope === "all") search(); } });
-    more?.addEventListener("click", () => { open = true; filter(); });
-    filter();
-    count();
   }
   sheet.addEventListener("click", e => { if (e.target === sheet) sheet.close(); });  // a tap on the backdrop
-  const me = document.currentScript;
+
+  // A reload starts over: no edit mode, no ticks.
+  const here = new URL(location.href);
+  if (performance.getEntriesByType?.("navigation")[0]?.type === "reload") {
+    write(TICKS, null);
+    here.searchParams.delete("edit");
+  }
+
+  // Ticks: the cover card of each ticked art, kept through sorts and filters.
+  let ticks = new Set(read(TICKS) || []);
+  const bar = document.querySelector("[data-merge]");
+  const shown = () => new Set([...grid.querySelectorAll(".ptile")].map(t => t.dataset.card));
+  const paint = () => {
+    grid.querySelectorAll(".ptile").forEach(t => t.classList.toggle("picked", ticks.has(t.dataset.card)));
+    if (!bar) return;
+    const on = grid.classList.contains("editing");
+    const hidden = [...ticks].filter(c => !shown().has(c)).length;
+    bar.hidden = !on || !ticks.size;
+    bar.querySelector("[data-count]").textContent = `${ticks.size} art${ticks.size === 1 ? "" : "s"} selected`;
+    const note = bar.querySelector("[data-hidden-count]");
+    note.hidden = !hidden;
+    note.textContent = `${hidden} hidden by filters`;
+    bar.querySelector("[data-go]").disabled = ticks.size < 2;
+  };
+  const tick = card => {
+    ticks.has(card) ? ticks.delete(card) : ticks.add(card);
+    write(TICKS, [...ticks]);
+    paint();
+  };
+  bar?.querySelector("[data-clear]").addEventListener("click", () => { ticks = new Set(); write(TICKS, null); paint(); });
+  bar?.addEventListener("submit", () => {  // every ticked art goes, hidden ones too; then the ticks are spent
+    ticks.forEach(card => bar.append(Object.assign(document.createElement("input"), {type: "hidden", name: "card", value: card})));
+    ticks = new Set();
+    write(TICKS, null);
+  });
+
+  // Edit mode: edit=1 rides on the sort links, the active filter chips, Clear filters and the Filters form.
   const modify = document.querySelector("[data-modify]"), hint = document.querySelector("[data-modify-hint]");
   const idle = modify ? modify.innerHTML : "";  // the button as drawn: pencil, Edit arts
+  const links = () => document.querySelectorAll(".pbar .set-sort a, .pfilters a, #filters h2 a");
+  const filterForm = document.querySelector("#filters form");
   const editing = on => {
     grid.classList.toggle("editing", on);
-    if (!modify) return;
-    modify.setAttribute("aria-pressed", String(on));
-    modify.innerHTML = on ? "Done" : idle;
-    modify.classList.toggle("quiet", !on);
+    links().forEach(a => {
+      const u = new URL(a.href, location.href);
+      on ? u.searchParams.set("edit", "1") : u.searchParams.delete("edit");
+      a.href = u.pathname + u.search;
+    });
+    let flag = filterForm?.querySelector('input[name="edit"]');
+    if (on && filterForm && !flag) filterForm.append(flag = Object.assign(document.createElement("input"), {type: "hidden", name: "edit", value: "1"}));
+    if (!on) flag?.remove();
+    on ? here.searchParams.set("edit", "1") : here.searchParams.delete("edit");
+    if (!on) { ticks = new Set(); write(TICKS, null); }
+    if (modify) {
+      modify.setAttribute("aria-pressed", String(on));
+      modify.innerHTML = on ? "Done" : idle;
+      modify.classList.toggle("quiet", !on);
+    }
     if (hint) hint.hidden = !on;
+    paint();
   };
-  modify?.addEventListener("click", () => editing(!grid.classList.contains("editing")));
+  modify?.addEventListener("click", () => {
+    editing(!grid.classList.contains("editing"));
+    history.replaceState(history.state, "", here.pathname + here.search + here.hash);
+  });
+  // In edit mode a sort or filter replaces this page, so Back still leaves in one step.
+  document.addEventListener("click", e => {
+    const a = e.target.closest?.(".pbar .set-sort a, .pfilters a, #filters h2 a");
+    if (!a || !grid.classList.contains("editing") || e.defaultPrevented) return;
+    e.preventDefault();
+    location.replace(a.href);
+  });
+  filterForm?.addEventListener("submit", e => {
+    if (!grid.classList.contains("editing")) return;
+    e.preventDefault();
+    location.replace(filterForm.action + "?" + new URLSearchParams(new FormData(filterForm)));
+  });
   grid.querySelectorAll(".ptile > a").forEach(a => a.addEventListener("click", e => {
     if (!grid.classList.contains("editing")) return;  // a tap opens the card
     e.preventDefault();
-    open(a.parentNode.dataset.card);
+    if (e.target.closest("[data-pen]")) open(a.parentNode.dataset.card);
+    else tick(a.parentNode.dataset.card);
   }));
-  // A fix (Not this art, Add, Undo, Re-check) is sent from the page, and the page it leads to takes the
+
+  // A fix (Not this art, Merge, Re-check) is sent from the page, and the page it leads to takes the
   // current one's place, so a fix adds no step to Back. If sending fails, the form is posted as before.
   const FIX = /^\/pokemon\/-?\d+\/(fix\/|recheck$)/;
   document.addEventListener("submit", async e => {
     const form = e.target;
     if (e.defaultPrevented || form.dataset.sent || !FIX.test(new URL(form.action, location.href).pathname)) return;
     e.preventDefault();
+    const data = new FormData(form, e.submitter);
+    for (const k of ["show", "sort", "lang"]) if (here.searchParams.get(k) && !data.has(k)) data.set(k, here.searchParams.get(k));
     try {
-      const r = await fetch(form.action, {method: "POST", body: new FormData(form, e.submitter)});
+      const r = await fetch(form.action, {method: "POST", body: data});
       if (!r.ok) throw new Error(r.status);
       location.replace(r.url);
     } catch {
@@ -113,17 +123,23 @@
       form.submit();
     }
   });
-  // Back from a fix: the same art's sheet opens again. Then open and message leave the address, so a
-  // refresh or Back shows the page as it was: the grid, Edit arts off, no sheet.
-  if (me.dataset.openArt) {
+
+  // Back from a fix: edit mode, and the same art's sheet when there is one. After a merge, "Merged N arts"
+  // shows for a few seconds.
+  const opened = me.dataset.openArt || here.searchParams.get("open");
+  const merged = here.searchParams.get("merged");
+  editing(here.searchParams.get("edit") === "1" || Boolean(opened));
+  if (opened) {
     const tile = grid.querySelector(`.ptile[data-art="${me.dataset.openArt}"]`);
-    editing(true);
     open(me.dataset.open || tile?.dataset.card);
   }
-  const here = new URL(location.href);
-  if (here.searchParams.has("open") || here.searchParams.has("message")) {
-    here.searchParams.delete("open");
-    here.searchParams.delete("message");
-    history.replaceState(history.state, "", here.pathname + here.search + here.hash);
+  const toast = document.querySelector("[data-toast]");
+  if (merged && toast) {
+    toast.textContent = `Merged ${merged} arts`;
+    toast.hidden = false;
+    setTimeout(() => { toast.hidden = true; }, 6000);
   }
+  // open, message and merged leave the address once read, so a reload or Back shows the page as it was.
+  for (const k of ["open", "message", "merged"]) here.searchParams.delete(k);
+  history.replaceState(history.state, "", here.pathname + here.search + here.hash);
 })();

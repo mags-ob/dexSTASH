@@ -27,25 +27,31 @@ the stash.
    pages need: illustrator, printings, picture and price. For a Pokémon, a card counts when its main Pokémon
    has that Pokédex number.
 8. A Pokémon's cards are grouped into arts: the same illustrator and near-identical pictures, in every
-   language. Edit arts puts a pencil on each tile; tapping one opens the Edit art sheet: the art's cards one
-   per row (language, set and number, and the printings it comes in, ✓ the ones you have), each with Not this
-   art; and Add a card to this art, which searches either the Pokémon's cards (a row of the closest pictures,
-   then every card, newest first, however alike) or All cards (any stored card by name, set or number, for a
-   card the Pokémon is in but not named on; it joins the Pokémon's page as added by you). A card taken out is
-   found again the same way. Not this art moves only that card: a card added to the art by hand stays in it,
-   even when the card taken out is the one it was added to (the art's cover). The fixes are kept: cards added
-   or taken out by hand keep their place after ↻ Re-check and Check for updates, whatever the pictures say.
-   Printings can't be changed there. ↻ Re-check, beside Following, compares the pictures again. Check for
-   updates adds new cards. After a fix or Re-check the page comes back with the same art's sheet open, in
-   place of the page before, so a fix adds no step to Back; a refresh or Back shows the page as it was, with
-   Edit arts off and no sheet open.
+   language. Edit arts (Done to leave) turns the grid into a selection: tapping a tile ticks it, and a bar
+   above the tab bar says how many arts are ticked, how many of them the filters hide, Clear and Merge arts
+   (two or more). Sorts and filters keep edit mode and the ticks, and in edit mode they take the page's place,
+   so they add no steps to Back. Merge arts joins every ticked art, hidden ones too, into one; the app picks
+   its cover (the English card, else the earliest), and different illustrators can be merged. "Merged N arts"
+   shows for about 6 seconds. A merge has no undo: Not this art takes a card back out. The pencil, shown
+   only in edit mode, opens the art's sheet: its cards one per row (language, set and number, and the printings it comes
+   in, ✓ the ones you have), each with Not this art, which takes out one card and has no undo. To move a card
+   to another art, take it out and merge its new art. A card the Pokémon is in but not named on joins from its
+   card page (Add to a Pokémon set…). Not this art moves only that card: a card added to the art by hand
+   stays in it, even when the card taken out is the art's cover. The fixes are kept: cards merged or taken out
+   by hand keep their place after ↻ Re-check and Check for updates, whatever the pictures say. Printings
+   can't be changed there. ↻ Re-check, beside Following, compares the pictures again. Check for updates adds
+   new cards. After a fix or Re-check the page comes back in edit mode (with the same art's sheet open after
+   Not this art), in place of the page before, so a fix adds no step to Back. A reload turns edit mode off
+   and clears the ticks.
 9. A followed Pokémon's or artist's page shows every art in one grid, like a set page (no rows by era). Every
    language counts: an art is yours when you have any card of it, in any language, and the arts, cards and
    printings counts cover them all. Each tile has language tags (EN, JA, ZH, mainland and Taiwan together) on
    its picture for the languages the art is printed in, filled when you have one, and its printings as owned
    of total (1/3). The Pokémon's words start collapsed under "Tags", as on Find. Sorts, on the page and kept
    per login: Value (the dearest printing first, the default), Number (newest set first, then card number)
-   and Name. Filters can show only owned, missing, chased, full art or promo arts. There's no language choice.
+   and Name. Filters can show only owned, missing, chased, full art or promo arts, and one language (All, English,
+   Japanese or Chinese). The language only narrows which arts show; owned, printings, prices, the Value sort,
+   tags and the summary ("1 of 9 arts") still count every language. It resets on each visit, like Show.
 10. Cards of followed Pokémon keep stored prices (see [prices](prices.md)), but aren't single chases: they
     have no price history and no Chase box unless they're chased too.
 11. Unfollowing removes the follow. When nobody follows it any more, its arts, fingerprints and the cards

@@ -49,7 +49,31 @@
   .ltg.h.ltg-zh { background:var(--lang-zh); border-color:var(--lang-zh); }
   .edit-pen { display:none; position:absolute; right:4px; bottom:4px; z-index:2; width:24px; height:24px; border-radius:50%;
               background:var(--accent); color:#fff; place-items:center; }
-  #arts.editing .edit-pen { display:grid; }
+  /* Edit arts: a tap ticks a tile (the circle, top left), the pencil opens the art's sheet, and a bar merges the ticked arts. */
+  #arts.editing .edit-pen { display:grid; width:32px; height:32px; cursor:pointer; }
+  #arts.editing .own, #arts.editing .chs { display:none; }
+  .sel { display:none; position:absolute; left:6px; top:6px; z-index:3; width:24px; height:24px; border-radius:50%;
+         border:2px solid #fff; background:rgba(0,0,0,.35); place-items:center; color:#fff; }
+  #arts.editing .sel { display:grid; }
+  #arts.editing .ptile.picked .sel { background:var(--accent); border-color:var(--accent); }
+  #arts.editing .ptile.picked .stack .face { outline:3px solid var(--accent); outline-offset:2px; }
+  .sel svg { visibility:hidden; } .ptile.picked .sel svg { visibility:visible; }
+  .merge-bar, .merge-toast { position:fixed; left:12px; right:12px; bottom:calc(78px + env(safe-area-inset-bottom)); z-index:50;
+    display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,.35); }
+  .merge-bar { background:var(--surface); border:1px solid var(--line); }
+  .merge-bar[hidden], .merge-toast[hidden] { display:none; }
+  .merge-bar > div { flex:1; min-width:0; }
+  .merge-bar b { display:block; font-size:15px; }
+  .merge-bar small { display:block; font-size:12px; }
+  .merge-bar button { min-height:40px; padding:4px 14px; white-space:nowrap; }
+  .merge-bar button:disabled { opacity:.55; }
+  .merge-toast { background:#2b2b2e; color:#fff; font-size:15px; }
+  /* Filters stay in reach while the bar or toast shows: the button moves up above it */
+  @media (max-width: 819px) {
+    body:has(.merge-bar:not([hidden])) .fab-filter, body:has(.merge-toast:not([hidden])) .fab-filter {
+      bottom:calc(var(--tabbar) + 90px + env(safe-area-inset-bottom)); } }
+  .active-chips.pfilters { display:flex; flex-wrap:wrap; }  /* Show and Language chips side by side */
+  .active-chips.pfilters .chip { flex-direction:row; align-items:center; gap:4px; min-height:36px; padding:4px 12px; }
   .face:has(.ltags) .nopic b { bottom:24px; }
   .pset-tags > summary { text-align:center; }  /* the Pokémon's words, under the evolution line */
   .ptile .n { display:block; font-weight:600; margin-top:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

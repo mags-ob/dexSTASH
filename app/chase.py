@@ -504,7 +504,7 @@ def _move_hand_joins(conn: sqlite3.Connection, dex: int, card_id: str, leaving: 
 def take_out(conn: sqlite3.Connection, dex: int, card_id: str, by: int | None,
              leaving: set[str] | frozenset = frozenset()) -> None:
     """✕: the card becomes its own art; cards added to the art by hand stay in it.
-    leaving: other cards taken out with this one. The art it left is remembered for Undo."""
+    leaving: other cards taken out with this one. The art it left is kept in left_card_id."""
     _move_hand_joins(conn, dex, card_id, set(leaving) | {card_id})
     row = conn.execute("""SELECT a.cover_card_id FROM arts a JOIN art_cards ac ON ac.art_id = a.id
                           WHERE a.dex_id = ? AND ac.card_id = ?""", (dex, card_id)).fetchone()
@@ -528,9 +528,26 @@ def put_with(conn: sqlite3.Connection, dex: int, card_id: str, art_card_id: str,
     conn.commit()
 
 
-def undo_fix(conn: sqlite3.Connection, dex: int, card_id: str) -> None:
-    conn.execute("DELETE FROM art_fixes WHERE dex_id = ? AND card_id = ?", (dex, card_id))
+def merge(conn: sqlite3.Connection, dex: int, cards: list[str], by: int | None) -> int | None:
+    """Merge arts: every card of the arts these cards are in joins one art, whose cover
+    follows the usual rule. Gives back the number of arts merged, or None when the
+    cards are in fewer than two arts. There's no undo: Not this art takes a card back out."""
+    rows = conn.execute("""SELECT ac.art_id, ac.card_id, pc.lang, pc.release_date FROM art_cards ac
+                           JOIN arts a ON a.id = ac.art_id
+                           JOIN pokemon_cards pc ON pc.dex_id = a.dex_id AND pc.card_id = ac.card_id
+                           WHERE a.dex_id = ?""", (dex,)).fetchall()
+    art_of = {r["card_id"]: r["art_id"] for r in rows}
+    picked = {art_of[c] for c in cards if c in art_of}
+    if len(picked) < 2:
+        return None
+    members = [dict(r) for r in rows if r["art_id"] in picked]
+    cover = cover_of(members)
+    moved = [m["card_id"] for m in members if m["art_id"] != art_of[cover]]
+    conn.executemany("""INSERT INTO art_fixes (dex_id, card_id, join_card_id, left_card_id, by, at) VALUES (?, ?, ?, NULL, ?, ?)
+                        ON CONFLICT(dex_id, card_id) DO UPDATE SET join_card_id = excluded.join_card_id, left_card_id = NULL,
+                          by = excluded.by, at = excluded.at""", [(dex, c, cover, by, now()) for c in moved])
     conn.commit()
+    return len(picked)
 
 
 def add_card(conn: sqlite3.Connection, dex: int, row: dict, by: int | None) -> None:

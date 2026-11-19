@@ -76,7 +76,7 @@ def artist_suggest(q: str = "", user=Depends(current_user)):
 
 
 @router.get("/artists/{norm}")
-def artist_page(request: Request, norm: str, show: str = "", sort: str = "",
+def artist_page(request: Request, norm: str, show: str = "", sort: str = "", lang: str = "",
                 open: str = "", user=Depends(current_user)):
     """An artist's cards grouped by art, like a Pokémon's set; a preview of their English cards until followed."""
     cid = user["collection_id"]
@@ -100,7 +100,7 @@ def artist_page(request: Request, norm: str, show: str = "", sort: str = "",
             **context, "preview": True,
             "briefs": [dict(b, image_url=tcgdex.image_url(b.get("image"))) for b in (briefs or [])][:300],
             "unreachable": briefs is None})
-    return _arts_page(request, context, user, key, show, sort, open)
+    return _arts_page(request, context, user, key, show, sort, lang, open)
 
 
 @router.post("/pokemon/{dex}/star")
@@ -134,22 +134,23 @@ def _sort(user, sort: str) -> str:
     return row[0] if row and row[0] in chase_pages.SORTS else "value"
 
 
-def _arts_page(request: Request, context: dict, user, key: int, show: str, sort: str, open: str):
+def _arts_page(request: Request, context: dict, user, key: int, show: str, sort: str, lang: str, open: str):
     """A followed Pokémon's or artist's page: every art in one grid, every language counted."""
     cid = user["collection_id"]
     show = show if show in chase_pages.SHOW else ""
+    lang = lang if lang in chase_pages.LANGS else ""
     sort = _sort(user, sort)
     return templates.TemplateResponse(request, "pokemon_set.html", {
         **context, "preview": False, "show": show, "sort": sort,
-        "summary": chase_pages.summary(conn, cid, key), "tiles": chase_pages.art_tiles(conn, cid, key, show, sort),
-        "sorts": chase_pages.SORTS, "shows": chase_pages.SHOW,
+        "summary": chase_pages.summary(conn, cid, key), "tiles": chase_pages.art_tiles(conn, cid, key, show, sort, lang),
+        "sorts": chase_pages.SORTS, "shows": chase_pages.SHOW, "lang": lang, "langs": chase_pages.LANGS,
         "open": open, "open_art": next((a["id"] for a in chase_pages.arts(conn, key) if open in a["card_ids"]), None) if open else None,
         "checked": conn.execute("SELECT MAX(checked_at) FROM followed_pokemon WHERE dex_id = ?", (key,)).fetchone()[0],
     })
 
 
 @router.get("/pokemon/{dex}")
-def pokemon_set(request: Request, dex: int, show: str = "", sort: str = "",
+def pokemon_set(request: Request, dex: int, show: str = "", sort: str = "", lang: str = "",
                 open: str = "", user=Depends(current_user)):
     if not 1 <= dex <= themes.SPECIES:
         raise HTTPException(404)
@@ -169,34 +170,29 @@ def pokemon_set(request: Request, dex: int, show: str = "", sort: str = "",
             **context, "preview": True,
             "briefs": [dict(b, image_url=tcgdex.image_url(b.get("image"))) for b in (briefs or [])][:300],
             "unreachable": briefs is None})
-    return _arts_page(request, context, user, dex, show, sort, open)
+    return _arts_page(request, context, user, dex, show, sort, lang, open)
 
 
 @router.get("/pokemon/{dex}/art")
 def pokemon_art(request: Request, dex: int, card: str, user=Depends(current_user)):
-    """The Edit art sheet's insides: the art's cards, Add a card to this art, and what was taken out."""
+    """The art sheet's insides: the art's cards, each with Not this art."""
     detail = chase_pages.art_detail(conn, user["collection_id"], dex, card)
     if detail is None:
         raise HTTPException(404)
     return templates.TemplateResponse(request, "_pokemon_art.html", {
         "user": user, "dex": dex, "d": detail, "tags": chase.LANG_TAGS,
         "name": (chase.artist(conn, dex) or {}).get("name", "") if dex < 0 else _pokemon_name(dex),
-        "candidates": chase_pages.candidates(conn, dex, card, chase.fingerprints(conn, dex, None)),
         "sprite": f"/sprites/{dex}.png" if themes.sprite_path(dex, False).exists() else None})
 
 
-@router.get("/pokemon/{dex}/art/search")
-def pokemon_art_search(request: Request, dex: int, card: str, q: str = "", user=Depends(current_user)):
-    """Edit art's All cards: any stored card by name, set or number, as tickable tiles."""
-    return templates.TemplateResponse(request, "_pokemon_art_found.html", {
-        "user": user, "q": q.strip(), "found": chase_pages.search_cards(conn, dex, card, q),
-        "sprite": f"/sprites/{dex}.png" if themes.sprite_path(dex, False).exists() else None})
+def _page_of(dex: int) -> str:
+    """The address of a Pokémon's page, or an artist's (a negative key)."""
+    return f"/artists/{quote((chase.artist(conn, dex) or {}).get('norm', ''))}" if dex < 0 else f"/pokemon/{dex}"
 
 
 def _back_to_art(dex: int, card: str, message: str | None = None) -> RedirectResponse:
     query = urlencode({"open": card, **({"message": message} if message else {})})
-    page = f"/artists/{quote((chase.artist(conn, dex) or {}).get('norm', ''))}" if dex < 0 else f"/pokemon/{dex}"
-    return RedirectResponse(f"{page}?{query}", status_code=303)
+    return RedirectResponse(f"{_page_of(dex)}?{query}", status_code=303)
 
 
 @router.post("/pokemon/{dex}/fix/out")
@@ -213,39 +209,29 @@ async def pokemon_fix_out(request: Request, dex: int, user=Depends(current_user)
                 chase.take_out(conn, dex, other, user["id"], set(taken))
                 chase.put_with(conn, dex, other, taken[0], user["id"])
             _regroup(dex)
-        return _back_to_art(dex, back if back not in taken else (form.get("stay") or back))
+        return _back_to_grid(dex, form, open=back if back not in taken else (form.get("stay") or back))
     return await _in_thread(work)
 
 
-@router.post("/pokemon/{dex}/fix/add")
-async def pokemon_fix_add(request: Request, dex: int, user=Depends(current_user)):
-    """Add a card to this art: the ticked cards join it. One from All cards that isn't the Pokémon's yet
-    joins its page too ("Added by you")."""
+def _back_to_grid(dex: int, form, **extra) -> RedirectResponse:
+    """Back to the Pokémon's or artist's page in edit mode, with the same sort and filters."""
+    keep = {k: form.get(k) for k in ("show", "sort", "lang") if form.get(k)}
+    query = urlencode({"edit": "1", **keep, **extra})
+    return RedirectResponse(f"{_page_of(dex)}?{query}", status_code=303)
+
+
+@router.post("/pokemon/{dex}/fix/merge")
+async def pokemon_fix_merge(request: Request, dex: int, user=Depends(current_user)):
+    """Merge arts: every card of the ticked arts joins one art."""
     form = await request.form()
 
     def work():  # Off the event loop, as one transaction
-        to = form.get("to", "")
-        for card in dict.fromkeys(form.getlist("card")):
-            inside = conn.execute("SELECT how FROM pokemon_cards WHERE dex_id = ? AND card_id = ?", (dex, card)).fetchone()
-            if inside is None:
-                row = chase.row_from_cards(conn, card)
-                if row is None:
-                    continue
-                chase.add_card(conn, dex, row, user["id"])
-            elif inside["how"] == "removed":
-                conn.execute("UPDATE pokemon_cards SET how = 'auto' WHERE dex_id = ? AND card_id = ?", (dex, card))
-                conn.commit()
-            chase.put_with(conn, dex, card, to, user["id"])
+        done = chase.merge(conn, dex, list(dict.fromkeys(c for c in form.getlist("card") if c)), user["id"])
+        if done is None:
+            return _back_to_grid(dex, form)
         _regroup(dex)
-        return _back_to_art(dex, to)
+        return _back_to_grid(dex, form, merged=done)
     return await _in_thread(work)
-
-
-@router.post("/pokemon/{dex}/fix/undo")
-def pokemon_fix_undo(dex: int, card: str = Form(...), back: str = Form(...), user=Depends(current_user)):
-    chase.undo_fix(conn, dex, card)
-    _regroup(dex)
-    return _back_to_art(dex, back)
 
 
 @router.post("/pokemon/{dex}/recheck")

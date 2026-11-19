@@ -1,13 +1,12 @@
-{# The Edit art sheet's insides: the art's cards one per row, then Add a card to this art: the Pokémon's cards
-   (closest pictures first, then every card) or All cards by search. A card taken out is found again by search. #}
-{% from "_pokemon_cand.html" import cand with context %}
+{# The art sheet's insides: the art's cards one per row, each with Not this art. Arts are joined on the grid
+   with Merge arts; a card the Pokémon isn't named on joins from its card page (Add to a Pokémon set…). #}
 {% set anchor = d.anchor %}
 <link rel="stylesheet" href="{{ asset("css/pokemon-art.css") }}">
 <div class="as-head">
   <span class="as-pic">{% if d.rows and d.rows[0].image %}<img src="{{ d.rows[0].image }}" alt="" loading="lazy">{% elif sprite %}<img class="spr" src="{{ sprite }}" alt="">{% endif %}
     {% if d.langs %}<span class="ltags">{% for l in d.langs %}<span class="ltg ltg-{{ l.key }}{% if l.owned %} h{% endif %}">{{ l.tag }}</span>{% endfor %}</span>{% endif %}</span>
   <div style="min-width:0">
-    <h2>Edit art</h2>
+    <h2>This art</h2>
     <div class="muted">{{ d.cover.set_name or d.cover.set_code }} art &middot; {{ d.cards }} card{{ "s" if d.cards != 1 }} &middot; {{ d.printings }} printing{{ "s" if d.printings != 1 }}</div>
   </div>
   <button type="button" data-close>Done</button>
@@ -30,29 +29,3 @@
   {% else %}<span></span>{% endif %}
 </div>
 {% endfor %}
-
-<form method="post" action="/pokemon/{{ dex }}/fix/add" class="as-add" data-add>
-  <input type="hidden" name="to" value="{{ anchor }}">
-  <h3 class="cv-label">Add a card to this art</h3>
-  <nav class="set-sort as-scope" aria-label="Where to look">
-    <button type="button" class="chip on" data-scope="mine" aria-pressed="true">{{ name }} cards</button>
-    <button type="button" class="chip" data-scope="all" aria-pressed="false">All cards</button>
-  </nav>
-  <input class="as-q" type="search" placeholder="Search name, set or number" aria-label="Search cards" autocomplete="off" {{ no_correct }} data-q>
-  <div data-pane="mine">
-    {% if candidates.close %}
-    <h4 class="as-sub">Closest pictures</h4>
-    <div class="as-strip">{% for c in candidates.close %}{{ cand(c) }}{% endfor %}</div>
-    {% endif %}
-    {% if candidates.every %}
-    <h4 class="as-sub">Every {{ name }} card &middot; {{ candidates.every | length }}, newest first</h4>
-    <div class="pgrid as-every">{% for c in candidates.every %}{{ cand(c, "In the " ~ c.in_art ~ " art" if c.in_art else "") }}{% endfor %}</div>
-    <p class="muted as-none" data-none hidden>No {{ name }} cards match.</p>
-    <button type="button" class="quiet as-more" data-more hidden>Show more</button>
-    {% else %}<p class="muted" style="font-size:13px">No other cards of this Pokémon.</p>{% endif %}
-  </div>
-  <div data-pane="all" hidden data-search="/pokemon/{{ dex }}/art/search?{{ qs(card=anchor) }}">
-    <p class="muted as-none">Search every card by name, set or number.</p>
-  </div>
-  <button class="as-go" data-go disabled>Add to this art</button>
-</form>
