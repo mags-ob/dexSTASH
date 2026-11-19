@@ -1,4 +1,4 @@
-  /* The Edit art sheet: the art, its cards one per row, Add a card to this art, and what was taken out. */
+  /* The art sheet: the art and its cards one per row, each with Not this art. */
   dialog.art-sheet { max-height:88dvh; overflow:auto; }
   .as-head { display:grid; grid-template-columns:56px 1fr auto; gap:12px; align-items:center; }
   .as-head h2 { margin:0; font-size:18px; }
@@ -6,7 +6,7 @@
   .as-head button { min-height:40px; padding:4px 14px; }
   .as-pic, .pp { position:relative; display:block; aspect-ratio:63/88; border-radius:6px; overflow:hidden; background:var(--line); }
   .as-pic img, .pp img { width:100%; height:100%; object-fit:cover; display:block; }
-  .as-pic img.spr, .pp img.spr, .cand img.spr { object-fit:contain; padding:4px; image-rendering:pixelated; }
+  .as-pic img.spr, .pp img.spr { object-fit:contain; padding:4px; image-rendering:pixelated; }
   .as-pic .ltags { left:3px; bottom:3px; }
   .as-card { display:grid; grid-template-columns:48px 1fr auto; gap:10px; align-items:start; padding:10px; margin-bottom:8px;
              border:1px solid var(--line); border-radius:14px; }
@@ -15,24 +15,3 @@
   .as-where .ltg { flex:none; }
   .as-card form { margin:0; }
   .as-card button { min-height:36px; padding:3px 10px; font-size:13px; white-space:nowrap; }
-  .as-add h3 span { font-size:12px; }
-  .as-add .pgrid { gap:12px 10px; }
-  .cand { display:block; min-width:0; font-size:12px; cursor:pointer; }
-  .cand .face { position:relative; display:block; aspect-ratio:63/88; border-radius:8px; overflow:hidden; background:var(--line); }
-  .cand .face img { width:100%; height:100%; object-fit:cover; display:block; }
-  .cand input { position:absolute; top:6px; right:6px; width:22px; height:22px; margin:0; z-index:2; }
-  .cand:has(input:checked) .face { outline:3px solid var(--accent); outline-offset:-3px; }
-  .cand .n { display:block; font-weight:600; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .cand .t { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .cand[hidden], .as-add [hidden] { display:none; }
-  .as-scope { margin:0 0 10px; }
-  .as-scope .chip { font:inherit; font-size:13px; color:var(--fg); background:none; cursor:pointer; }
-  .as-scope .chip.on { border:1px solid var(--accent); background:var(--accent-tint); color:var(--ink); }
-  .as-q { width:100%; box-sizing:border-box; min-height:44px; margin:0 0 4px; }
-  .as-sub { font-size:13px; font-weight:500; color:var(--muted); margin:12px 0 6px; }
-  .as-strip { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; scroll-snap-type:x proximity; }
-  .as-strip .cand { flex:none; width:88px; scroll-snap-align:start; }
-  .as-none { font-size:13px; margin:12px 0; }
-  .as-more { display:block; margin:12px auto 0; }
-  .as-go { position:sticky; bottom:0; width:100%; margin-top:12px; z-index:3; box-shadow:0 -8px 16px var(--surface); }
-  .as-go:disabled { opacity:.55; }

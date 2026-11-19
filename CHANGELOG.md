@@ -4,6 +4,10 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 
 ## Unreleased
 
+### Added
+- **Edit arts on the grid.** On a Pokémon or artist page, Edit arts lets you tick arts and Merge arts, with Undo; sorts and filters keep edit mode and your ticks. The pencil opens a slim sheet of the art's cards, each with Not this art. Add a card to this art is gone: add a card from its card page with Add to a Pokémon set… (#96).
+- **Filter a Pokémon or artist page by language** (English, Japanese or Chinese). It only narrows which arts show; owned and prices still count every language (#96).
+
 ### Fixed
 - **A CardTrader token saves.** A key can be up to 4,000 characters (CardTrader's is over 500, which was turned away, so Data sources kept saying "no key"). Spaces and line breaks that come with a paste are dropped, and what Save, Test or Remove did now shows in green or red on the key's own row instead of at the top of the page, out of view (#64).
 - **opentelemetry-api raised to 1.45.2**, which fixes a known vulnerability pip-audit reported in 1.45.1 (#101).

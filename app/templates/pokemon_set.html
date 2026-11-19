@@ -4,10 +4,11 @@
 {% from "_macros.html" import cname %}
 {% from "_evolution.html" import evolution %}
 {% from "_pokemon_tags.html" import pokemon_tags %}
+{% macro grid_keep() %}{% for k, v in (("show", show), ("sort", sort), ("lang", lang)) if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}{% endmacro %}
 {%- set here = "/artists/" ~ (artist.norm | urlencode) if artist else "/pokemon/" ~ dex -%}
 {% block title %}{{ name }}{{ "" if artist else "'s set" }} · {{ app_name }}{% endblock %}
 {% block heading %}{{ name }}{% endblock %}
-{% set filter_count = 0 if preview else (1 if show else 0) %}
+{% set filter_count = 0 if preview else ((1 if show else 0) + (1 if lang else 0)) %}
 {% block filters %}{% if not preview %}
 <form method="get" action="{{ here }}">
   <h2>Filters <a href="{{ here }}">Clear filters</a></h2>
@@ -17,6 +18,13 @@
       {% for key, label in shows.items() %}<label class="chip"><input type="radio" name="show" value="{{ key }}" {% if key == show %}checked{% endif %}>{{ label }}</label>{% endfor %}
     </div>
   </div>
+  <div class="fgroup"><b>Language</b>
+    <div class="chips">
+      <label class="chip"><input type="radio" name="lang" value="" {% if not lang %}checked{% endif %}>All</label>
+      {% for key, label in langs.items() %}<label class="chip"><input type="radio" name="lang" value="{{ key }}" {% if key == lang %}checked{% endif %}>{{ label }}</label>{% endfor %}
+    </div>
+  </div>
+  <input type="hidden" name="sort" value="{{ sort }}">
   <button>Show arts</button>
 </form>
 {% endif %}{% endblock %}
@@ -68,18 +76,22 @@
 </div>
 {% else %}
 {% set base = here ~ "?" %}
-{% if show %}
+{% if show or lang %}
 <div class="chips active-chips pfilters">
-  <a class="chip on" href="{{ base ~ qs(sort=sort) }}" aria-label="Show every art">{{ shows[show] }} {{ icon("x", 14) }}</a>
+  {% if show %}<a class="chip on" href="{{ base ~ qs(sort=sort, lang=lang) }}" aria-label="Show every art">{{ shows[show] }} {{ icon("x", 14) }}</a>{% endif %}
+  {% if lang %}<a class="chip on" href="{{ base ~ qs(show=show, sort=sort) }}" aria-label="Show every language">{{ langs[lang] }} {{ icon("x", 14) }}</a>{% endif %}
 </div>
 {% endif %}
-{# Sort like a set page, and Edit arts: a pencil on each tile; a tap opens that art's Edit art sheet. #}
+{# Sort like a set page, and Edit arts: a tap ticks a tile, Merge arts joins the ticked ones, and the pencil
+   opens the art's sheet. Sorts and filters keep edit mode on (edit=1 in the address); a reload turns it off. #}
 {% if tiles %}<div class="pbar">
   <nav class="seg set-sort" aria-label="Sort">{% for key, label in sorts.items() %}<a class="chip{% if key == sort %} on{% endif %}"
-     href="{{ base ~ qs(show=show, sort=key) }}"{% if key == sort %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+     href="{{ base ~ qs(show=show, sort=key, lang=lang) }}"{% if key == sort %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+  <form method="post" action="/pokemon/{{ dex }}/fix/merge/undo" data-undo hidden>{{ grid_keep() }}<input type="hidden" name="token">
+    <button class="quiet">Undo merge</button></form>
   <button type="button" class="quiet" data-modify aria-pressed="false">{{ icon("pencil", 15) }} Edit arts</button>
 </div>
-<p class="muted modify-hint" data-modify-hint hidden>Tap an art to edit it.</p>{% endif %}
+<p class="muted modify-hint" data-modify-hint hidden>Tap arts to select them, then Merge arts. Tap {{ icon("pencil", 13) }} to see an art's cards.</p>{% endif %}
 <div class="pgrid" id="arts" data-dex="{{ dex }}">
   {% for t in tiles %}
   <div class="ptile" data-card="{{ t.cover.card_id }}" data-art="{{ t.art_id }}">
@@ -87,7 +99,8 @@
       <span class="stack{% if t.versions == 1 %} one{% endif %}{% if t.owned %} have{% endif %}"><span class="face">
         {% if t.owned %}<span class="own">{{ icon("check", 14) }}</span>{% endif %}
         {% if t.chased %}<span class="chs" aria-label="Chasing">{{ icon("star-on", 14) }}</span>{% endif %}
-        <span class="edit-pen" aria-hidden="true">{{ icon("pencil", 14) }}</span>
+        <span class="sel" aria-hidden="true">{{ icon("check", 14) }}</span>
+        <span class="edit-pen" data-pen role="button" aria-label="See this art's cards">{{ icon("pencil", 16) }}</span>
         {% if t.pics %}<img class="c" src="{{ t.pics[0][0] }}" data-pics="{{ t.pics[1:] | tojson | forceescape }}" alt="{{ t.cover.name }}" loading="lazy" data-fail="art">
         {% else %}<span class="nopic">{% if sprite %}<img src="{{ sprite }}" alt="">{% endif %}<b>No picture</b></span>{% endif %}
         {% if t.langs %}<span class="ltags" aria-label="{% for l in t.langs %}{{ l.label }} {{ 'owned' if l.owned else 'missing' }}{{ ', ' if not loop.last }}{% endfor %}">
@@ -102,7 +115,15 @@
   <p class="muted" style="grid-column:1/-1">{% if running %}The cards show here when they're in.{% elif show %}No arts match.{% else %}No cards yet.{% endif %}</p>
   {% endfor %}
 </div>
-<dialog class="cv-add art-sheet" id="art-sheet" aria-label="Edit art"><div data-art-body>Opening…</div></dialog>
+<dialog class="cv-add art-sheet" id="art-sheet" aria-label="This art"><div data-art-body>Opening…</div></dialog>
+{% if tiles %}
+<form class="merge-bar" method="post" action="/pokemon/{{ dex }}/fix/merge" data-merge hidden>{{ grid_keep() }}
+  <div><b data-count>0 arts selected</b><small class="muted" data-hidden-count hidden></small></div>
+  <button type="button" class="quiet" data-clear>Clear</button>
+  <button data-go disabled>Merge arts</button>
+</form>
+<div class="merge-toast" role="status" data-toast hidden><span></span><button type="button" class="quiet" data-toast-undo>Undo</button></div>
+{% endif %}
 {% if checked %}<p class="muted" style="font-size:12px;margin-top:16px">Cards last checked {{ checked | long_date }}.</p>{% endif %}
 <script src="{{ asset("js/pokemon-art-tray.js") }}" data-open-art="{{ open_art or '' }}" data-open="{{ open or '' }}"></script>
 {% endif %}

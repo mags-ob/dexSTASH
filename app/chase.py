@@ -17,7 +17,9 @@ Only followed Pokémon are processed. Following one starts a background job
 
 import json
 import logging
+import secrets
 import sqlite3
+import time
 
 from . import catalog, clock, jobs, prices, tcgdex
 
@@ -528,9 +530,53 @@ def put_with(conn: sqlite3.Connection, dex: int, card_id: str, art_card_id: str,
     conn.commit()
 
 
-def undo_fix(conn: sqlite3.Connection, dex: int, card_id: str) -> None:
-    conn.execute("DELETE FROM art_fixes WHERE dex_id = ? AND card_id = ?", (dex, card_id))
+UNDO_FOR = 600  # seconds a merge can be undone; kept in memory only, so a restart keeps the merge
+_undo: dict[str, tuple[int, float, list]] = {}
+
+
+def merge(conn: sqlite3.Connection, dex: int, cards: list[str], by: int | None) -> tuple[str, int] | None:
+    """Merge arts: every card of the arts these cards are in joins one art, whose cover
+    follows the usual rule. Gives back (an Undo token, the number of arts merged), or
+    None when the cards are in fewer than two arts."""
+    rows = conn.execute("""SELECT ac.art_id, ac.card_id, pc.lang, pc.release_date FROM art_cards ac
+                           JOIN arts a ON a.id = ac.art_id
+                           JOIN pokemon_cards pc ON pc.dex_id = a.dex_id AND pc.card_id = ac.card_id
+                           WHERE a.dex_id = ?""", (dex,)).fetchall()
+    art_of = {r["card_id"]: r["art_id"] for r in rows}
+    picked = {art_of[c] for c in cards if c in art_of}
+    if len(picked) < 2:
+        return None
+    members = [dict(r) for r in rows if r["art_id"] in picked]
+    cover = cover_of(members)
+    moved = [m["card_id"] for m in members if m["art_id"] != art_of[cover]]
+    before = {r["card_id"]: dict(r) for r in conn.execute(
+        f"SELECT * FROM art_fixes WHERE dex_id = ? AND card_id IN ({','.join('?' * len(moved))})", (dex, *moved))}
+    conn.executemany("""INSERT INTO art_fixes (dex_id, card_id, join_card_id, left_card_id, by, at) VALUES (?, ?, ?, NULL, ?, ?)
+                        ON CONFLICT(dex_id, card_id) DO UPDATE SET join_card_id = excluded.join_card_id, left_card_id = NULL,
+                          by = excluded.by, at = excluded.at""", [(dex, c, cover, by, now()) for c in moved])
     conn.commit()
+    moment = time.monotonic()
+    for token in [t for t, (_, until, _) in _undo.items() if until < moment]:
+        del _undo[token]
+    token = secrets.token_urlsafe(8)
+    _undo[token] = (dex, moment + UNDO_FOR, [(c, before.get(c)) for c in moved])
+    return token, len(picked)
+
+
+def undo_merge(conn: sqlite3.Connection, dex: int, token: str) -> bool:
+    """Undo a merge: each moved card's fix goes back to what it was. False when the
+    token is unknown, for another page, or too old."""
+    found = _undo.pop(token, None)
+    if found is None or found[0] != dex or found[1] < time.monotonic():
+        return False
+    for card_id, fix in found[2]:
+        if fix is None:
+            conn.execute("DELETE FROM art_fixes WHERE dex_id = ? AND card_id = ?", (dex, card_id))
+        else:
+            conn.execute("""INSERT OR REPLACE INTO art_fixes (dex_id, card_id, join_card_id, left_card_id, by, at)
+                            VALUES (:dex_id, :card_id, :join_card_id, :left_card_id, :by, :at)""", fix)
+    conn.commit()
+    return True
 
 
 def add_card(conn: sqlite3.Connection, dex: int, row: dict, by: int | None) -> None:

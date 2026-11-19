@@ -32,6 +32,15 @@ TCGplayer's scale: Near Mint, Lightly Played, Moderately Played, Heavily Played,
 A card, or all cards of a followed Pokémon or artist, the household is looking for. A chase is for the whole
 card, any printing. ([chases.md](specs/chases.md))
 
+**Art**
+One picture of a Pokémon or by an artist, across every language and set it was printed in: cards with the same
+illustrator and near-identical pictures, plus hand fixes. A followed Pokémon's or artist's page is a grid of arts.
+([chases.md](specs/chases.md))
+
+**Merge arts**
+Joining two or more arts into one by hand, in edit mode on that grid. The app picks the cover (English, else the
+earliest). Not this art takes one card back out. ([chases.md](specs/chases.md))
+
 **Binder**
 A named group of copies a person can share. ([sharing.md](specs/sharing.md))
 
