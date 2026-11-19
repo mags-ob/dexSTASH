@@ -1,7 +1,7 @@
 # Contributing
 
 Everyone, including AI assistants, follows the same path. See
-[docs/lifecycle.md](docs/lifecycle.md) for detail.
+[docs/lifecycle.md](../docs/lifecycle.md) for detail.
 
 1. **Open an issue** with the Bug, Feature or Process change form. There are no
    other options. A Process change is for changing the workflow, agents,
@@ -44,11 +44,11 @@ DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
 The tests need no network: every outside request is replaced with a fake one.
 `tools/demo_data.py` makes a demo collection to click around in. On Windows, set
 `PYTHONUTF8=1` first. The project's code rules are in
-[AGENTS.md](AGENTS.md#project).
+[AGENTS.md](../AGENTS.md#project).
 
 ## How the code is laid out
 
-[docs/architecture.md](docs/architecture.md) has the diagrams and a map from each page to its route, logic and tables. In short:
+[docs/architecture.md](../docs/architecture.md) has the diagrams and a map from each page to its route, logic and tables. In short:
 
 - `app/routes/` has one module of pages per topic; `app/web.py` holds what they share (templates, sign-in checks, background workers).
 - Logic lives in plain modules in `app/` and takes a database connection, so it can be tested without the web layer.
@@ -62,10 +62,10 @@ The tests need no network: every outside request is replaced with a fake one.
 
 - Card data, card pictures, sprites, Pokédex text, Bulbapedia text, Chinese
   dataset files, prices or models. They're downloaded into `data/` while the app
-  runs, under their owners' terms (see [NOTICE.md](NOTICE.md)).
+  runs, under their owners' terms (see [NOTICE.md](../NOTICE.md)).
 - `.env`, `data/`, or anything with a real domain, server name, password or key
   in it. Examples use `misty` and `cards.example.com`.
 
-Using an AI assistant? Point it at [AGENTS.md](AGENTS.md). For a security
+Using an AI assistant? Point it at [AGENTS.md](../AGENTS.md). For a security
 problem, see [SECURITY.md](SECURITY.md). By contributing you agree that your
-contribution is licensed under the [AGPL-3.0](LICENSE).
+contribution is licensed under the [AGPL-3.0](../LICENSE).

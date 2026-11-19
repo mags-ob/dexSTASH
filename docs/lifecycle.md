@@ -201,7 +201,7 @@ else forks.
 ## Process changes
 
 These files define the process: `AGENTS.md`, `agents/`, `docs/lifecycle.md`,
-`docs/github-setup.md`, `CONTRIBUTING.md`, `.github/` (forms, PR template,
+`docs/github-setup.md`, `.github/CONTRIBUTING.md`, `.github/` (forms, PR template,
 labels, CODEOWNERS), `tools/` and `rules/`.
 
 `docs/product.md` and `docs/concepts.md` are not process files. They are living

@@ -44,7 +44,7 @@ approved or merged. Say in the thread or on the issue which card you moved.
 ## Process files
 
 `AGENTS.md`, `agents/`, `docs/lifecycle.md`, `docs/github-setup.md`,
-`CONTRIBUTING.md`, `.github/`, `tools/` and `rules/` define the process. Edit
+`.github/CONTRIBUTING.md`, `.github/`, `tools/` and `rules/` define the process. Edit
 them only for an issue labelled `process`, following
 [agents/process-editor.md](agents/process-editor.md). On a Bug or Feature, don't
 touch them: open or link a Process change issue instead. A process change still

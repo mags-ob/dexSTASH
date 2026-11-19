@@ -27,7 +27,7 @@ GitHub Actions. Do it once, in this order.
   - Don't enforce for administrators, so the maintainer can merge.
 - **Security:** turn on private vulnerability reporting and secret
   scanning with push protection (free on public repositories). Add a
-  `SECURITY.md` if the repository is public.
+  `.github/SECURITY.md` if the repository is public.
 
 ## 3. Issue forms
 

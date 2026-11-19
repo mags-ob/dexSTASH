@@ -1,6 +1,6 @@
 # A test image for a pull request with the "test image" label: ghcr.io/<owner>/dexstash:pr-<number>, for amd64
 # and arm64, built when the label is added and rebuilt on each push after, so a host can try the change before
-# it is merged (DEPLOY.md › Trying a pull request). It takes several minutes, so only pull requests someone
+# it is merged (docs/deploy.md › Trying a pull request). It takes several minutes, so only pull requests someone
 # wants to try get one. The image is removed when the pull request closes. Release images come from image.yml.
 # Pull requests from forks build nothing here: GitHub gives them no right to write packages.
 name: Test image
@@ -57,7 +57,7 @@ jobs:
             echo '```'
             echo "DEXSTASH_VERSION=pr-${{ github.event.pull_request.number }}"
             echo '```'
-            echo "then \`docker compose pull && docker compose up -d\`. A pull request with a database step upgrades your database: see DEPLOY.md › Trying a pull request."
+            echo "then \`docker compose pull && docker compose up -d\`. A pull request with a database step upgrades your database: see docs/deploy.md › Trying a pull request."
           } >> "$GITHUB_STEP_SUMMARY"
 
   remove:
