@@ -104,7 +104,7 @@ def test_a_loaded_image_file_matches_the_compose_file():
 
 
 def test_deploy_explains_published_and_test_images():
-    deploy = (ROOT / "DEPLOY.md").read_text(encoding="utf-8")
+    deploy = (ROOT / "docs" / "deploy.md").read_text(encoding="utf-8")
     for heading in ("### Using a release image", "### Trying a pull request"):
         assert heading in deploy
     assert "docker load -i dexstash-" in deploy and "DEXSTASH_VERSION=0.29.0" in deploy

@@ -1,7 +1,7 @@
 # When a GitHub Release is published (its tag like v0.29.0), builds the Docker image for amd64 and arm64:
 # - attaches each to the Release as an image file (dexstash-<version>-amd64.tar.gz) for `docker load`;
 # - pushes it to ghcr.io/<owner>/dexstash as <version>, <major.minor> and latest (not latest for a pre-release)
-#   for `docker compose pull` (DEPLOY.md › Using a release image).
+#   for `docker compose pull` (docs/deploy.md › Using a release image).
 # Nothing is published unless the tests pass and the tag matches the app's version.
 # Actions › Image › Run workflow builds an existing release tag again. While Actions is off,
 # `python tools/release_image.py <tag>` does the same on a maintainer's machine.

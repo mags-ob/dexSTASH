@@ -65,7 +65,7 @@ A spec is written from the code the first time an issue touches that part, so so
 
 - People use it through the web pages (`app/routes/`); `tests/routes.txt` lists every route.
 - Hosts configure it through `.env` (see `.env.example`) and Account › Data sources.
-- [README.md](../../README.md) is the user guide, [DEPLOY.md](../../DEPLOY.md) the install guide and
+- [README.md](../../README.md) is the user guide, [docs/deploy.md](../deploy.md) the install guide and
   [docs/architecture.md](../architecture.md) the code tour.
 
 ## Open questions

@@ -51,7 +51,7 @@ def test_spec_only_pull_requests_skip_the_tests():
     assert "pull_request" in _on("tests.yml") and "paths-ignore" not in (_on("tests.yml")["pull_request"] or {})
     assert _skips(["docs/specs/prices.md", "rules/project.md", "AGENTS.md", ".github/ISSUE_TEMPLATE/bug.yml"])
     # Every file a test reads keeps the tests running.
-    for path in ["README.md", "DEPLOY.md", "CONTRIBUTING.md", "CHANGELOG.md", "docs/architecture.md",
+    for path in ["README.md", "docs/deploy.md", ".github/CONTRIBUTING.md", "CHANGELOG.md", "docs/architecture.md",
                  ".github/workflows/tests.yml", "app/main.py", "tests/test_ci.py", "rules.py", "docs/specs.py"]:
         assert not _skips([path]), path
     assert not _skips(["docs/specs/prices.md", "app/prices.py"])
@@ -62,7 +62,7 @@ def test_the_pre_push_hook_runs_the_quick_checks():
     hook = ROOT / "tools" / "hooks" / "pre-push"
     assert os.access(hook, os.X_OK)
     text = hook.read_text()
-    for step in ("ruff check .", "tools/check_rules.py", "pytest -q", "gitleaks git", "pip_audit --requirement requirements.lock"):
+    for step in ("ruff check .", "tools/check_rules.py", "pytest -q", "gitleaks git", "pip_audit --requirement requirements/requirements.lock"):
         assert step in text
     subprocess.run(["sh", "-n", str(hook)], check=True)  # it parses
 

@@ -1,4 +1,4 @@
-# Exact versions the Docker image installs (tested together). Made with: pip freeze, from requirements.txt on Python 3.13.
+# Exact versions the Docker image installs (tested together). Made with: pip freeze, from requirements/requirements.txt on Python 3.13.
 annotated-doc==0.0.5
 annotated-types==0.8.0
 antlr4-python3-runtime==4.9.3
@@ -21,7 +21,7 @@ numpy==2.5.3
 omegaconf==2.3.1
 onnxruntime==1.30.0
 opencv-python==5.0.0.93
-opentelemetry-api==1.45.1
+opentelemetry-api==1.45.2
 packaging==26.3
 pillow==13.0.0
 protobuf==7.36.2
