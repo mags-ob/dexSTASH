@@ -230,20 +230,7 @@ async def pokemon_fix_merge(request: Request, dex: int, user=Depends(current_use
         if done is None:
             return _back_to_grid(dex, form)
         _regroup(dex)
-        return _back_to_grid(dex, form, undo=done[0], merged=done[1])
-    return await _in_thread(work)
-
-
-@router.post("/pokemon/{dex}/fix/merge/undo")
-async def pokemon_fix_merge_undo(request: Request, dex: int, user=Depends(current_user)):
-    """Undo a merge: the cards go back to the arts they were in."""
-    form = await request.form()
-
-    def work():
-        if not chase.undo_merge(conn, dex, form.get("token", "")):
-            return _back_to_grid(dex, form, message="That merge can't be undone any more.")
-        _regroup(dex)
-        return _back_to_grid(dex, form)
+        return _back_to_grid(dex, form, merged=done)
     return await _in_thread(work)
 
 

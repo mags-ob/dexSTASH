@@ -198,10 +198,10 @@ def test_refresh_and_back_dont_reopen_the_edit_art_sheet():
     from pathlib import Path
     js = (Path(__file__).resolve().parents[1] / "app/static/js/pokemon-art-tray.js").read_text()
     assert "location.replace(r.url)" in js and "location.assign" not in js
-    assert 'for (const k of ["open", "message", "undo", "merged"]) here.searchParams.delete(k);' in js
+    assert 'for (const k of ["open", "message", "merged"]) here.searchParams.delete(k);' in js
     assert "history.replaceState(" in js and "history.pushState(" not in js
     assert "form.submit()" in js  # if sending fails, the form is posted as before
-    assert r"(fix\/|recheck$)" in js  # Not this art, Merge arts, Undo and Re-check
+    assert r"(fix\/|recheck$)" in js  # Not this art, Merge arts and Re-check
 
 
 def test_the_chasing_section_fits_a_phone():
@@ -212,7 +212,7 @@ def test_the_chasing_section_fits_a_phone():
     assert "grid-template-columns:minmax(0, 1fr)" in rule
 
 
-# #96: Edit arts on the grid: tick arts and merge them, Undo, and a Language filter.
+# #96: Edit arts on the grid: tick arts and merge them, and a Language filter.
 
 def _two_arts(client, monkeypatch, **kw):
     """Clefairy with the 151 art (EN, JA, ZH) and Base Set (EN), and a third art: Japanese only, by another artist."""
@@ -231,7 +231,7 @@ def test_merge_arts_joins_every_card_of_the_ticked_arts(client, monkeypatch):
     r = client.post("/pokemon/35/fix/merge", data={"card": ["base1-5", "ja:SV9-051"], "sort": "name", "lang": "ja"},
                     follow_redirects=False)
     location = r.headers["location"]
-    assert location.startswith("/pokemon/35?edit=1&sort=name&lang=ja&undo=") and location.endswith("&merged=2")
+    assert location == "/pokemon/35?edit=1&sort=name&lang=ja&merged=2"
     assert _art_of("base1-5") == {"base1-5", "ja:SV9-051"}  # across illustrators, no warning
     art = next(a for a in chase_pages.arts(main.conn, 35) if "base1-5" in a["card_ids"])
     assert art["cover"] == "base1-5"  # the usual rule: the English card
@@ -255,22 +255,18 @@ def test_merge_needs_two_arts(client, monkeypatch):
         assert r.headers["location"] == "/pokemon/35?edit=1" and chase_pages.arts(main.conn, 35) == before
 
 
-def test_undo_puts_every_card_back(client, monkeypatch):
+def test_a_merge_has_no_undo(client, monkeypatch):
+    """The maintainer chose no Undo for a merge: Not this art takes a card back out. A card taken out before
+    still joins when its art is ticked."""
     _two_arts(client, monkeypatch)
     client.post("/pokemon/35/fix/out", data={"card": "zh-tw:SV2a-035", "back": "sv03.5-035"})  # a card taken out
     r = client.post("/pokemon/35/fix/merge", data={"card": ["sv03.5-035", "zh-tw:SV2a-035", "ja:SV9-051"]},
                     follow_redirects=False)
-    assert len(_art_of("sv03.5-035")) == 4
-    token = re.search(r"undo=([^&]+)", r.headers["location"]).group(1)
-    r = client.post("/pokemon/35/fix/merge/undo", data={"token": token, "show": "missing"}, follow_redirects=False)
-    assert r.headers["location"] == "/pokemon/35?edit=1&show=missing"
-    assert _art_of("sv03.5-035") == {"sv03.5-035", "ja:SV2a-035"} and _art_of("zh-tw:SV2a-035") == {"zh-tw:SV2a-035"}
-    assert _art_of("ja:SV9-051") == {"ja:SV9-051"}
-    fix = main.conn.execute("SELECT join_card_id, left_card_id FROM art_fixes WHERE card_id = 'zh-tw:SV2a-035'").fetchone()
-    assert fix["join_card_id"] is None and fix["left_card_id"]  # its own fix is back, as it was
-    r = client.post("/pokemon/35/fix/merge/undo", data={"token": token}, follow_redirects=False)  # only once
-    assert "can%27t+be+undone" in r.headers["location"] or "can't" in r.headers["location"]
-    assert not chase.undo_merge(main.conn, 34, "made-up")
+    assert r.headers["location"] == "/pokemon/35?edit=1&merged=3" and len(_art_of("sv03.5-035")) == 4
+    assert client.post("/pokemon/35/fix/merge/undo", data={"token": "x"}).status_code in (404, 405)
+    assert not hasattr(chase, "undo_merge")
+    page = client.get("/pokemon/35", params={"edit": "1", "merged": "3"}).text
+    assert "Undo" not in page.split('class="merge-bar"')[1]  # the bar and the "Merged 3 arts" note have no Undo
 
 
 def test_not_this_art_on_a_merged_art_moves_only_that_card(client, monkeypatch):
@@ -314,7 +310,7 @@ def test_edit_mode_on_the_grid():
     assert 'e.target.closest("[data-pen]")' in js and "tick(a.parentNode.dataset.card)" in js
     assert "ticks.size < 2" in js and "hidden by filters" in js and "setTimeout(() => { toast.hidden = true; }, 6000)" in js
     html = (root / "app/templates/pokemon_set.html").read_text()
-    assert 'class="merge-bar"' in html and 'action="/pokemon/{{ dex }}/fix/merge"' in html and "Undo merge" in html
+    assert 'class="merge-bar"' in html and 'action="/pokemon/{{ dex }}/fix/merge"' in html and "Undo" not in html
     assert 'data-pen role="button"' in html and 'class="sel"' in html
 
 
@@ -327,7 +323,7 @@ def test_merge_and_language_on_an_artist_page(client, monkeypatch):
     chase.regroup(main.conn, key, VECTORS)
     r = client.post(f"/pokemon/{key}/fix/merge", data={"card": ["sv03.5-035", "base1-5"], "lang": "en"},
                     follow_redirects=False)
-    assert r.headers["location"].startswith("/artists/saya%20tsuruta?edit=1&lang=en&undo=")
+    assert r.headers["location"] == "/artists/saya%20tsuruta?edit=1&lang=en&merged=2"
     assert len(chase_pages.arts(main.conn, key)) == 1
     page = client.get("/artists/saya%20tsuruta", params={"lang": "ja"}).text
     assert "<b>Language</b>" in page and len(_tile_order(page)) == 1

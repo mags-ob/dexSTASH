@@ -5,7 +5,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 ## Unreleased
 
 ### Added
-- **Edit arts on the grid.** On a Pokémon or artist page, Edit arts lets you tick arts and Merge arts, with Undo; sorts and filters keep edit mode and your ticks. The pencil opens a slim sheet of the art's cards, each with Not this art. Add a card to this art is gone: add a card from its card page with Add to a Pokémon set… (#96).
+- **Edit arts on the grid.** On a Pokémon or artist page, Edit arts lets you tick arts and Merge arts; sorts and filters keep edit mode and your ticks. The pencil opens a slim sheet of the art's cards, each with Not this art. Add a card to this art is gone: add a card from its card page with Add to a Pokémon set… (#96).
 - **Filter a Pokémon or artist page by language** (English, Japanese or Chinese). It only narrows which arts show; owned and prices still count every language (#96).
 
 ### Fixed

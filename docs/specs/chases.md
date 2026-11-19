@@ -31,10 +31,9 @@ the stash.
    above the tab bar says how many arts are ticked, how many of them the filters hide, Clear and Merge arts
    (two or more). Sorts and filters keep edit mode and the ticks, and in edit mode they take the page's place,
    so they add no steps to Back. Merge arts joins every ticked art, hidden ones too, into one; the app picks
-   its cover (the English card, else the earliest), and different illustrators can be merged. "Merged N arts
-   · Undo" shows for about 6 seconds, then Undo merge stays beside Done until you leave edit mode or reload
-   (the undo is kept in memory for 10 minutes; a restart keeps the merge). The pencil, shown only in edit
-   mode, opens the art's sheet: its cards one per row (language, set and number, and the printings it comes
+   its cover (the English card, else the earliest), and different illustrators can be merged. "Merged N arts"
+   shows for about 6 seconds. A merge has no undo: Not this art takes a card back out. The pencil, shown
+   only in edit mode, opens the art's sheet: its cards one per row (language, set and number, and the printings it comes
    in, ✓ the ones you have), each with Not this art, which takes out one card and has no undo. To move a card
    to another art, take it out and merge its new art. A card the Pokémon is in but not named on joins from its
    card page (Add to a Pokémon set…). Not this art moves only that card: a card added to the art by hand
@@ -43,7 +42,7 @@ the stash.
    can't be changed there. ↻ Re-check, beside Following, compares the pictures again. Check for updates adds
    new cards. After a fix or Re-check the page comes back in edit mode (with the same art's sheet open after
    Not this art), in place of the page before, so a fix adds no step to Back. A reload turns edit mode off
-   and clears the ticks and Undo.
+   and clears the ticks.
 9. A followed Pokémon's or artist's page shows every art in one grid, like a set page (no rows by era). Every
    language counts: an art is yours when you have any card of it, in any language, and the arts, cards and
    printings counts cover them all. Each tile has language tags (EN, JA, ZH, mainland and Taiwan together) on

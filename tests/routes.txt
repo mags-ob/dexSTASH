@@ -89,7 +89,6 @@ GET /pokemon/{dex} pokemon_set
 GET /pokemon/{dex}/art pokemon_art
 POST /pokemon/{dex}/fix/out pokemon_fix_out
 POST /pokemon/{dex}/fix/merge pokemon_fix_merge
-POST /pokemon/{dex}/fix/merge/undo pokemon_fix_merge_undo
 POST /pokemon/{dex}/recheck pokemon_recheck
 POST /cards/{card_id}/pokemon-sets card_pokemon_sets
 GET /wants wants_view

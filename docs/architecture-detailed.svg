@@ -61,7 +61,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="ds" x="286" y="200">templates and filters, sign-in</text>
 <text class="ds" x="286" y="216">checks, the workers, shared</text>
 <text class="ds" x="286" y="232">helpers for several pages</text>
-<text class="t2" x="520" y="84">app/routes/ · 217 routes in 16 modules</text>
+<text class="t2" x="520" y="84">app/routes/ · 216 routes in 16 modules</text>
 <text class="m" x="520" y="108">data_sources.py</text>
 <text class="lbl" x="662" y="108" text-anchor="end">36</text>
 <text class="m" x="520" y="126">scans.py</text>
@@ -71,7 +71,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="m" x="520" y="162">account.py</text>
 <text class="lbl" x="662" y="162" text-anchor="end">18</text>
 <text class="m" x="520" y="180">pokemon.py</text>
-<text class="lbl" x="662" y="180" text-anchor="end">15</text>
+<text class="lbl" x="662" y="180" text-anchor="end">14</text>
 <text class="m" x="520" y="198">home.py</text>
 <text class="lbl" x="662" y="198" text-anchor="end">13</text>
 <text class="m" x="678" y="108">search.py</text>

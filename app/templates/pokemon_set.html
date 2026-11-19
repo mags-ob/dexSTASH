@@ -87,8 +87,6 @@
 {% if tiles %}<div class="pbar">
   <nav class="seg set-sort" aria-label="Sort">{% for key, label in sorts.items() %}<a class="chip{% if key == sort %} on{% endif %}"
      href="{{ base ~ qs(show=show, sort=key, lang=lang) }}"{% if key == sort %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</nav>
-  <form method="post" action="/pokemon/{{ dex }}/fix/merge/undo" data-undo hidden>{{ grid_keep() }}<input type="hidden" name="token">
-    <button class="quiet">Undo merge</button></form>
   <button type="button" class="quiet" data-modify aria-pressed="false">{{ icon("pencil", 15) }} Edit arts</button>
 </div>
 <p class="muted modify-hint" data-modify-hint hidden>Tap arts to select them, then Merge arts. Tap {{ icon("pencil", 13) }} to see an art's cards.</p>{% endif %}
@@ -122,7 +120,7 @@
   <button type="button" class="quiet" data-clear>Clear</button>
   <button data-go disabled>Merge arts</button>
 </form>
-<div class="merge-toast" role="status" data-toast hidden><span></span><button type="button" class="quiet" data-toast-undo>Undo</button></div>
+<div class="merge-toast" role="status" data-toast hidden></div>
 {% endif %}
 {% if checked %}<p class="muted" style="font-size:12px;margin-top:16px">Cards last checked {{ checked | long_date }}.</p>{% endif %}
 <script src="{{ asset("js/pokemon-art-tray.js") }}" data-open-art="{{ open_art or '' }}" data-open="{{ open or '' }}"></script>

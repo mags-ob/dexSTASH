@@ -1,7 +1,7 @@
-// Edit arts, on the grid: a tap ticks a tile, the bar merges the ticked arts (with Undo), and the pencil opens
+// Edit arts, on the grid: a tap ticks a tile, the bar merges the ticked arts, and the pencil opens
 // the art's sheet (its cards, each with Not this art). Without Edit arts on, a tap opens the card.
 // Edit mode is edit=1 in the address, so sorts and filters keep it; the ticks live in session storage.
-// A reload turns edit mode off and clears the ticks.
+// A reload turns edit mode off and clears the ticks. After a merge, "Merged N arts" shows for a few seconds.
 (() => {
   const grid = document.getElementById("arts");
   const sheet = document.getElementById("art-sheet");
@@ -9,7 +9,7 @@
   const body = sheet.querySelector("[data-art-body]");
   const me = document.currentScript;
   const store = (() => { try { return window.sessionStorage; } catch { return null; } })();
-  const TICKS = `arts-ticks:${location.pathname}`, UNDO = `arts-undo:${location.pathname}`;
+  const TICKS = `arts-ticks:${location.pathname}`;
   const read = key => { try { return JSON.parse(store?.getItem(key) || "null"); } catch { return null; } };
   const write = (key, value) => { try { value == null ? store?.removeItem(key) : store?.setItem(key, JSON.stringify(value)); } catch { /* private mode */ } };
 
@@ -22,11 +22,10 @@
   }
   sheet.addEventListener("click", e => { if (e.target === sheet) sheet.close(); });  // a tap on the backdrop
 
-  // A reload starts over: no edit mode, no ticks, no Undo.
+  // A reload starts over: no edit mode, no ticks.
   const here = new URL(location.href);
   if (performance.getEntriesByType?.("navigation")[0]?.type === "reload") {
     write(TICKS, null);
-    write(UNDO, null);
     here.searchParams.delete("edit");
   }
 
@@ -61,7 +60,6 @@
   // Edit mode: edit=1 rides on the sort links, the active filter chips, Clear filters and the Filters form.
   const modify = document.querySelector("[data-modify]"), hint = document.querySelector("[data-modify-hint]");
   const idle = modify ? modify.innerHTML : "";  // the button as drawn: pencil, Edit arts
-  const undoForm = document.querySelector("[data-undo]");
   const links = () => document.querySelectorAll(".pbar .set-sort a, .pfilters a, #filters h2 a");
   const filterForm = document.querySelector("#filters form");
   const editing = on => {
@@ -75,8 +73,7 @@
     if (on && filterForm && !flag) filterForm.append(flag = Object.assign(document.createElement("input"), {type: "hidden", name: "edit", value: "1"}));
     if (!on) flag?.remove();
     on ? here.searchParams.set("edit", "1") : here.searchParams.delete("edit");
-    if (!on) { ticks = new Set(); write(TICKS, null); write(UNDO, null); }
-    if (undoForm) undoForm.hidden = !on || !read(UNDO);
+    if (!on) { ticks = new Set(); write(TICKS, null); }
     if (modify) {
       modify.setAttribute("aria-pressed", String(on));
       modify.innerHTML = on ? "Done" : idle;
@@ -108,7 +105,7 @@
     else tick(a.parentNode.dataset.card);
   }));
 
-  // A fix (Not this art, Merge, Undo, Re-check) is sent from the page, and the page it leads to takes the
+  // A fix (Not this art, Merge, Re-check) is sent from the page, and the page it leads to takes the
   // current one's place, so a fix adds no step to Back. If sending fails, the form is posted as before.
   const FIX = /^\/pokemon\/-?\d+\/(fix\/|recheck$)/;
   document.addEventListener("submit", async e => {
@@ -117,7 +114,6 @@
     e.preventDefault();
     const data = new FormData(form, e.submitter);
     for (const k of ["show", "sort", "lang"]) if (here.searchParams.get(k) && !data.has(k)) data.set(k, here.searchParams.get(k));
-    if (form === undoForm) write(UNDO, null);
     try {
       const r = await fetch(form.action, {method: "POST", body: data});
       if (!r.ok) throw new Error(r.status);
@@ -128,25 +124,22 @@
     }
   });
 
-  // Back from a fix: edit mode, and the same art's sheet when there is one. After a merge, "Merged N arts · Undo"
-  // shows for a few seconds; Undo merge stays beside Done until you leave edit mode or reload.
+  // Back from a fix: edit mode, and the same art's sheet when there is one. After a merge, "Merged N arts"
+  // shows for a few seconds.
   const opened = me.dataset.openArt || here.searchParams.get("open");
-  const token = here.searchParams.get("undo"), merged = here.searchParams.get("merged");
-  if (token) write(UNDO, token);
-  if (undoForm) undoForm.querySelector('input[name="token"]').value = read(UNDO) || "";
+  const merged = here.searchParams.get("merged");
   editing(here.searchParams.get("edit") === "1" || Boolean(opened));
   if (opened) {
     const tile = grid.querySelector(`.ptile[data-art="${me.dataset.openArt}"]`);
     open(me.dataset.open || tile?.dataset.card);
   }
   const toast = document.querySelector("[data-toast]");
-  if (token && merged && toast) {
-    toast.querySelector("span").textContent = `Merged ${merged} arts`;
+  if (merged && toast) {
+    toast.textContent = `Merged ${merged} arts`;
     toast.hidden = false;
-    toast.querySelector("[data-toast-undo]").addEventListener("click", () => undoForm?.requestSubmit());
     setTimeout(() => { toast.hidden = true; }, 6000);
   }
-  // open, message, undo and merged leave the address once read, so a reload or Back shows the page as it was.
-  for (const k of ["open", "message", "undo", "merged"]) here.searchParams.delete(k);
+  // open, message and merged leave the address once read, so a reload or Back shows the page as it was.
+  for (const k of ["open", "message", "merged"]) here.searchParams.delete(k);
   history.replaceState(history.state, "", here.pathname + here.search + here.hash);
 })();
