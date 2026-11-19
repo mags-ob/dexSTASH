@@ -49,7 +49,7 @@ curl -fsSL -o .env https://raw.githubusercontent.com/mags-ob/dexSTASH/main/.env.
 docker compose up -d
 ```
 
-[DEPLOY.md](DEPLOY.md) has the full setup, [Configuration](docs/configuration.md) every setting, and [Building from source](#building-from-source) how to build it yourself.
+[docs/deploy.md](docs/deploy.md) has the full setup, [Configuration](docs/configuration.md) every setting, and [Building from source](#building-from-source) how to build it yourself.
 
 ## Where data comes from
 
@@ -121,7 +121,7 @@ Data from these sources is downloaded into your own `data/` folder while the app
 
 ## Guides
 
-- [DEPLOY.md](DEPLOY.md): installing on your server, step by step, with Caddy and HTTPS.
+- [docs/deploy.md](docs/deploy.md): installing on your server, step by step, with Caddy and HTTPS.
 - [Configuration](docs/configuration.md): every setting in `.env` and in the app.
 - [Updating](docs/updating.md): getting a new version, and going back.
 - [Backups and moving servers](docs/backups.md)
@@ -131,7 +131,7 @@ Data from these sources is downloaded into your own `data/` folder while the app
 
 ```sh
 python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.lock pytest
+pip install -r requirements/requirements.lock pytest
 python -m pytest -q                              # the whole suite; no network needed
 DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
 ```
@@ -160,12 +160,12 @@ The rest of [Quick start](#quick-start) is the same. To update, `git pull` and r
 
 - **Questions and ideas:** [GitHub Discussions](https://github.com/mags-ob/dexSTASH/discussions).
 - **Something broken:** [open an issue](https://github.com/mags-ob/dexSTASH/issues/new/choose); the form asks for your version and what you saw.
-- **A security problem:** don't open an issue; [SECURITY.md](SECURITY.md) says how to report it privately.
+- **A security problem:** don't open an issue; [SECURITY.md](.github/SECURITY.md) says how to report it privately.
 
 ## Contributing, security and licence
 
-- [CONTRIBUTING.md](CONTRIBUTING.md): running the tests and the code style.
-- [SECURITY.md](SECURITY.md): how to report a security problem privately.
+- [CONTRIBUTING.md](.github/CONTRIBUTING.md): running the tests and the code style.
+- [SECURITY.md](.github/SECURITY.md): how to report a security problem privately.
 - [CHANGELOG.md](CHANGELOG.md): what changed in each version.
 
 dexSTASH is free software under the [GNU Affero General Public License v3.0](LICENSE). If you run a changed copy for other people, offer them your changes too. Card data, pictures, sprites, prices and models come from other sources under their own terms; see [NOTICE.md](NOTICE.md).

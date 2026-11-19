@@ -5,7 +5,7 @@ name: dexstash
 #                     at low priority, so searches and pages stay quick while a batch reads.
 #                     Only with DEXSTASH_SCANNER=separate and COMPOSE_PROFILES=scanner in .env
 #                     (or: docker compose --profile scanner up -d).
-# Settings come from .env (copy .env.example). See DEPLOY.md.
+# Settings come from .env (copy .env.example). See docs/deploy.md.
 # Docker's own log for each container stops at 3 files of 10 MB (the app's activity log is in data/logs/).
 x-logging: &logs
   driver: json-file

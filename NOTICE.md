@@ -13,7 +13,7 @@ dexSTASH is a fan project. It is not affiliated with, endorsed by or sponsored b
 | htmx 2.0.4 (`app/static/htmx-2.0.4.min.js`) | Zero-Clause BSD (`app/static/htmx-LICENSE.txt`) |
 | Printed set codes the scanner reads (`app/set_codes.json`), made from [TCGdex's cards database](https://github.com/tcgdex/cards-database) | That project's licence |
 
-The Python packages in `requirements.txt` (FastAPI, Uvicorn, Jinja, httpx, Pillow, RapidOCR, ONNX Runtime and others) are installed when the image is built, each under its own licence.
+The Python packages in `requirements/requirements.txt` (FastAPI, Uvicorn, Jinja, httpx, Pillow, RapidOCR, ONNX Runtime and others) are installed when the image is built, each under its own licence.
 
 ## Downloaded while the app runs (never included)
 

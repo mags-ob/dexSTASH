@@ -69,7 +69,7 @@ statements a change must keep true.
 - Never add a second web worker without moving the in-memory state (lockout, runner, threads) somewhere
   shared first.
 - Never change an existing database step.
-- No new package unless it works on amd64 and arm64 on a small home server, is pinned in `requirements.lock`
+- No new package unless it works on amd64 and arm64 on a small home server, is pinned in `requirements/requirements.lock`
   and passes `pip-audit`.
 - Tests never touch the network.
 

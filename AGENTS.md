@@ -44,7 +44,7 @@ approved or merged. Say in the thread or on the issue which card you moved.
 ## Process files
 
 `AGENTS.md`, `agents/`, `docs/lifecycle.md`, `docs/github-setup.md`,
-`CONTRIBUTING.md`, `.github/`, `tools/` and `rules/` define the process. Edit
+`.github/CONTRIBUTING.md`, `.github/`, `tools/` and `rules/` define the process. Edit
 them only for an issue labelled `process`, following
 [agents/process-editor.md](agents/process-editor.md). On a Bug or Feature, don't
 touch them: open or link a Process change issue instead. A process change still
@@ -65,6 +65,11 @@ maintainer's go is still required.
 
 If the plan turns out wrong while building, stop. Update the issue's Plan
 section and get a new go before changing more code.
+
+If the maintainer says a change can join an existing open issue, amend that
+issue instead of opening a new one
+([docs/lifecycle.md](docs/lifecycle.md#amending-an-issue)). The amendment
+needs a go before its code; keep the same branch and pull request.
 
 ## Validate never fixes silently
 
@@ -100,9 +105,9 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
 - **Commands:**
   ```sh
   python3 -m venv .venv && . .venv/bin/activate
-  pip install -r requirements.lock pytest
+  pip install -r requirements/requirements.lock pytest
   python -m pytest -q                              # the whole suite; no network needed
-  ruff check .                                     # settings in ruff.toml
+  ruff check .                                     # settings in pyproject.toml
   DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
   python tools/demo_data.py                        # a demo collection to click around in
   ```
@@ -116,7 +121,7 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
 - **Stack:** no front-end framework and no JavaScript build step. CSS and
   JavaScript live in `app/static/css` and `app/static/js`, one file per
   template, linked through `asset()`. New packages are pinned in
-  `requirements.lock`, need a reason in the pull request, must work on a
+  `requirements/requirements.lock`, need a reason in the pull request, must work on a
   small home server (amd64 and arm64), and must pass `pip-audit`.
 - **Code:** logic lives in plain modules in `app/` that take a database
   connection. A database change is a new numbered `_step_N` in `app/db.py` that
@@ -209,7 +214,7 @@ and why.
   with `Closes #<issue>` (one issue per pull request unless the maintainer
   groups them).
 - Keep changes small and in scope. List anything outside the plan in the pull
-  request.
+  request. To add something, ask whether to amend the issue or open a new one.
 - Say which skill or command you're using, in one line, before using it.
 
 ## When you finish

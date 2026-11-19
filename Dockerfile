@@ -22,7 +22,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --uid 1000 --create-home --shell /usr/sbin/nologin dexstash
 
-COPY requirements.lock .
+COPY requirements/requirements.lock .
 RUN pip install -r requirements.lock
 
 COPY app ./app

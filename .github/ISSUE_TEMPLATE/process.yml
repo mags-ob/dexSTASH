@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Use this only to change the process itself (AGENTS.md, agents/, docs/lifecycle.md,
-        docs/github-setup.md, CONTRIBUTING.md, .github/, tools/ and rules/).
+        docs/github-setup.md, .github/CONTRIBUTING.md, .github/, tools/ and rules/).
         docs/product.md and docs/concepts.md are not process files.
         Product work is a Bug or a Feature. Process files can't be changed from those.
   - type: textarea

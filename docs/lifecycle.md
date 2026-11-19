@@ -28,7 +28,8 @@ It still gets a branch, a pull request and the local scan.
 
 - The **issue** is the single source of truth: definition, acceptance
   criteria, wireframe and plan all live in its body (the plan in a "Plan"
-  section, never in a comment).
+  section, never in a comment). An amendment goes in the body too, marked
+  "Added <date>:" (see [Amending an issue](#amending-an-issue)).
 - The **project board column** is the phase (Define, Build, Validate, Done).
   The maintainer's go and approval are the gate decisions; the card follows
   them. Assistants may move cards, but only after the gate is passed.
@@ -173,6 +174,28 @@ pull request (changelog and version only); merge it, then tag.
 A failed Validate goes back to Build for a code fix, or to Define when the
 plan or wireframe was wrong. Never patch around a bad plan in code.
 
+## Amending an issue
+
+New work can join an open issue instead of becoming a new one, when the
+maintainer says so.
+
+- Only the maintainer decides that new work joins an existing issue. If an
+  assistant finds something new, it suggests it and asks: amend this issue, or
+  open a new one.
+- An open issue can be amended in any phase until its pull request is merged.
+  A merged or closed issue is never reopened for new work; that is a new issue.
+- Add the change to the issue body, in each section it touches (definition,
+  acceptance criteria, UI/UX, plan, Docs impact), under "Added <date>:". Keep
+  the earlier text so the history stays readable.
+- The amendment needs a go before any code for it. Work already covered by the
+  earlier go may continue meanwhile.
+- If the card is in Validate, it moves back to Build once the maintainer says
+  go on the amendment.
+- Keep the same branch and pull request. Update the pull request description
+  and the `CHANGELOG.md` line to cover the amendment. Amended work is part of
+  the plan, so it does not go under "Outside the plan".
+- The same applies to process issues.
+
 ## Local scan
 
 `tools/scan.sh` checks added lines for secrets (with
@@ -201,7 +224,7 @@ else forks.
 ## Process changes
 
 These files define the process: `AGENTS.md`, `agents/`, `docs/lifecycle.md`,
-`docs/github-setup.md`, `CONTRIBUTING.md`, `.github/` (forms, PR template,
+`docs/github-setup.md`, `.github/CONTRIBUTING.md`, `.github/` (forms, PR template,
 labels, CODEOWNERS), `tools/` and `rules/`.
 
 `docs/product.md` and `docs/concepts.md` are not process files. They are living
