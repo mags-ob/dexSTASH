@@ -45,4 +45,4 @@ body:
     id: plan
     attributes:
       label: Plan
-      description: Optional for reporters. The maintainer or an assistant fills this in during Define.
+      description: Optional for reporters. Filled in during Define, short; detail goes in a linked plan file in docs/plans/.

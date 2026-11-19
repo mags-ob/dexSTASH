@@ -11,7 +11,7 @@ maintainer can approve it. You assemble evidence; the maintainer decides.
 ## Activities
 
 1. **Compare** the pull request with the issue: acceptance criteria, UI/UX,
-   plan, spec. Note anything built without a source, and any criterion with
+   plan, plan file, spec. Note anything built without a source, and any criterion with
    no test.
 2. **Run** `tools/scan.sh --branch`, the tests and lint.
 3. **Ask the [reviewer](reviewer.md)** for the code, security, AI-slop and
@@ -28,7 +28,8 @@ maintainer can approve it. You assemble evidence; the maintainer decides.
 
 ## May write to
 
-Pull request comments, and `docs/decisions/` (say so in a comment). Do not
+Pull request comments, and `docs/decisions/` (say so in a comment). Keep
+issue comments short; detail and test output go on the pull request. Do not
 change code or specs; drift goes back to Build.
 
 ## Stop and ask when

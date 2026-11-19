@@ -34,4 +34,4 @@ body:
     id: plan
     attributes:
       label: Plan
-      description: The files to edit and the wording of the change. Filled in during Define.
+      description: The files to edit and what changes in each, short. Exact wording, if needed, goes in a linked plan file in docs/plans/. Filled in during Define.

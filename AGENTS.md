@@ -37,8 +37,9 @@ approved or merged. Say in the thread or on the issue which card you moved.
    `gh issue view <number> --json title,body,labels,comments`
 3. Find the phase from the board column, and read that agent's file.
 4. Read [rules/core.md](rules/core.md), [docs/product.md](docs/product.md) and
-   [docs/concepts.md](docs/concepts.md), and the spec in
-   [docs/specs/](docs/specs/) for the area. If a document is still a blank
+   [docs/concepts.md](docs/concepts.md), the spec in
+   [docs/specs/](docs/specs/) for the area, and earlier plan files in
+   [docs/plans/](docs/plans/) for the same area. If a document is still a blank
    template, don't fill the gaps with assumptions; ask.
 
 ## Process files
@@ -75,6 +76,24 @@ needs a go before its code; keep the same branch and pull request.
 
 Validation reports problems; it does not quietly fix them. Comment what
 failed, then send a code fix back to Build, or the plan back to Define.
+
+## Issues and comments are for people
+
+Write issues and issue comments short, in plain words, easy to skim: a few
+lines per section, about a minute to read the whole issue. The definition,
+acceptance criteria, UI/UX and a short plan stay in the issue, and the go and
+approval are given there.
+
+Detail an assistant needs (file lists, step-by-step build plans, test notes,
+design context) goes in a plan file, `docs/plans/<issue>-<short-name>.md`,
+linked from the issue's Plan section. Write one when the work needs more than
+the issue holds. It goes on the issue's branch, merges with the work and is
+kept as the record of design context
+([docs/plans/README.md](docs/plans/README.md)). If the plan file changes what
+the issue says, update the issue and get a new go.
+
+Comments say what happened, what's next and who needs to act. Logs and test
+output go in the pull request or the plan file, not on the issue.
 
 ## Concepts, product and specs
 
@@ -219,5 +238,5 @@ and why.
 
 ## When you finish
 
-Comment on the issue: what you did, what's left, and any questions with who
-should answer them.
+Leave a short comment on the issue: what you did, what's left, and any
+questions with who should answer them.
