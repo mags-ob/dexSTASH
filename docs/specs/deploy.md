@@ -26,7 +26,7 @@ guide; this spec holds the statements a change must keep true.
    one release, `pr-<number>` runs a test image.
 7. Building from source is the same compose file in a clone (or an unpacked release source) with
    `docker compose up -d --build`, from the `Dockerfile`.
-8. The image installs the exact versions in `requirements.lock`, runs as the user `PUID`/`PGID` (1000 unless
+8. The image installs the exact versions in `requirements/requirements.lock`, runs as the user `PUID`/`PGID` (1000 unless
    set) after making `data/` theirs, and reports healthy once `/healthz` answers.
 
 ### Containers and profiles

@@ -100,9 +100,9 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
 - **Commands:**
   ```sh
   python3 -m venv .venv && . .venv/bin/activate
-  pip install -r requirements.lock pytest
+  pip install -r requirements/requirements.lock pytest
   python -m pytest -q                              # the whole suite; no network needed
-  ruff check .                                     # settings in ruff.toml
+  ruff check .                                     # settings in pyproject.toml
   DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
   python tools/demo_data.py                        # a demo collection to click around in
   ```
@@ -116,7 +116,7 @@ Only the maintainer edits it. Personal preferences go in `rules/personal.md`
 - **Stack:** no front-end framework and no JavaScript build step. CSS and
   JavaScript live in `app/static/css` and `app/static/js`, one file per
   template, linked through `asset()`. New packages are pinned in
-  `requirements.lock`, need a reason in the pull request, must work on a
+  `requirements/requirements.lock`, need a reason in the pull request, must work on a
   small home server (amd64 and arm64), and must pass `pip-audit`.
 - **Code:** logic lives in plain modules in `app/` that take a database
   connection. A database change is a new numbered `_step_N` in `app/db.py` that

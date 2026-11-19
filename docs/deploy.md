@@ -197,4 +197,4 @@ Uncomment `ports` under `app` in `docker-compose.yml`, set `DEXSTASH_HTTPS_ONLY=
 - **Sign-ins** last 14 days. Account › Sign out everywhere signs out every phone and computer. 5 wrong passwords for one username within 10 minutes lock that username from that address for a while, and 20 from one address within 15 minutes, over any usernames, lock that address.
 - **Forms sent from another website are refused.** Your reverse proxy must pass the browser's `Host` header on to the app; Caddy does this by default.
 - **Shared binders.** A binder's **Share** turns on a link (`https://<your domain>/b/<random>`) and codes, one per person. Revoke a code, or make a new link, to stop a visitor at once. Shared pages never show your own photos or scans.
-- The image installs the exact versions in `requirements.lock`. `requirements.txt` is the looser list for running it on your own computer.
+- The image installs the exact versions in `requirements/requirements.lock`. `requirements/requirements.txt` is the looser list for running it on your own computer.

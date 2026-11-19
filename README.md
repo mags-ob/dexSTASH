@@ -131,7 +131,7 @@ Data from these sources is downloaded into your own `data/` folder while the app
 
 ```sh
 python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.lock pytest
+pip install -r requirements/requirements.lock pytest
 python -m pytest -q                              # the whole suite; no network needed
 DEXSTASH_HTTPS_ONLY=0 uvicorn app.main:app --reload
 ```
