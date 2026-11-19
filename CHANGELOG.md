@@ -16,6 +16,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 - **Find's first page is quicker to scan.** Recently viewed shows each card's picture and name, without the "No price" line. Search results and set pages keep their prices (#66).
 - **Tapping a card's artist tag searches Find for the artist**, the same as typing their name: "Cards drawn by …", the link to their page, and every card they drew. Other tags still open a tag search. Typing an artist's whole name with a digit in it, like "5ban Graphics", now finds their cards too (#67).
 - **Home on a phone shows the logo and the app's name** in place of "Home", as the top bar does on an iPad or computer. A test copy's name ("Test PR 78 0d0fd04") now shows on a phone too (#93).
+- **Issues are short and easy to read.** Detail an assistant needs goes in a plan file in [docs/plans/](docs/plans/), linked from the issue and kept as a record of design context (#106).
 - **An issue in progress can be amended.** When the maintainer says new work joins an open issue, it's added to that issue and its pull request instead of a new issue, after a go on the addition (#103).
 - **Assistants keep the board and labels up to date.** They move an issue's card once the maintainer has said go or approved, and may add, remove and create labels. Go and Approved stay the maintainer's (#98).
 - **Process docs agree with each other.** A release comes as its own pull request, and assistants never skip the git hooks (#84).

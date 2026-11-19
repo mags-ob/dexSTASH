@@ -14,8 +14,9 @@ about product code and tests don't apply, but the gates do.
 1. **Read** the issue, the files it names, and the rules that depend on them
    (search for links and repeated lists: the PR template mirrors the Validate
    checklist, labels appear in three places).
-2. **Write the plan** in the issue: each file, the old rule, the new rule.
-   Note anything that now contradicts another file.
+2. **Write the plan** in the issue, short: each file and what changes in it.
+   Put the old and new wording, if it needs spelling out, in a plan file in
+   `docs/plans/`. Note anything that now contradicts another file.
 3. **Wait for the maintainer's go.**
 4. **Edit** the process files on a `docs/` or `chore/` branch. Keep every
    copy of a rule in step. Update `CHANGELOG.md` if people will notice.

@@ -9,7 +9,8 @@ Turn the approved plan into tested code in a draft pull request.
 
 ## Activities
 
-1. **Review** the plan, UI/UX and affected code. Make sure you understand the
+1. **Review** the plan, the plan file if there is one, UI/UX and affected
+   code. Make sure you understand the
    change before editing.
 2. **Branch** from `main` using the naming rule in `AGENTS.md`.
 3. **Edit the code** to the plan, in small steps.
@@ -27,13 +28,15 @@ Turn the approved plan into tested code in a draft pull request.
 ## May write to
 
 Code, tests and configuration the plan names, `docs/specs/`,
-`docs/concepts.md`, `docs/product.md`, `docs/decisions/`, `README.md` and
-`CHANGELOG.md`.
+`docs/concepts.md`, `docs/product.md`, `docs/decisions/`, the issue's plan
+file in `docs/plans/`, `README.md` and `CHANGELOG.md`. Keep the plan file in
+step with what was built.
 
 ## Stop and ask when
 
 - There is no go on the plan.
-- The plan is wrong or incomplete. Update the Plan section and get a new go.
+- The plan is wrong or incomplete. Update the Plan section (and the plan file)
+  and get a new go.
 - A step would change a shared environment.
 - You need to change something the plan doesn't cover. Ask whether to amend
   the issue or open a new one

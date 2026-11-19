@@ -26,10 +26,15 @@ It still gets a branch, a pull request and the local scan.
 
 ## Where state lives
 
-- The **issue** is the single source of truth: definition, acceptance
-  criteria, wireframe and plan all live in its body (the plan in a "Plan"
-  section, never in a comment). An amendment goes in the body too, marked
-  "Added <date>:" (see [Amending an issue](#amending-an-issue)).
+- The **issue** is the single source of truth for what was agreed:
+  definition, acceptance criteria, wireframe and a short plan all live in its
+  body (the plan in a "Plan" section, never in a comment). It is written for
+  people: short, plain words, about a minute to read. An amendment goes in the
+  body too, marked "Added <date>:" (see [Amending an issue](#amending-an-issue)).
+- A **plan file** in [plans/](plans/) holds the detail an assistant needs
+  (file lists, build steps, test notes, design context), linked from the
+  issue's Plan section. It is kept after merge as the record of design context.
+  See [Plan files](#plan-files).
 - The **project board column** is the phase (Define, Build, Validate, Done).
   The maintainer's go and approval are the gate decisions; the card follows
   them. Assistants may move cards, but only after the gate is passed.
@@ -64,10 +69,11 @@ Write down:
 - **Acceptance criteria:** each one testable.
 - **UI/UX:** a wireframe or mockup at the smallest screen width, or
   "UI/UX: no screen changes".
-- **Development plan:** files and areas touched, tests to add, and a
-  **Docs impact** list: which of `README.md`, `docs/product.md`,
+- **Development plan:** in a few lines, what changes and the tests to add,
+  and a **Docs impact** list: which of `README.md`, `docs/product.md`,
   `docs/concepts.md`, the specs and other docs the change touches, or "none".
-  It must match the UI/UX.
+  It must match the UI/UX. File lists and step-by-step detail go in the plan
+  file, when there is one.
 
 **Exit (Go):**
 - [ ] Definition and acceptance criteria are written
@@ -89,7 +95,8 @@ Write down:
   commits and the pull request short: what changed; the why is on the issue.
 
 **If the plan turns out wrong:** stop, update the issue's Plan section (and
-the wireframe if it changes), and get a new go before changing more code.
+the wireframe and plan file if they change), and get a new go before changing
+more code.
 
 **Exit:**
 - [ ] Code, tests and the docs named in the plan's Docs impact are in the
@@ -142,7 +149,7 @@ the rest N/A with a reason.
 
 The project's actual commands live in `AGENTS.md` once the stack is chosen.
 
-**If it fails:** comment what failed and which criterion it breaks. A code
+**If it fails:** comment briefly what failed and which criterion it breaks. A code
 fix goes back to Build on the same pull request. If the plan was wrong, go back
 to Define and get a new go.
 
@@ -186,7 +193,8 @@ maintainer says so.
   A merged or closed issue is never reopened for new work; that is a new issue.
 - Add the change to the issue body, in each section it touches (definition,
   acceptance criteria, UI/UX, plan, Docs impact), under "Added <date>:". Keep
-  the earlier text so the history stays readable.
+  the earlier text so the history stays readable, and keep it short. Put the
+  detail in the plan file, if there is one, under the same "Added <date>:".
 - The amendment needs a go before any code for it. Work already covered by the
   earlier go may continue meanwhile.
 - If the card is in Validate, it moves back to Build once the maintainer says
@@ -195,6 +203,24 @@ maintainer says so.
   and the `CHANGELOG.md` line to cover the amendment. Amended work is part of
   the plan, so it does not go under "Outside the plan".
 - The same applies to process issues.
+
+## Plan files
+
+Issues stay short for people. When an assistant needs more than the issue
+holds, the detail goes in `docs/plans/<issue>-<short-name>.md` (for example
+`docs/plans/106-short-readable-issues.md`), linked from the issue's Plan
+section.
+
+- It holds file lists, step-by-step build plans, test notes and design
+  context: whatever the next person or assistant would otherwise have to dig
+  out of old issues.
+- It is written in Define, on the issue's branch, and updated in Build if the
+  plan changes. It merges with the work and is kept.
+- It never decides anything the issue doesn't say. If it changes what the
+  issue says, the issue is updated and needs a new go.
+- Before planning, read earlier plan files for the same area.
+
+See [plans/README.md](plans/README.md).
 
 ## Local scan
 
