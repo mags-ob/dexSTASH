@@ -164,6 +164,7 @@ POST /scans/{batch_id}/delete scan_batch_delete
 POST /scans-finished/clear scans_clear_finished
 GET /account/data/no-pictures data_no_pictures
 GET /account/data data_sources
+GET /account/data/price-updates older_price_updates
 GET /account/data/log activity_log
 GET /account/data/running data_running
 POST /account/data/descriptions data_descriptions

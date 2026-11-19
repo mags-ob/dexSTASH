@@ -150,13 +150,19 @@ def record_run(conn, started: str, status: str, summary: dict) -> None:
                      (RUNS_KEPT,))
 
 
-def runs(conn, limit: int = 6) -> list[dict]:
-    """The last price runs with a summary, newest first, and the last short run (for Data sources)."""
+def runs(conn, limit: int = RUNS_KEPT, skip: int = 0) -> list[dict]:
+    """The full price runs with a summary, newest first: Data sources shows the newest, Older price updates the rest."""
     out = []
-    for r in conn.execute("SELECT * FROM price_runs WHERE summary_json IS NOT NULL ORDER BY ran_at DESC LIMIT ?", (limit,)):
+    for r in conn.execute("SELECT * FROM price_runs WHERE summary_json IS NOT NULL ORDER BY ran_at DESC LIMIT ? OFFSET ?",
+                          (limit, skip)):
         out.append({**json.loads(r["summary_json"]), "ran_at": r["ran_at"], "finished_at": r["finished_at"],
                     "status": r["status"], "fx_date": r["fx_date"]})
     return out
+
+
+def run_count(conn) -> int:
+    """How many full price runs still have their summary (at most RUNS_KEPT)."""
+    return conn.execute("SELECT COUNT(*) FROM price_runs WHERE summary_json IS NOT NULL").fetchone()[0]
 
 
 def last_short_run(conn) -> dict | None:

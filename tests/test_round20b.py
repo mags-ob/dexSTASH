@@ -73,7 +73,7 @@ def test_each_full_run_records_a_summary(client):
     [run] = sync.runs(main.conn)
     assert run["status"] == "ok" and run["kind"] == "full" and run["finished_at"] and "tcgdex" in run["sources"]
     page = client.get("/account/data").text
-    assert "Last price updates" in page and "all fine" in page
+    assert "Last price update:" in page and "all fine" in page
 
 
 def test_a_failed_run_says_so_and_frees_the_update(client, monkeypatch):

@@ -5,6 +5,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 ## Unreleased
 
 ### Fixed
+- **A CardTrader token saves.** A key can be up to 4,000 characters (CardTrader's is over 500, which was turned away, so Data sources kept saying "no key"). Spaces and line breaks that come with a paste are dropped, and what Save, Test or Remove did now shows in green or red on the key's own row instead of at the top of the page, out of view (#64).
 - **opentelemetry-api raised to 1.45.2**, which fixes a known vulnerability pip-audit reported in 1.45.1 (#101).
 - **Cards you add to an art by hand stay there.** Taking a card out with Not this art moves only that card, even when it's the card the others were added to. Your hand choices keep their place after ↻ Re-check and Check for updates (#71).
 - **The Chasing section on a card page fits a phone.** The remove (×), Add and Add photo buttons are no longer cut off at the right edge (#68).
@@ -12,6 +13,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 - **A card or set TCGdex doesn't answer for no longer shows "Can't reach your server".** The app's own page says "Couldn't load this card" (or set) with Try again and Back, and writes why to the log. The offline screen is only for a server that really can't be reached, and the "upgrade didn't finish" page now shows on a phone too (#77).
 
 ### Changed
+- **"Last price update" on Data sources › Prices shows the latest full run only.** Older ones (the last 30) are on a new Older price updates page, linked under it. A latest run with problems still opens by itself (#65).
 - **The contributing and security guides moved to `.github/`, and the install guide to [docs/deploy.md](docs/deploy.md).** Lint settings moved from ruff.toml into pyproject.toml, and requirements.txt and requirements.lock into `requirements/`, so a build from source installs with `pip install -r requirements/requirements.lock`. Links to the old DEPLOY.md stop working (#101).
 - **Find's first page is quicker to scan.** Recently viewed shows each card's picture and name, without the "No price" line. Search results and set pages keep their prices (#66).
 - **Tapping a card's artist tag searches Find for the artist**, the same as typing their name: "Cards drawn by …", the link to their page, and every card they drew. Other tags still open a tag search. Typing an artist's whole name with a digit in it, like "5ban Graphics", now finds their cards too (#67).

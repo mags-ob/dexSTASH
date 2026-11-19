@@ -1,0 +1,10 @@
+{# One full price run (sync.runs): when, how it went and what each source did. Data sources and Older price
+   updates both show it. #}
+    <div class="ds-run" style="margin:8px 0">
+      <b>{{ r.ran_at | when }}</b> <span class="muted">· {{ run_words[r.status] }}{% if r.fx_date %} · rates of {{ r.fx_date | short_date }}{% endif %}</span>
+      {% if r.error %}<div class="error" style="font-size:13px">{{ r.error }}</div>{% endif %}
+      <ul class="muted" style="margin:2px 0 0;padding-left:18px;font-size:13px">{% for name, s in (r.sources or {}).items() %}
+        <li>{{ source_names.get(name, name) }}: {% if s.sets is defined %}{{ s.sets }} sets read{% elif s.cards is defined %}{{ s.cards }} cards{% elif not s.errors %}done{% endif %}{% if s.skipped %}, {{ s.skipped }} TCGCSV already priced (asked weekly){% endif %}{% if s.slowed %}, slowed down {{ s.slowed }}×{% endif %}{% if s.no_language %}, {{ s.no_language }} listings with no language left out{% endif %}{% if s.too_high %}, {{ s.too_high }} far too high left out{% endif %}{% if s.errors %}{{ ", " if s.sets is defined or s.cards is defined }}{{ s.errors }} problem{{ "" if s.errors == 1 else "s" }}{% for e in s.first_errors %}<br><span style="font-size:12px">{{ e }}</span>{% endfor %}{% endif %}</li>{% endfor %}{% if r.other_errors %}
+        <li>{{ r.other_errors }} other problem{{ "" if r.other_errors == 1 else "s" }} (see the activity log)</li>{% endif %}
+      </ul>
+    </div>

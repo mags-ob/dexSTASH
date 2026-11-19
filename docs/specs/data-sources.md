@@ -55,6 +55,10 @@ each site's terms. A new source, or a new use of an old one, starts here.
     It is never logged or put in an error message, and the scanner container never reads it.
 12. A CardTrader token still in `.env` from before 0.28 is moved into the key file once at start-up.
 13. A key the site refuses is shown as refused on Data sources; the run carries on with the other sources.
+    A key can be up to 4,000 characters (CardTrader's token is a signed JWT, well over 500), and spaces or
+    line breaks a paste brings along are dropped. An empty box saves nothing.
+    What Save, Test or Remove did shows on that key's own row, green when it worked and red when it didn't,
+    because the page comes back scrolled to that row.
 
 ### Links out only
 
@@ -69,7 +73,8 @@ each site's terms. A new source, or a new use of an old one, starts here.
       followed Pokémon, new sprites, missing pictures), card sets and languages, Pokémon data (names, sprites,
       descriptions).
     - **Prices**: Update prices, the nightly update, rebuilding downloaded data, sets not matched on TCGCSV or CardTrader (with a way to
-      pick the match), sets with no price source, how many printings each source prices, the last runs,
+      pick the match), sets with no price source, how many printings each source prices, the latest full
+      run (older ones on Older price updates, the last 30),
       price history settings, and API keys.
     - **Pictures & scanning**: the site switches, picture counts, and the scanner.
     - **Settings**: time zone, currency, the eBay site for links, when a price counts as stale, which names
