@@ -74,9 +74,29 @@ for a person to check and add them, all on the household's own server with no cl
     where it can be put back. Clear finished deletes the batches with nothing left to read or check; the cards
     added stay.
 
+### Trade scans
+
+21. Start a trade (beside Start on the Scan tab) asks only who the trade is with. The batch is named "Trade with
+    <name>" and has two sides: **Your cards** and **<name>'s cards**. Scanning starts on Your cards; the batch's
+    tabs and a switch at the top of the camera (both named that way) move between sides at any time. A photo goes
+    to the side it was taken for, even when the phone sends it later.
+22. Each side's tab shows its cards and total (the prices on its tiles times their quantity), and how many have
+    no price; under the tabs, how much more or less the other person's cards are worth, and Compare both sides,
+    a sheet listing each side's cards and prices. A price is added in the card view, as for any scan.
+23. Each of Your cards shows how many copies of it are in the stash, or "Not in your stash". Its card view says
+    which copy leaves: the only one, or, when you have the card more than one way (printing, condition), a
+    warning and a choice. Finish trade waits until each of those is picked.
+24. A trade batch has no From · Binder line, count line or Set for all. Finish trade shows "N cards have no
+    price" when any do, a binder for each of the other person's cards (with All of them; None unless picked),
+    and how many cards leave your stash, then Back or Finish.
+25. Finish takes Your cards out of the stash (history: traded away; copies leave Not in a binder first, then
+    the fullest binder) and adds the other person's cards (From: Trade) to the binders picked. A card of yours
+    that isn't in the stash is skipped. Each history entry is noted "Trade with <name>"; the name isn't kept on
+    the copies. Photos still being read or with no match stay in the batch.
+
 ### After a restart
 
-20. A restart carries on with scans: photos that were being read are read again, and photos waiting in a
+26. A restart carries on with scans: photos that were being read are read again, and photos waiting in a
     batch stay until someone adds, removes or deletes them.
 
 ## Rules and limits
@@ -89,8 +109,8 @@ for a person to check and add them, all on the household's own server with no cl
 
 ## Interfaces
 
-- Pages: `/scans`, `/scans/{batch_id}` and its `photos`, `changes`, `name`, `from`, `set-all`, `add` and
-  `delete` routes; `/scans/item/{scan_id}` and its card view, language, use, match, save, cancel, skip,
+- Pages: `/scans`, `/scans/trade`, `/scans/{batch_id}` and its `photos`, `changes`, `name`, `from`, `set-all`, `add`,
+  `finish` and `delete` routes; `/scans/item/{scan_id}` and its card view, language, use, match, save, cancel, skip,
   put-back, retry, picture and link routes; `/scans-finished/clear`; `/account/data/scanning`.
 - Code: `app/scans.py`, `app/scanner.py`, `app/scan_worker.py`, `app/scanning.py`, `app/pictures.py`,
   `app/settings.py` (`scanner_mode`), `app/routes/scans.py`.

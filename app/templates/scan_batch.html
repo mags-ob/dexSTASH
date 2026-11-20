@@ -18,7 +18,7 @@
   {{ icon("pencil", 16) }}
 </form>
 <link rel="stylesheet" href="{{ asset("css/scan-batch.css") }}">
-<p class="muted bt-line">{% if trade %}&#8644; Trade with <b>{{ trade.with }}</b> &middot; {% endif %}{% if batch.language != "auto" %}{{ lang_tag(batch.language) }} {% endif %}Started {{ batch.created_at | when }}{% if batch.created_by_name %} &middot; {{ batch.created_by_name }}{% endif %}</p>
+<p class="muted bt-line">{% if trade %}<span>&#8644; Trade with <b>{{ trade.with }}</b> &middot;</span> {% endif %}{% if batch.language != "auto" %}{{ lang_tag(batch.language) }} {% endif %}Started {{ batch.created_at | when }}{% if batch.created_by_name %} &middot; {{ batch.created_by_name }}{% endif %}</p>
 {% if problem %}<p class="banner">{{ problem }}</p>{% endif %}
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
 {% if added %}<p class="banner ok-banner">Added to your cards.</p>{% endif %}
@@ -81,7 +81,7 @@
 <div class="review-bar bt-bar" id="review-bar">
   <div class="rb-acts">
     {% if trade %}
-    <button type="button" class="go pop" data-open-sheet="finish-sheet">Finish trade</button>
+    <button type="button" class="go pop" data-open-sheet="finish-sheet"{% if not (trade.mine or trade.theirs) %} disabled{% endif %}>Finish trade</button>
     {% else %}
     <button type="submit" form="add-form" class="go pop" data-add-all data-heavy="Adding {{ counts.to_add }} card{{ 's' if counts.to_add != 1 }} to your collection…"{% if not counts.to_add %} disabled{% endif %}>Add {{ counts.to_add }} to My Stash</button>
     {% endif %}

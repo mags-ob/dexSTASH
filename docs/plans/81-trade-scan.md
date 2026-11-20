@@ -148,3 +148,19 @@ Short version goes in the issue's Plan section once the answers are in.
 - Tests: one per acceptance criterion, in `tests/` next to the scan tests.
 - Docs impact: scanning spec (new Trade section), My Stash spec (traded-away log), concepts.md (Trade scan,
   Your cards, the other person's cards), CHANGELOG.
+
+## Built (20 Nov 2026)
+
+What was built, and where it differs from the plan above:
+
+- Database step 20: `scan_batches.trade_with`, `scans.side`, `scans.from_line`, `inventory_log.note`.
+- `scans.add_lines` holds the Add logic that was inline in the route; Add N to My Stash and Finish trade both use
+  it. Like Add, each card is saved as it's added; Finish checks everything first (copies picked, their cards
+  loadable, binders real), then takes your cards out, then adds theirs.
+- The copy picker lists the matched card's printings and conditions you own. A card in another language is a
+  different card: change the photo's language tag to match the copy you're trading.
+- The binder menus in Finish trade offer None and your binders; there's no "+ New binder" there (make one on
+  My Stash › Binders first).
+- `tests/test_trade_scan.py` covers each acceptance criterion. `tests/test_round27.py::test_step_19` now checks the
+  database ends at the latest step (it pinned 19). `tests/routes.txt` and the architecture diagrams list the two
+  new routes.

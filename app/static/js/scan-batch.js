@@ -255,6 +255,7 @@ const PAGE = JSON.parse(document.currentScript.dataset.page);
       drawShots();
     });
   });
+  if (camSide) drawShots();  // the Add button names the side
 
   function drawShots() {
     shotsEl.replaceChildren(...shots.map((s, i) => {

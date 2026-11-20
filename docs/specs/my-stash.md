@@ -20,7 +20,8 @@ binders and sharing have their own specs.
 4. A line can also hold where it came from (Pack, Single, Trade, Gift, Other), the price paid for each copy
    (in the currency it was typed in), a binder, and a short note such as a grade.
 5. One install holds one collection: every login sees and changes the same stash. Each addition and removal
-   is logged with who made it and how (by hand, imported or scanned), and the card page shows that history.
+   is logged with who made it and how (by hand, imported, scanned or traded away), and the card page shows that
+   history. A trade scan notes each entry it makes with "Trade with <name>" ([scanning](scanning.md) items 21 to 25).
 
 ### Adding and removing
 
