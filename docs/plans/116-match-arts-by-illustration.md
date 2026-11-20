@@ -55,8 +55,12 @@ and compared every pair. The maintainer judged the pairs the two ways disagreed 
 5. **Arts when a Pokémon is followed.** Every indexed card already has both fingerprints, so following a Pokémon or
    artist builds its arts straight away from the store, with no picture downloads (Taiwan cards with no Japanese
    twin are the only fetches). Followed Pokémon and artists keep their own `arts`/`art_cards` (with your fixes).
-   Arts for unfollowed Pokémon aren't built: nothing shows them. #95 and #29 can add them later from the same
-   fingerprints.
+   Arts for every other Pokémon (Updated 20 Nov 2026, for #95 coming along): a rebuildable catalog table,
+   `catalog.card_arts (lang, card_id, dex_id, art_id)`, built per Pokémon in the background after its
+   illustrations exist, with the same rule (only cards of one Pokémon are compared, so each rebuild is small).
+   Illustrator, rarity and Pokédex numbers from `catalog.index_cards`; mainland Chinese from `cards`. A followed
+   Pokémon's arts (with your fixes) win over it. Find grouped by art (#95) reads it, with no TCGdex calls at search
+   time.
 6. **Card page Languages** stays exactly as it is (maintainer, 20 Nov 2026): chips for an art of a followed Pokémon
    or artist, now grouped by the new rule.
 7. **Rainbow label.** In the Edit art sheet, a card in the "secret" rarity group shows its rarity label (Rainbow
@@ -76,6 +80,8 @@ a rule (reprints reuse old art years later; it stays only as the cover tie-break
 - `app/chase.py`: thresholds, `group()` rule (illustration vectors, secret-rarity bar), `fingerprints()` returns
   illustration vectors, Taiwan twins, `regroup` unchanged otherwise.
 - `app/chase_pages.py`: sheet rows carry the rarity label.
+- `app/catalog.sql`: `card_arts`. `app/arts.py` (new): build `card_arts` per Pokémon, look up a card's art (followed
+  arts first).
 - `app/jobs.py` / updates: run `fill_illustrations` after `index_sets`, then regroup followed Pokémon.
 - `app/templates/pokemon_set.html` (sheet), `data_sources.html` (illustrations row), CSS for the gold label.
 - `app/upgrades.py`: regroup followed Pokémon once illustrations exist.
