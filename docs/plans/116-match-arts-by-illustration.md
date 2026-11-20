@@ -146,3 +146,6 @@ cards picked at random were judged by hand with each card's art and its three cl
 - Replaying the answers with these changes: about 53 of 58. Still missed: Bronzong XY 61 and Pocket A2a 59
   (same language, 0.915), and two pairs at 0.83-0.84. A fresh sample checks the changes on cards they weren't
   tuned on.
+- Fresh sample with the changes (12 other Pokémon, seed 20261121, 528 cards): 58 of 60 right (97%), no wrong
+  cards. Both misses are stamped mainland Chinese promos of the same art by the same artist (0.884 and 0.867): the
+  stamp sits on the illustration. Left to hand fixes (or suggested merges, see Questions).
