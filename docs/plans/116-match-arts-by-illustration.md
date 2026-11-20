@@ -61,6 +61,8 @@ and compared every pair. The maintainer judged the pairs the two ways disagreed 
    Illustrator, rarity and Pokédex numbers from `catalog.index_cards`; mainland Chinese from `cards`. A followed
    Pokémon's arts (with your fixes) win over it. Find grouped by art (#95) reads it, with no TCGdex calls at search
    time.
+   For #95: `arts.lookup(conn, card_ids)` gives back, in one local query, each card's art id (followed arts first,
+   then `card_arts`) and its rarity group ("secret" for the rainbow label). A card with no art is left out.
 6. **Card page Languages** stays exactly as it is (maintainer, 20 Nov 2026): chips for an art of a followed Pokémon
    or artist, now grouped by the new rule.
 7. **Rainbow label.** In the Edit art sheet, a card in the "secret" rarity group shows its rarity label (Rainbow
