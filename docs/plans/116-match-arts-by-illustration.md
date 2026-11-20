@@ -58,7 +58,9 @@ wrong one out.
    zero).
 3. **Taiwan Chinese** cards take their Japanese twin's fingerprints (same TCGdex set and number). A Taiwan card with
    no twin keeps today's per-Pokémon fetch.
-4. **The rule** (`chase.group`): same artist and illustration ≥ 0.93 (`ART_THRESHOLD`). Artist unknown on either
+4. **The rule** (`chase.group`): same artist and illustration ≥ 0.93 (`ART_THRESHOLD`), or ≥ 0.885 between
+   languages (`OTHER_LANGUAGE_THRESHOLD`, from the sample test below). No group holds two artists, even through a
+   card with no artist. Mainland Chinese cards read their artist from the datasets. Artist unknown on either
    card: ≥ 0.94 (was 0.95; measured 20 Nov 2026, see below). Different artists: never. Rainbow and gold: when either card is in the "secret" rarity group and
    the artists match, ≥ 0.85 (`RECOLOUR_THRESHOLD`). Hand fixes win, as now. Thresholds are constants, tuned on
    the test above.
@@ -127,3 +129,20 @@ In `tests/test_match_arts.py`.
 
 Updated 20 Nov 2026: the Find language change briefly added here (from #117) moved to #95, which changes Find's
 language default to all languages grouped by art.
+
+## Sample test: 60 random cards (20 Nov 2026)
+
+Instead of fixing Pokémon one by one, 12 random Pokémon (seed 20261120) were fingerprinted, 569 cards, and 60
+cards picked at random were judged by hand with each card's art and its three closest cards not joined.
+
+- Result with the rule then: 42 of 58 right (72%), 14 missing a card, 2 with a wrong card.
+- Mainland Chinese cards do have an artist: PTCG-CHS-Datasets `illustratorName`, on 97% of its cards and all 161
+  in the test. The app saved it only as a tag, so these cards used the stricter no-artist bar (8 misses).
+- The same art in another language by the same artist scored 0.886-0.925 and was missed. Different arts by the
+  same artist scored up to 0.882 in the test, but up to 0.923 within one language in the first test (Tyranitar).
+  So the bar is 0.885 between languages and stays 0.93 within one.
+- Vikavolt GX (SM1p 021) joined Vikavolt V (Darkness Ablaze 60) through a mainland Chinese card with no
+  artist. Now a group never holds two artists, and the closest pairs join first.
+- Replaying the answers with these changes: about 53 of 58. Still missed: Bronzong XY 61 and Pocket A2a 59
+  (same language, 0.915), and two pairs at 0.83-0.84. A fresh sample checks the changes on cards they weren't
+  tuned on.

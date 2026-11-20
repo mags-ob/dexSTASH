@@ -27,8 +27,10 @@ the stash.
    pages need: illustrator, printings, picture and price. For a Pokémon, a card counts when its main Pokémon
    has that Pokédex number.
 8. A Pokémon's cards are grouped into arts by the illustration (the picture without its frame, text box and
-   language, from the Enhanced Search store): the same illustrator and an illustration score of at least 0.93;
-   when either card has no illustrator (mainland Chinese), 0.94; different illustrators never. A rainbow or gold
+   language, from the Enhanced Search store): the same illustrator and an illustration score of at least 0.93
+   in one language, or 0.885 between languages; when either card has no illustrator, 0.94; different
+   illustrators never, not even through a card with no illustrator. Mainland Chinese cards take their
+   illustrator from the Chinese datasets (saved with their tags). A rainbow or gold
    version (rarity group "secret") of a same-illustrator card joins at 0.85: it's its own card in the art, with its
    rarity in gold in the art sheet. Taiwan Chinese cards use their Japanese twin's fingerprints. A card whose
    illustration isn't made yet falls back to the old rule (same illustrator, whole card at 0.92). Without

@@ -14,7 +14,7 @@ import json
 import logging
 import sqlite3
 
-from . import catalog, chase, db
+from . import catalog, chase, db, tags
 
 log = logging.getLogger("dexstash.arts")
 
@@ -54,11 +54,12 @@ def _cards(conn: sqlite3.Connection, names=None) -> dict[int, list[dict]]:
                 {"card_id": catalog.local_id(r["lang"], r["id"]), "lang": r["lang"], "illustrator": r["illustrator"],
                  "rarity": r["rarity"], "release_date": None})
     if names is not None:
+        artists = tags.chs_illustrators(conn)
         for c in conn.execute("""SELECT c.id, c.name, c.twin_name, c.rarity, s.release_date FROM cards c
                                  JOIN sets s ON s.set_id = c.set_id WHERE s.language = 'zh-cn'"""):
             dex = names.species_id(c["twin_name"] or "") or names.species_id(c["name"] or "")
             if dex:
-                by_dex.setdefault(dex, []).append({"card_id": c["id"], "lang": "zh-cn", "illustrator": None,
+                by_dex.setdefault(dex, []).append({"card_id": c["id"], "lang": "zh-cn", "illustrator": artists.get(c["id"]),
                                                    "rarity": c["rarity"], "release_date": c["release_date"]})
     return by_dex
 

@@ -4,7 +4,7 @@ art as cards of their own; arts exist for every Pokémon (catalog.card_arts) for
 import numpy as np
 import pytest
 
-from app import arts, chase, chase_pages, jobs, main, pictures, upgrades
+from app import arts, chase, chase_pages, jobs, main, pictures, tags, upgrades
 from test_app import FakeEncoder, _card_png, _setup_with_set, client  # noqa: F401
 
 DIM = pictures.DIM
@@ -20,13 +20,14 @@ def _pair(score: float) -> tuple:
 
 
 def _joined(score: float, artist_a="Ken Sugimori", artist_b="Ken Sugimori", rarity_a=None, rarity_b=None,
-            whole: float | None = None) -> bool:
-    """Whether two cards whose illustrations score `score` come out as one art."""
+            whole: float | None = None, lang_b="ja") -> bool:
+    """Whether two cards whose illustrations score `score` come out as one art (an English card and a lang_b one)."""
     a, b = _pair(score)
+    other = "x-2" if lang_b == "en" else f"{lang_b}:x-1"
     cards = [{"card_id": "x-1", "lang": "en", "illustrator": artist_a, "rarity": rarity_a, "release_date": "2020-01-01"},
-             {"card_id": "ja:x-1", "lang": "ja", "illustrator": artist_b, "rarity": rarity_b, "release_date": "2020-01-01"}]
-    vectors = dict(zip(("x-1", "ja:x-1"), _pair(whole))) if whole is not None else {}
-    out = chase.group(cards, vectors, [], art={"x-1": a, "ja:x-1": b})
+             {"card_id": other, "lang": lang_b, "illustrator": artist_b, "rarity": rarity_b, "release_date": "2020-01-01"}]
+    vectors = dict(zip(("x-1", other), _pair(whole))) if whole is not None else {}
+    out = chase.group(cards, vectors, [], art={"x-1": a, other: b})
     return len(out) == 1
 
 
@@ -68,7 +69,8 @@ def test_illustrations_written_for_other_rows_are_made_again(tmp_path, monkeypat
 # --- AC3/AC4: the rule ---------------------------------------------------------------------------------------
 
 def test_same_artist_joins_at_the_illustration_bar_only():
-    assert _joined(0.93) and not _joined(0.92)
+    assert _joined(0.93, lang_b="en") and not _joined(0.92, lang_b="en")  # one language
+    assert _joined(0.886) and not _joined(0.88)  # another language: a lower bar (sample test, 20 Nov 2026)
     assert not _joined(0.99, artist_b="Atsuko Nishida")  # different artists never
     assert _joined(0.94, artist_b=None) and not _joined(0.93, artist_b=None)  # no artist: a stricter bar
     assert _joined(0.86, rarity_b="Rare Rainbow") and not _joined(0.86)  # a rainbow version of the art
@@ -121,7 +123,58 @@ JUDGED = [
 
 @pytest.mark.parametrize("what,score,whole,same,rarity,judged", JUDGED, ids=[j[0] for j in JUDGED])
 def test_the_judged_pairs_come_out_as_judged(what, score, whole, same, rarity, judged):
-    assert _joined(score, artist_b="Ken Sugimori" if same else "Kagemaru Himeno", rarity_b=rarity, whole=whole) == judged
+    lang = "ja" if what.startswith("The same art in") else "en"  # the Tyranitar pairs are all English cards
+    assert _joined(score, artist_b="Ken Sugimori" if same else "Kagemaru Himeno", rarity_b=rarity, whole=whole,
+                   lang_b=lang) == judged
+
+
+# --- The sample test (20 Nov 2026): pairs from 60 random cards judged by hand -------------------------------
+
+# (what, illustration score, artist of the second card, its language, judged the same art)
+SAMPLE = [
+    ("Snorlax 151 143: Taiwan and Japanese", 0.925, "HYOGONOSUKE", "zh-tw", True),
+    ("Bronzong Lost Origin 126: English and Taiwan", 0.888, "AKIRA EGAWA", "zh-tw", True),
+    ("Luxray Battle Styles 48: English and Japanese", 0.886, "Kazuma Koda", "ja", True),
+    ("Volcarona Darkness Ablaze 181 / 95: different arts", 0.882, "Eske Yoshinob", "en", False),
+    ("Volcarona Darkness Ablaze 181 / a Chinese card: different arts", 0.873, "Eske Yoshinob", "zh-cn", False),
+]
+
+
+@pytest.mark.parametrize("what,score,artist,lang,judged", SAMPLE, ids=[s[0] for s in SAMPLE])
+def test_the_sample_pairs_come_out_as_judged(what, score, artist, lang, judged):
+    assert _joined(score, artist_a=artist, artist_b=artist, lang_b=lang) == judged
+
+
+def test_a_card_with_no_artist_doesnt_chain_two_artists():
+    # Vikavolt V (Ayaka Yoshida) and Vikavolt GX (5ban Graphics), joined through a Chinese card in the test.
+    v, gx = _pair(0.934)
+    cn = np.zeros(DIM, np.float32)
+    cn[0], cn[1] = 0.985, 0.12  # the Chinese card: 0.985 with Vikavolt V, 0.963 with Vikavolt GX
+    cn[2] = (1 - 0.985 ** 2 - 0.12 ** 2) ** 0.5
+    cards = [{"card_id": "swsh3-60", "lang": "en", "illustrator": "Ayaka Yoshida"},
+             {"card_id": "ja:SM1p-021", "lang": "ja", "illustrator": "5ban Graphics"},
+             {"card_id": "zh-cn:CS1.5C-017", "lang": "zh-cn", "illustrator": None}]
+    out = chase.group(cards, {}, [], art={"swsh3-60": v, "ja:SM1p-021": gx, "zh-cn:CS1.5C-017": cn})
+    assert sorted(sorted(a["cards"]) for a in out) == [["ja:SM1p-021"], ["swsh3-60", "zh-cn:CS1.5C-017"]]
+
+
+def test_your_fix_can_still_join_two_artists():
+    a, b = _pair(0.99)
+    cards = [{"card_id": "x-1", "lang": "en", "illustrator": "A"}, {"card_id": "x-2", "lang": "en", "illustrator": "B"}]
+    out = chase.group(cards, {}, [{"card_id": "x-2", "join_card_id": "x-1"}], art={"x-1": a, "x-2": b})
+    assert len(out) == 1
+
+
+def test_mainland_chinese_cards_read_their_artist_from_the_tags(client):  # noqa: F811
+    main.conn.executemany("INSERT INTO card_tags (card_id, tag, kind) VALUES (?, ?, 'auto')",
+                          [("zh-cn:T1-001", "Pokémon"), ("zh-cn:T1-001", "Basic"), ("zh-cn:T1-001", "ex"),
+                           ("zh-cn:T1-001", "Ayaka Yoshida"), ("zh-cn:T1-002", "Trainer"), ("x-9", "Ken Sugimori")])
+    try:
+        assert tags.chs_illustrators(main.conn) == {"zh-cn:T1-001": "Ayaka Yoshida"}
+        assert tags.chs_illustrators(main.conn, ["zh-cn:T1-002", "x-9"]) == {}
+    finally:
+        main.conn.execute("DELETE FROM card_tags WHERE card_id IN ('zh-cn:T1-001', 'zh-cn:T1-002', 'x-9')")
+        main.conn.commit()
 
 
 # --- AC2 and AC6: Taiwan twins, following from the store, the fill through the queue ---------------------
