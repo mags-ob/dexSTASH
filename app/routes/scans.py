@@ -57,7 +57,8 @@ def scans_view(request: Request, user=Depends(current_user)):
         "reading": [b for b in batches if b["reading"]],
         "to_confirm": [b for b in batches if not b["reading"] and b["to_confirm"]],
         "finished": [b for b in batches if not b["reading"] and not b["to_confirm"]],
-        "languages": LANGUAGES, "scan_languages": tcgdex.SCAN_CHOICES,
+        "languages": LANGUAGES, "scan_languages": tcgdex.SCAN_CHOICES, "error": request.query_params.get("error"),
+        "trade_totals": {b["id"]: _trade_totals(b) for b in batches if scans.is_trade(b)},
         "problem": _scan_problem() if web.scan_worker.available() else "The photo reader isn't installed yet. "
                    "Run pip install rapidocr onnxruntime, then restart the app. Photos you take wait until then.",
     })
@@ -68,6 +69,15 @@ def scans_start(request: Request, user=Depends(current_user)):
     """One New batch button; each photo's language is worked out as it's read."""
     batch_id = scans.create_batch(conn, user["collection_id"], user["id"], None, "auto")
     return RedirectResponse(f"/scans/{batch_id}?camera=1", status_code=303)
+
+
+@router.post("/scans/trade")
+def scans_start_trade(trading_with: str = Form(""), user=Depends(current_user)):
+    """Start a trade: a batch with two sides, named after who it's with. Scanning starts on Your cards."""
+    if not trading_with.strip():
+        return RedirectResponse(f"/scans?error={quote('Type who you are trading with.')}", status_code=303)
+    batch_id = scans.create_batch(conn, user["collection_id"], user["id"], None, "auto", trade_with=trading_with)
+    return RedirectResponse(f"/scans/{batch_id}?camera=1&side=mine", status_code=303)
 
 
 @router.post("/scans/item/{scan_id}/language")
@@ -464,6 +474,9 @@ def _tile(scan: dict, batch: dict) -> dict | None:
 
 
 templates.env.globals["scan_tile"] = lambda scan, batch: _tile(scan, batch)  # each tile on the batch page
+templates.env.globals["scan_side"] = scans.side_of
+templates.env.globals["scan_owned"] = lambda scan, batch: sum(  # On a trade: copies of your card in the stash
+    line["quantity"] for line in scans.owned_lines(conn, scan["collection_id"], scans.match_card_id(scan, batch)))
 
 
 def _scan_options(scan: dict, lang: str) -> list[dict]:
@@ -478,6 +491,14 @@ def _scan_options(scan: dict, lang: str) -> list[dict]:
         if (m["lang"], m["id"]) not in seen:
             out.append({**m, "src": "picture", "pick": i, "word": word})
     return out
+
+
+def _copy_context(user, scan: dict, batch: dict, applied: bool) -> dict:
+    """On a trade, a photo of your card shows which of your copies leaves the stash."""
+    if not (applied and scans.is_trade(batch) and scans.side_of(scan) == "mine"):
+        return {"trading": False}
+    return {"trading": True, "copies": scans.owned_lines(conn, user["collection_id"], scans.match_card_id(scan, batch)),
+            "leaving": scans.leaving_line(conn, scan, batch)}
 
 
 def _card_view(request: Request, user, scan_id: int, src: str = "guess", pick: int = 0, fresh: bool = False,
@@ -511,7 +532,8 @@ def _card_view(request: Request, user, scan_id: int, src: str = "guess", pick: i
            "condition": (scan["condition"] or "NM") if applied else "NM",
            "quantity": (scan["quantity"] or 1) if applied else 1, "paid": scan["paid"] if applied else None,
            "at": at, "total": total, "next_id": scans.next_open(conn, scan),
-           "binder_on": bool(batch.get("binder")), "word_class": scans.LIKENESS_CLASS, "back": "batch",
+           "binder_on": bool(batch.get("binder")) and not scans.is_trade(batch), "word_class": scans.LIKENESS_CLASS,
+           "back": "batch", **_copy_context(user, scan, batch, applied),
            **_found_context(user, scan, batch, None, None, None)}
     if request.headers.get("HX-Request"):
         return templates.TemplateResponse(request, "_scan_details.html", ctx)
@@ -613,13 +635,16 @@ def scan_use_match(request: Request, scan_id: int, src: str = Form("guess"), pic
 @router.post("/scans/item/{scan_id}/save")
 def scan_save(request: Request, scan_id: int, variant: str = Form(""), condition: str = Form("NM"),
               quantity: int = Form(1), paid: str = Form(""), in_binder: str = Form(""), in_binder_shown: str = Form(""),
-              next: str = Form(""), user=Depends(current_user)):
+              next: str = Form(""), from_line: str = Form(""), user=Depends(current_user)):
     """Save / Save & next in the card view: how the card will be added, and it's checked (✓).
-    In the binder is only on the form when the batch has a binder; otherwise the card keeps its setting."""
+    In the binder is only on the form when the batch has a binder; otherwise the card keeps its setting.
+    On a trade, from_line is which of your copies a photo of your card trades away."""
     scan = _scan_or_404(user, scan_id)
     keep_in = in_binder == "1" if in_binder_shown else bool(scan["in_binder"])
     try:
         scans.save(conn, scan, variant, condition, quantity, _price(paid) if paid.strip() else None, keep_in)
+        if from_line.isdigit():
+            scans.set_from_line(conn, _scan_or_404(user, scan_id), _scan_batch_or_404(user, scan["batch_id"]), int(from_line))
     except ValueError as e:
         raise HTTPException(400, str(e))
     if next:
@@ -791,6 +816,63 @@ async def scan_review_add(request: Request, batch_id: int, user=Depends(current_
     return await _in_thread(work)
 
 
+def _trade_totals(batch: dict) -> dict:
+    """Each side of a trade: its cards, their total (the prices the tiles show, times quantity), how many have no
+    price, and whether some prices are still on their way; and how much more the other side is worth."""
+    sides = {side: {"cards": 0, "total": 0.0, "no_price": 0, "pricing": False} for side in scans.SIDES}
+    for s in scans.to_review(conn, batch["id"]):
+        side, tile = sides[scans.side_of(s)], _tile(s, batch)
+        side["cards"] += 1
+        if tile is None or not tile["known"]:
+            side["pricing"] = True
+        elif tile["price"] is None:
+            side["no_price"] += 1
+        else:
+            side["total"] += tile["price"] * tile["quantity"]
+    return {**sides, "difference": round(sides["theirs"]["total"] - sides["mine"]["total"], 2)}
+
+
+@router.post("/scans/{batch_id}/finish")
+async def scan_finish_trade(request: Request, batch_id: int, user=Depends(current_user)):
+    """Finish trade: your cards leave the stash, theirs join it in the binders picked (None by default).
+    Photos still being read or with no match stay in the batch."""
+    batch = _scan_batch_or_404(user, batch_id)
+    if not scans.is_trade(batch):
+        raise HTTPException(404)
+    form = await request.form()
+
+    def work():
+        def fail(text: str):
+            return RedirectResponse(f"/scans/{batch_id}?side=theirs&error={quote(text)}", status_code=303)
+
+        theirs, picked = [], {}
+        for row in _review_rows(user, batch):  # every row checked before anything changes
+            s = row["s"]
+            if scans.side_of(s) != "theirs":
+                continue
+            if "error" in row:
+                return fail(row["error"])
+            choice = str(form.get(f"binder-{s['id']}") or "")
+            if choice and choice != "none":
+                found = binders.get(conn, user["collection_id"], int(choice)) if choice.isdigit() else None
+                if found is None:
+                    return fail("Pick a binder.")
+                picked[s["id"]] = found["id"]
+            theirs.append({"scan": s, "card_id": row["card_id"], "variant": row["variant"], "condition": row["condition"],
+                           "quantity": row["quantity"], "paid": row["paid"], "paid_currency": scans._paid_currency(s, row["paid"]),
+                           "in_binder": True})
+        if not theirs and not scans.trade_scans(conn, batch, "mine"):
+            return fail("No cards have a match yet.")
+        try:
+            scans.finish_trade(conn, user["collection_id"], user["id"], batch, theirs,
+                               lambda scan: picked.get(scan["id"]), _store_price)
+        except ValueError as e:
+            conn.rollback()
+            return fail(str(e))
+        return RedirectResponse(f"/scans/{batch_id}?side=theirs&finished=1", status_code=303)
+    return await _in_thread(work)
+
+
 _asked_prices: set[tuple[int, str]] = set()
 
 
@@ -833,8 +915,18 @@ def scan_prices_running(batch: dict) -> bool:
     return web.background.running(f"scan-prices:{batch['id']}")
 
 
-def _batch_context(user, batch: dict) -> dict:
-    return {"counts": scans.counts(conn, batch["id"]),
+def _batch_context(user, batch: dict, side: str = "mine") -> dict:
+    trade = None
+    if scans.is_trade(batch):
+        trade = {"side": side if side in scans.SIDES else "mine", "with": batch["trade_with"], "totals": _trade_totals(batch),
+                 "problems": scans.trade_problems(conn, batch),
+                 "theirs": [dict(s, tile=_tile(s, batch)) for s in scans.trade_scans(conn, batch, "theirs")],
+                 "mine": [dict(s, tile=_tile(s, batch), leaving=scans.leaving_line(conn, s, batch),
+                               owned=sum(line["quantity"] for line in scans.owned_lines(conn, user["collection_id"],
+                                                                                         scans.match_card_id(s, batch))))
+                          for s in scans.trade_scans(conn, batch, "mine")]}
+        trade["leaving"] = sum(min(s["quantity"] or 1, s["leaving"]["quantity"]) for s in trade["mine"] if s["leaving"])
+    return {"counts": scans.counts(conn, batch["id"]), "trade": trade,
             "purchases": [p for p in spending.purchase_choices(conn, user["collection_id"]) if p["kind"] != spending.BEFORE],
             "binders": binders.all_for(conn, user["collection_id"])}
 
@@ -849,14 +941,15 @@ def scan_batch_view(request: Request, batch_id: int, user=Depends(current_user))
     if any(s["status"] == "picture_waiting" for s in items) and not web.picture_worker.running():
         web.picture_worker.start()
     return templates.TemplateResponse(request, "scan_batch.html", {
-        **_scan_item_context(user, None, batch), **_batch_context(user, batch), "items": items,
+        **_scan_item_context(user, None, batch), **_batch_context(user, batch, request.query_params.get("side", "mine")),
+        "items": items, "finished": request.query_params.get("finished"),
         "problem": web.scan_worker.problem or _scan_problem(), "error": request.query_params.get("error"), "rev": scans.batch_rev(conn, batch_id),
         "added": request.query_params.get("added"), "camera": request.query_params.get("camera"),
     })
 
 
 @router.get("/scans/{batch_id}/changes")
-def scan_batch_changes(batch_id: int, since: int = 0, user=Depends(current_user)):
+def scan_batch_changes(request: Request, batch_id: int, since: int = 0, user=Depends(current_user)):
     """Tiles changed since the page last looked, drawn and ready to swap in, and the summary line's counts."""
     batch = _scan_batch_or_404(user, batch_id)
     rev = scans.batch_rev(conn, batch_id)
@@ -871,13 +964,16 @@ def scan_batch_changes(batch_id: int, since: int = 0, user=Depends(current_user)
     to_confirm = conn.execute("SELECT COUNT(*) FROM scans WHERE batch_id = ? "
                               "AND status IN ('ready', 'nomatch', 'failed', 'picture_ready')",
                               (batch_id,)).fetchone()[0]
-    return {"rev": rev, "to_confirm": to_confirm, **counts,
+    trade_html = templates.get_template("_trade_sum.html").render(
+        {"trade": _batch_context(user, batch, request.query_params.get("side", "mine"))["trade"], "batch": batch}) \
+        if scans.is_trade(batch) else None
+    return {"rev": rev, "to_confirm": to_confirm, **counts, "trade_html": trade_html,
             "rows": [{"id": s["id"], "html": row.render(_scan_item_context(user, s, batch))} for s in changed]}
 
 
 @router.post("/scans/{batch_id}/photos")
 async def scan_upload(request: Request, batch_id: int, photos: list[UploadFile] = File(...),
-                      client_id: str = Form(""), user=Depends(current_user)):
+                      client_id: str = Form(""), side: str = Form(""), user=Depends(current_user)):
     batch = _scan_batch_or_404(user, batch_id)
     added, error = [], None
     client_id = client_id.strip()[:64] if len(photos) == 1 else ""  # One photo at a time carries the phone's id
@@ -888,7 +984,7 @@ async def scan_upload(request: Request, batch_id: int, photos: list[UploadFile] 
         try:
             # Shrinking the photo (Pillow) runs off the event loop, so other pages stay quick meanwhile.
             # As one transaction of its own.
-            added.append(await _in_thread(scans.add_photo, conn, batch, user["id"], data, None, client_id or None))
+            added.append(await _in_thread(scans.add_photo, conn, batch, user["id"], data, None, client_id or None, side))
         except scans.Repeat:  # the same photo arrived twice at once: its row is already on the page
             return HTMLResponse("", headers={"X-Scan-Repeat": "1"})
         except ValueError as e:

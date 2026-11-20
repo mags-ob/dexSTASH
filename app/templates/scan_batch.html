@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Scan batch · {{ app_name }}{% endblock %}
-{% block heading %}Cards{% endblock %}
+{% block heading %}{{ "Trade" if trade else "Cards" }}{% endblock %}
 {% block back %}{% from "_macros.html" import back_to %}{{ back_to("/scans", "All batches") }}{% endblock %}
 {% block header_actions %}
 <details class="cv-menu bt-menu"><summary aria-label="More">{{ icon("more", 20) }}</summary>
@@ -17,14 +17,18 @@
          enterkeyhint="done" autocomplete="off" data-enter-blur>
   {{ icon("pencil", 16) }}
 </form>
-<p class="muted bt-line">{% if batch.language != "auto" %}{{ lang_tag(batch.language) }} {% endif %}Started {{ batch.created_at | when }}{% if batch.created_by_name %} &middot; {{ batch.created_by_name }}{% endif %}</p>
+<link rel="stylesheet" href="{{ asset("css/scan-batch.css") }}">
+<p class="muted bt-line">{% if trade %}&#8644; Trade with <b>{{ trade.with }}</b> &middot; {% endif %}{% if batch.language != "auto" %}{{ lang_tag(batch.language) }} {% endif %}Started {{ batch.created_at | when }}{% if batch.created_by_name %} &middot; {{ batch.created_by_name }}{% endif %}</p>
 {% if problem %}<p class="banner">{{ problem }}</p>{% endif %}
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
 {% if added %}<p class="banner ok-banner">Added to your cards.</p>{% endif %}
+{% if finished %}<p class="banner ok-banner">Trade finished. Your stash is up to date.</p>{% endif %}
+{% if trade %}{% include "_trade_sum.html" %}{% endif %}
 
 {% set purchase = purchases | selectattr("id", "equalto", batch.purchase_id) | first if batch.purchase_id else None %}
 {% set binder = binders | selectattr("id", "equalto", (batch.binder | int) if batch.binder and batch.binder != "new" else -1) | first %}
 {% set came = batch.came or "none" %}
+{% if not trade %}
 <button type="button" class="bt-from" data-open-sheet="from-sheet">
   <span>From: <b>{% if came == "add" and purchase %}{{ purchase.label }}{% elif came == "new" %}New purchase{% if batch.new_label %} &middot; {{ batch.new_label }}{% endif %}{% else %}Not a purchase{% endif %}</b></span>
   <span>&middot; Binder: <b>{% if batch.binder == "new" %}{{ batch.new_binder }} (new){% elif binder %}{{ binder.name }}{% else %}none{% endif %}</b></span>
@@ -36,6 +40,7 @@
     <span class="amber" data-needs{% if not counts.needs_match %} hidden{% endif %}>&middot; {{ counts.needs_match }} need{{ "s" if counts.needs_match == 1 }} a match</span></span>
   <button type="button" class="linkish" data-open-sheet="all-sheet">Set for all &rsaquo;</button>
 </div>
+{% endif %}
 
 <noscript>
   <form method="post" action="/scans/{{ batch.id }}/photos" enctype="multipart/form-data" style="display:flex;gap:8px;flex-wrap:wrap">
@@ -47,7 +52,7 @@
 {% set grid = items | selectattr("status", "in", ("waiting", "reading", "picture_waiting", "picture_searching", "ready", "nomatch", "failed", "picture_ready")) | list %}
 {% set done = items | selectattr("status", "equalto", "added") | list %}
 {% set deleted = items | selectattr("status", "equalto", "skipped") | list %}
-<div id="scan-list" data-rev="{{ rev }}">
+<div id="scan-list" data-rev="{{ rev }}"{% if trade %} data-show="{{ trade.side }}"{% endif %}>
   <div class="bgrid" id="grid">{% for s in grid %}{% include "_scan_item.html" %}{% endfor %}</div>
   <p class="muted" id="scan-empty"{% if grid %} hidden{% endif %}>No photos yet. Tap the camera button to start.</p>
   <details class="bfold" id="fold-added"{% if not done %} hidden{% endif %}>
@@ -75,9 +80,63 @@
 </dialog>
 <div class="review-bar bt-bar" id="review-bar">
   <div class="rb-acts">
+    {% if trade %}
+    <button type="button" class="go pop" data-open-sheet="finish-sheet">Finish trade</button>
+    {% else %}
     <button type="submit" form="add-form" class="go pop" data-add-all data-heavy="Adding {{ counts.to_add }} card{{ 's' if counts.to_add != 1 }} to your collection…"{% if not counts.to_add %} disabled{% endif %}>Add {{ counts.to_add }} to My Stash</button>
+    {% endif %}
   </div>
 </div>
+
+{% if trade %}
+{% from "_macros.html" import condition_badge %}
+{# Compare both sides: each side's cards with their prices, and the difference. #}
+<dialog class="sheet" id="compare-sheet" aria-label="Compare both sides">
+  <div class="sheet-head"><h2>Trade with {{ trade.with }}</h2>{{ x_close("this.closest('dialog').close()") }}</div>
+  <div class="sheet-body">
+    {% for key, label, rows in (("mine", "Your cards", trade.mine), ("theirs", trade.with ~ "'s cards", trade.theirs)) %}
+    {% set x = trade.totals[key] %}
+    <div class="panel tr-list" style="padding:8px 14px">
+      <div class="tr-head" style="border:0;padding:0"><b>{{ label }} &middot; {{ x.cards }}</b><b>{{ x.total | money }}{% if x.no_price %} <span class="amber" style="font-size:12px">+ {{ x.no_price }} no price</span>{% endif %}</b></div>
+      {% for r in rows %}{% set g = r.guesses[0] %}
+      <div><span><b>{{ en_name(g.name, g.lang or "en").en }}</b><div class="muted" style="font-size:12px">{{ g.set_name }} #{{ g.number }}{% if r.tile and r.tile.label %} &middot; {{ r.tile.label }}{% endif %} &middot; {{ r.condition or "NM" }}{% if (r.quantity or 1) > 1 %} &middot; &times;{{ r.quantity }}{% endif %}</div>
+        {% if key == "mine" %}<div class="muted" style="font-size:12px">{% if r.owned %}In stash &times;{{ r.owned }}{% else %}Not in your stash{% endif %}</div>{% endif %}</span>
+        <span>{% if r.tile and r.tile.price is not none %}{{ (r.tile.price * r.tile.quantity) | money }}{% elif r.tile and r.tile.known %}No price{% else %}&hellip;{% endif %}</span></div>
+      {% else %}<p class="muted" style="margin:6px 0">No cards yet.</p>{% endfor %}
+    </div>
+    {% endfor %}
+    {% set d = trade.totals.difference %}
+    <p style="margin:0;text-align:center">{% if d > 0 %}{{ trade.with }}'s cards are worth <b>{{ d | money }} more</b>{% elif d < 0 %}{{ trade.with }}'s cards are worth <b>{{ (-d) | money }} less</b>{% else %}Both sides are worth the same{% endif %}</p>
+    <button type="button" class="go pop" data-open-sheet="finish-sheet" data-dialog-close>Finish trade</button>
+  </div>
+</dialog>
+
+{# Finish trade: a warning when cards have no price, a binder for each of their cards (None unless picked),
+   and how many of your cards leave the stash. #}
+<dialog class="sheet" id="finish-sheet" aria-label="Finish trade">
+  <form method="post" action="/scans/{{ batch.id }}/finish" data-heavy="Finishing the trade…">
+    <div class="sheet-head"><h2>Finish trade with {{ trade.with }}</h2></div>
+    <div class="sheet-body">
+      {% set no_price = trade.totals.mine.no_price + trade.totals.theirs.no_price %}
+      {% if no_price %}<p class="banner tr-warn">{{ icon("warning", 16) }} <b>{{ no_price }} card{{ "s have" if no_price != 1 else " has" }} no price</b></p>{% endif %}
+      {% for p in trade.problems %}<p class="error" style="margin:0">{{ p }}</p>{% endfor %}
+      {% if trade.theirs %}
+      <div><b>{{ trade.with }}'s {{ trade.theirs | length }} card{{ "s" if trade.theirs | length != 1 }} join your stash.</b> <span class="muted" style="font-size:13px">Pick a binder for each, or leave None.</span>
+        <label class="tr-binder tr-all"><span class="muted">All of them</span>
+          <select data-binder-all aria-label="Binder for all of them"><option value="none">None</option>{% for b in binders %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select></label>
+        {% for r in trade.theirs %}{% set g = r.guesses[0] %}
+        <label class="tr-binder"><span><b>{{ en_name(g.name, g.lang or "en").en }}</b> <span class="muted" style="font-size:12px">#{{ g.number }}</span></span>
+          <select name="binder-{{ r.id }}" aria-label="Binder for {{ g.name }}"><option value="none">None</option>{% for b in binders %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select></label>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <p style="margin:0;font-size:14px"><b>Cards leaving your stash: {{ trade.leaving }}</b></p>
+      <div class="cam-sheet-acts"><button type="button" class="quiet" data-dialog-close>Back</button>
+        <button{% if trade.problems or not (trade.theirs or trade.mine) %} disabled{% endif %}>Finish</button></div>
+    </div>
+  </form>
+</dialog>
+{% endif %}
 
 {# From · Binder #}
 <dialog class="sheet" id="from-sheet" aria-label="Where these came from and their binder">
@@ -143,7 +202,13 @@
 <div id="cam" class="cam" hidden role="dialog" aria-label="Camera">
   <div class="cam-top">
     {{ x_close("", "Close the camera", "data-cam-close") }}
+    {% if trade %}
+    <span class="seg cam-sides" role="group" aria-label="Which side you're scanning">
+      <button type="button" data-cam-side="mine"{% if trade.side == "mine" %} class="on"{% endif %}>Your cards</button>
+      <button type="button" data-cam-side="theirs"{% if trade.side == "theirs" %} class="on"{% endif %}>{{ trade.with }}'s cards</button></span>
+    {% else %}
     <span class="cam-lang">Scanning cards</span>
+    {% endif %}
     <button type="button" class="cam-round" data-torch aria-label="Flash" hidden>{{ icon("flash", 20) }}</button>
   </div>
   <div class="cam-view">
@@ -175,5 +240,5 @@
 </div>
 
 <script src="/static/photo-queue.js"></script>
-<script src="{{ asset("js/scan-batch.js") }}" data-page="{{ {"batch": batch.id, "toAdd": counts.to_add, "unchecked": counts.unchecked, "delIcon": icon("x", 12) | string, "camera": true if camera else false} | tojson | forceescape }}"></script>
+<script src="{{ asset("js/scan-batch.js") }}" data-page="{{ {"batch": batch.id, "toAdd": counts.to_add, "unchecked": counts.unchecked, "delIcon": icon("x", 12) | string, "camera": true if camera else false, "side": trade.side if trade else None} | tojson | forceescape }}"></script>
 {% endblock %}

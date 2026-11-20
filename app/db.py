@@ -611,6 +611,14 @@ def _step_19(conn) -> None:
     _add_columns(conn, ("sets", "english_name", "TEXT"))
 
 
+def _step_20(conn) -> None:
+    """Trade scans (#81): a batch can be a trade with someone, each photo is on your side or theirs, a photo of
+    your card points at the stash line it leaves from, and a history entry can carry a short note
+    ("Trade with Brock")."""
+    _add_columns(conn, ("scan_batches", "trade_with", "TEXT"), ("scans", "side", "TEXT"),
+                 ("scans", "from_line", "INTEGER"), ("inventory_log", "note", "TEXT"))
+
+
 def _time_defaults(conn) -> None:
     """A table made before 0.19 keeps its old default time (datetime('now'): a space, no Z), as SQLite can't change
     a default. A trigger rewrites a time filled in that way as it's saved."""
@@ -626,8 +634,9 @@ def _time_defaults(conn) -> None:
 
 STEPS: list = [(1, _step_1), (2, _step_2), (3, _step_3), (4, _step_4), (5, _step_5), (6, _step_6), (7, _step_7),
                (8, _step_8), (9, _step_9), (10, _step_10), (11, _step_11), (12, _step_12), (13, _step_13),
-               (14, _step_14), (15, _step_15), (16, _step_16), (17, _step_17), (18, _step_18), (19, _step_19)]
-LATEST = 19
+               (14, _step_14), (15, _step_15), (16, _step_16), (17, _step_17), (18, _step_18), (19, _step_19),
+               (20, _step_20)]
+LATEST = 20
 
 
 def init(conn: sqlite3.Connection) -> None:

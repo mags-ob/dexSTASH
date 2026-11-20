@@ -77,6 +77,16 @@
 
   {% if applied %}
   <form id="cv-save" class="cv-choices" method="post" action="{{ item }}/save"{% if change_open %} hidden{% endif %}>
+    {% if trading %}{# A trade: which of your copies leaves the stash #}
+    <div class="cv-label">Leaves your stash</div>
+    {% if not copies %}<p class="muted" style="margin:0;font-size:14px">Not in your stash, so nothing leaves it for this card.</p>
+    {% elif copies | length == 1 %}{% set c = copies[0] %}<input type="hidden" name="from_line" value="{{ c.id }}">
+    <p style="margin:0;font-size:14px">{{ c.variant_label }} &middot; {{ c.condition_label }} <span class="muted">(you have {{ c.quantity }})</span></p>
+    {% else %}
+    {% if not leaving %}<p class="banner" style="margin:0;font-size:14px">{{ icon("warning", 16) }} You have this card {{ copies | length }} ways. Pick the one you're trading.</p>{% endif %}
+    <div class="chips">{% for c in copies %}<label class="chip"><input type="radio" name="from_line" value="{{ c.id }}" required{% if leaving and leaving.id == c.id %} checked{% endif %}>{{ c.variant_label }} &middot; {{ c.condition }} &times;{{ c.quantity }}</label>{% endfor %}</div>
+    {% endif %}
+    {% endif %}
     <div class="cv-label">Printing</div>
     {{ printing_chips(variants, offered, variant, offer.price_map if offer else {}, sources=info.sources) }}
     <div class="cv-label">Condition</div>

@@ -92,10 +92,11 @@ def adjust(conn: sqlite3.Connection, user_id: int, card_id: str, variant: str, c
 
 
 def set_quantity(conn: sqlite3.Connection, user_id: int, card_id: str, variant: str, condition: str, quantity: int,
-                 by: int | None = None, source: str = "manual", origin: str | None = None, cheer: bool = True) -> int:
+                 by: int | None = None, source: str = "manual", origin: str | None = None, cheer: bool = True,
+                 note: str | None = None) -> int:
     """Make the collection hold exactly `quantity` of this printing and condition,
     and log the change. origin (pack, trade...) is where added copies came from;
-    the line keeps the latest one given. Doesn't commit."""
+    the line keeps the latest one given. note goes on the history entry ("Trade with Brock"). Doesn't commit."""
     if variant not in VARIANTS or condition not in CONDITIONS:
         raise ValueError("Unknown variant or condition.")
     origin = origin if origin in ORIGINS else None
@@ -129,9 +130,9 @@ def set_quantity(conn: sqlite3.Connection, user_id: int, card_id: str, variant: 
         conn.execute("UPDATE inventory SET origin = ? WHERE user_id = ? AND card_id = ? AND variant = ? AND condition = ?",
                      (origin, *key))
     conn.execute(
-        "INSERT INTO inventory_log (collection_id, card_id, variant, condition, delta, user_id, source, origin) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (user_id, card_id, variant, condition, quantity - current, by, source, origin if added else None),
+        "INSERT INTO inventory_log (collection_id, card_id, variant, condition, delta, user_id, source, origin, note) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (user_id, card_id, variant, condition, quantity - current, by, source, origin if added else None, note),
     )
     return quantity
 
@@ -235,7 +236,7 @@ def methods(conn: sqlite3.Connection, user_id: int, card_id: str | None = None) 
 
 
 SOURCES = {"manual": "by hand", "pull": "from a purchase", "import": "from an import", "scan": "from a scan",
-           "bulk": "with Select › Remove"}
+           "bulk": "with Select › Remove", "trade": "traded away"}
 
 
 def history(conn: sqlite3.Connection, user_id: int, card_id: str, limit: int = 20) -> list[dict]:

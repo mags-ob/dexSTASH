@@ -130,6 +130,7 @@ POST /imports/{batch_id}/again import_again
 POST /imports/{batch_id}/delete import_delete
 GET /scans scans_view
 POST /scans scans_start
+POST /scans/trade scans_start_trade
 POST /scans/item/{scan_id}/language scan_language
 GET /scans/item/{scan_id} scan_item
 GET /scans/photo/{scan_id} scan_photo
@@ -155,6 +156,7 @@ POST /scans/{batch_id}/from scan_batch_from
 POST /scans/{batch_id}/set-all scan_batch_set_all
 POST /scans/{batch_id}/review scan_review_add
 POST /scans/{batch_id}/add scan_review_add
+POST /scans/{batch_id}/finish scan_finish_trade
 GET /scans/{batch_id} scan_batch_view
 GET /scans/{batch_id}/changes scan_batch_changes
 POST /scans/{batch_id}/photos scan_upload
