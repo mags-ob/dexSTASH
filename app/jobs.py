@@ -174,6 +174,12 @@ def tidy(conn, days: int = 30) -> None:
     conn.commit()
 
 
+# Rows another process queued that may also run between a long job's steps: grouping one Pokémon's cards (after a
+# follow or ↻ Re-check) takes a minute, and shouldn't wait for hours of fingerprinting illustrations.
+BETWEEN_KINDS = frozenset({"recheck"})
+BETWEEN_EVERY = 2.0  # seconds between looks for them, so a job's steps don't each ask the database
+
+
 class Jobs:
     """This process's jobs and its one runner.
 
@@ -191,6 +197,7 @@ class Jobs:
         self._live: dict[int, Job] = {}
         self._fns: dict[int, object] = {}
         self._quick: set[int] = set()
+        self._looked = 0.0  # when _between last looked for queued rows that may run between steps
         self._again: dict[str, tuple] = {}
         self._lock = threading.Lock()
         self._wake = threading.Event()
@@ -291,7 +298,7 @@ class Jobs:
         rows = conn.execute("SELECT * FROM jobs WHERE runs_in = ? AND status = 'waiting' ORDER BY priority, id",
                             (self.runs_in,)).fetchall()
         for row in rows:
-            if not quick_only or row["id"] in self._quick:
+            if not quick_only or row["id"] in self._quick or row["kind"] in BETWEEN_KINDS:
                 return row
         return None
 
@@ -326,8 +333,12 @@ class Jobs:
 
     def _between(self) -> None:
         """Between a job's steps: quick jobs that are waiting run now (on the runner's thread only)."""
-        if not self._quick or threading.current_thread() is not self._thread:
+        if threading.current_thread() is not self._thread:
             return
+        if not self._quick:
+            if time.monotonic() - self._looked < BETWEEN_EVERY:
+                return
+            self._looked = time.monotonic()
         conn = db.connect()
         try:
             while (row := self._next(conn, quick_only=True)) is not None:

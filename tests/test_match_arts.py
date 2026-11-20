@@ -4,7 +4,7 @@ art as cards of their own; arts exist for every Pokémon (catalog.card_arts) for
 import numpy as np
 import pytest
 
-from app import arts, chase, chase_pages, main, pictures, upgrades
+from app import arts, chase, chase_pages, jobs, main, pictures, upgrades
 from test_app import FakeEncoder, _card_png, _setup_with_set, client  # noqa: F401
 
 DIM = pictures.DIM
@@ -279,3 +279,26 @@ def test_data_sources_counts_illustrations(client, store):  # noqa: F811
         main.conn.commit()
     assert "Illustrations (for arts)" in html and "1 of 2" in html
     assert pictures.stats()["illustrations"] == 1
+
+
+def test_grouping_a_pokemon_doesnt_wait_for_the_illustrations_fill(client, monkeypatch):  # noqa: F811
+    """A follow or Re-check queues "recheck" for the scanner; it runs between the fill's steps, not hours later."""
+    main.conn.execute("DELETE FROM jobs")
+    main.conn.commit()
+    monkeypatch.setattr(jobs, "BETWEEN_EVERY", 0.0)
+    order = []
+    box = jobs.Jobs(main.conn, "scanner", run_kind=lambda c, kind, arg, job: order.append(f"{kind} {arg}"), idle=0.05)
+
+    def fill(c, job):
+        for i in range(3):
+            if i == 1:
+                box.queue("recheck:248", "Grouping Tyranitar's cards by artwork", "recheck", "248")
+            order.append(f"step {i}")
+            job.progress(i, 3, "Fingerprinting illustrations · English")
+    try:
+        box.start("pictures", "Fingerprinting illustrations", fill, wait=True)
+        assert order == ["step 0", "step 1", "recheck 248", "step 2"]
+    finally:
+        box.stop()
+        main.conn.execute("DELETE FROM jobs")
+        main.conn.commit()
