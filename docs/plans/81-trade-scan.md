@@ -82,8 +82,7 @@ From the maintainer, 20 Nov 2026:
 
 - Does the other person's side also show stash counts ("You have 1", "On your chase list")? Not in the notes, so not drawn.
 - Is the price shown the main price (average of sources) for the printing picked? Assumed yes.
-- Which copy leaves the stash when there's more than one: assumed the one in the fewest binders, then the oldest.
-  A Trade binder (#80) could go first later.
+- Which copy leaves the stash: decided, see Architecture review finding 2.
 
 ## What's reused and what's new
 
