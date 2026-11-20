@@ -48,6 +48,7 @@ Your cards, no Add price sheet, a no-price warning before finishing, and a binde
 | Batch: name, From · Binder, grid, Add N to My Stash ([now-batch](../specs/wireframes/trade-scan/now-batch.png)) | Trade batch: two tabs, **Your cards** and **Brock's cards** (named from Trading with), each with its card count and total, the difference under them, then the same grid for that tab ([your cards](../specs/wireframes/trade-scan/proposed-trade-your-cards.png), [Brock's cards](../specs/wireframes/trade-scan/proposed-trade-their-cards.png)) |
 | none | Your cards tiles say how many you have ("In stash ×2", or "Not in your stash") |
 | Tile shows "No price"; a price is added in the card view | Same as today. The tab says "1 no price" and the total leaves it out |
+| Set for all (condition, paid each) on every batch | On a trade, only on Brock's cards tab, for his cards only ([proposed-their-set-for-all](../specs/wireframes/trade-scan/proposed-their-set-for-all.png)) |
 | From · Binder line on the batch | Not on a trade batch. The binders are picked in Finish trade |
 | Camera: "Scanning cards" ([now-camera](../specs/wireframes/trade-scan/now-camera.png)) | Camera: a **Your cards / Brock's cards** switch at the top, named from Trading with; photos go to the side picked ([proposed-camera-side](../specs/wireframes/trade-scan/proposed-camera-side.png)) |
 | none | Compare both sides (link on its own line, centred, under "Brock's cards are worth $X more/less"): one list per side with prices, stash counts and the difference, with a close button ([proposed-compare](../specs/wireframes/trade-scan/proposed-compare.png)) |
@@ -69,6 +70,7 @@ From the maintainer, 20 Nov 2026:
 - Finish trade sheet: warning just says "N card(s) have no price"; buttons Back and Finish; "Cards leaving your
   stash: N" with no list. Compare has a close button. The Compare link sits on its own line, centred, under
   "<name>'s cards are worth $X more/less". (Added 20 Nov 22:09.)
+- Set for all shows only on the other person's tab and sets only their cards. (Added 20 Nov 22:12.)
 
 - Sides can be switched any time, from the tabs or the camera switch.
 - Finish trade adds the other person's cards to the stash (From: Trade, with their name, in the binders picked in Finish trade),
