@@ -380,17 +380,19 @@ def fingerprints(conn: sqlite3.Connection, dex: int, encoder, job=None, fetch=No
                 known_art.setdefault(c["card_id"], known_art[t])
     todo = []
     if encoder is not None:
-        todo = [c for c in cards if c["image_url"] and (c["card_id"] not in known or (art and c["card_id"] not in known_art))]
+        todo = [c for c in cards if _picture_urls(c) and (c["card_id"] not in known or (art and c["card_id"] not in known_art))]
     for i in range(0, len(todo), 8):
         if job is not None:
             job.progress(i, len(todo), "Fingerprinting pictures")
         rows, images = [], []
         for c in todo[i:i + 8]:
-            try:
-                images.append(pictures.picture_image({"key": picture_key(c["image_url"]), "url": c["image_url"]}, fetch))
-                rows.append({"card": c["card_id"], "set": c["set_id"], "key": c["image_url"]})
-            except Exception as e:
-                log.info("no picture for %s: %s", c["card_id"], e)
+            for url in _picture_urls(c):
+                try:
+                    images.append(pictures.picture_image({"key": picture_key(url), "url": url}, fetch))
+                    rows.append({"card": c["card_id"], "set": c["set_id"], "key": url})
+                    break
+                except Exception as e:
+                    log.info("no picture for %s at %s: %s", c["card_id"], url, e)
         if images:
             vectors = encoder.embed(images)
             arts = encoder.embed([pictures.crop_art(im) for im in images])
@@ -406,6 +408,13 @@ def fingerprints(conn: sqlite3.Connection, dex: int, encoder, job=None, fetch=No
                 v = np.asarray(have[c["card_id"]], np.float32)
                 put[c["card_id"]] = v / max(float(np.linalg.norm(v)), 1e-9)
     return (out, out_art) if art else out
+
+
+def _picture_urls(c: dict) -> list[str]:
+    """Where a card's picture can be fetched for its fingerprints: TCGdex's, then (Japanese and Taiwan cards,
+    which TCGdex often has no picture for) the Limitless TCG one the card's tile shows."""
+    from .card_pictures import limitless
+    return [u for u in (c["image_url"], limitless(c["card_id"])) if u]
 
 
 def twin(card_id: str) -> str | None:

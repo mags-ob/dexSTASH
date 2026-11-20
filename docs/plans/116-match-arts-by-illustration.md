@@ -55,7 +55,9 @@ and compared every pair. The maintainer judged the pairs the two ways disagreed 
    the test above.
 5. **Arts when a Pokémon is followed.** Every indexed card already has both fingerprints, so following a Pokémon or
    artist builds its arts straight away from the store, with no picture downloads (Taiwan cards with no Japanese
-   twin are the only fetches). Followed Pokémon and artists keep their own `arts`/`art_cards` (with your fixes).
+   twin are the only fetches). A Japanese or Taiwan card TCGdex has no picture for is fingerprinted from the
+   Limitless TCG picture its tile shows (added 20 Nov 2026, after testing: many Japanese cards stayed on their own).
+   Followed Pokémon and artists keep their own `arts`/`art_cards` (with your fixes).
    Arts for every other Pokémon (Updated 20 Nov 2026, for #95 coming along): a rebuildable catalog table,
    `catalog.card_arts (lang, card_id, dex_id, art_id)`, built per Pokémon in the background after its
    illustrations exist, with the same rule (only cards of one Pokémon are compared, so each rebuild is small).

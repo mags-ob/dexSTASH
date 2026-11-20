@@ -320,3 +320,20 @@ def test_the_illustrations_fill_carries_on_after_a_restart(client, monkeypatch):
     monkeypatch.setattr(web, "_pictures_ready", lambda: False)
     saved.update(illustrations=0)
     assert not web._resume_illustrations()  # no Enhanced Search: nothing changes
+
+
+def test_a_japanese_card_tcgdex_has_no_picture_for_is_fingerprinted_from_limitless(store):
+    _card(375, "ja:SV5M-047", "ja", illustrator="Nobuhiro Imagawa", image=None)
+    _card(375, "zh-tw:SV5M-047", "zh-tw", illustrator="Nobuhiro Imagawa", image=None)
+    _card(375, "sv05-114", "en", illustrator="Nobuhiro Imagawa", image="https://assets.example/en/sv05/114")
+    _card(375, "old-1", "en", image=None)  # nothing anywhere: no fetch
+    main.conn.commit()
+    fetched = []
+
+    def fetch(url):
+        fetched.append(url)
+        return _card_png((30, 180, 40))
+    whole, art = chase.fingerprints(main.conn, 375, FakeEncoder(), fetch=fetch, folder=store / "pokemon", art=True)
+    assert sorted(art) == ["ja:SV5M-047", "sv05-114", "zh-tw:SV5M-047"]
+    assert any("limitlesstcg" in u and "SV5M_47_" in u for u in fetched) and len(fetched) == 3
+    assert chase.regroup(main.conn, 375, (whole, art)) == 2  # the three are one art; old-1 on its own
