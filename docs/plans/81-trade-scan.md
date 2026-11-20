@@ -2,7 +2,7 @@
 
 **Issue:** [#81](https://github.com/mags-ob/dexSTASH/issues/81). The issue decides; this file explains.
 
-Draft design (20 Nov 2026, second draft), waiting on the maintainer's answers and go. Nothing here is decided.
+Design agreed 20 Nov 2026 (second draft), waiting on the go.
 
 ## Original notes
 
@@ -66,19 +66,17 @@ From the maintainer, 20 Nov 2026:
 - A card with no price: warn before finishing the trade. Prices are added in the card view, as today.
 - The other person's cards: the user picks the binder they go in.
 
-Proposed, not yet confirmed (drawn this way):
-
-1. **Scan order:** switch sides any time, from the tabs or the camera switch.
-2. **When the trade is done:** Finish trade adds the other person's cards to the stash (From: Trade, with their
-   name, in the binder picked), and takes Your cards out of the stash, logged as traded. A card that isn't in the
-   stash is skipped and said so. If more than one copy could go, the one in a Trade binder goes first (needs #80).
-3. **The other person:** just a name, typed when the trade starts. No login or shared link.
+- Sides can be switched any time, from the tabs or the camera switch.
+- Finish trade adds the other person's cards to the stash (From: Trade, with their name, in the binder picked),
+  and takes Your cards out of the stash, logged as traded. A card that isn't in the stash is skipped and said so.
+- The other person is just a name, typed when the trade starts. No login or shared link.
 
 ## Still to ask
 
 - Does the other person's side also show stash counts ("You have 1", "On your chase list")? Not in the notes, so not drawn.
 - Is the price shown the main price (average of sources) for the printing picked? Assumed yes.
-- Does Finish trade wait for #80 (Trade binder type), or does it pick any copy for now?
+- Which copy leaves the stash when there's more than one: assumed the one in the fewest binders, then the oldest.
+  A Trade binder (#80) could go first later.
 
 ## Plan (draft, after answers)
 
