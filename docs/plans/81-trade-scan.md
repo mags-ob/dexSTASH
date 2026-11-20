@@ -120,26 +120,30 @@ Findings:
 1. **Refactor the Add logic out of the route first** (its own commit). It's the biggest reuse, and AGENTS.md wants
    logic in plain modules, not routes. Plain batches must behave exactly as before; existing Add tests cover it.
 2. **Your cards need the printing and condition you own.** Removing a copy needs the exact stash line
-   (card, printing, condition). Proposal: on Your cards, the card view starts on the copy you own (when there's one
-   line), and Finish warns if that exact line isn't in the stash instead of guessing.
-3. **The other person's name on your copies.** The stash keeps where a copy came from as a word (Trade), not a
-   name. Showing "Trade · Brock" on the card later would need one more field on the log. Proposal: keep the name on
-   the trade batch only (shown on the Scan tab and in Compare) for this issue. Maintainer to decide.
+   (card, printing, condition). Decided 20 Nov 22:58: when you own more than one line of that card (languages,
+   printings, conditions), the card view for that scan warns and asks you to pick which copy leaves. With one line,
+   it's picked for you. Finish trade can't run until each of Your cards points at a copy you own (or is marked not
+   in your stash).
+3. **The other person's name.** Decided 20 Nov 22:58: not kept on the stash line or after the trade. The card's
+   history keeps it: the same database step adds a short note to each history entry, so the card page reads
+   "Added from a trade with Brock" and "Traded to Brock". The batch holds the name only while the trade is open
+   (for the tab names).
 4. **Offline photo queue** must carry the side (finding above); a test covers a retried upload.
 5. **No new background work.** Prices for matches already come from the existing short price run; nothing new
    reaches another site.
-6. **Clear finished batches** deletes finished trades too, and with them the record of who a trade was with. Fine
-   if finding 3 stays batch-only; otherwise the name needs to live on the log.
+6. **Clear finished batches** deletes finished trades as today; the card history keeps who each trade was with.
 
 ## Plan (draft, after answers)
 
 Short version goes in the issue's Plan section once the answers are in.
 
-- Database: a new numbered step adds `scan_batches.trade_with` (the other person's name, empty for a plain batch)
-  and `scans.side` (`mine` or `theirs`).
+- Database: a new numbered step adds `scan_batches.trade_with` (the other person's name, empty for a plain batch),
+  `scans.side` (`mine` or `theirs`), `scans.from_line` (the stash line a Your cards scan takes from) and
+  `inventory_log.note` ("Trade with Brock").
 - First, move the Add logic from `scan_review_add` into `app/scans.py`, unchanged in behaviour.
 - `app/scans.py`: side totals from the tile prices; stash counts for Your cards;
-  Finish trade adds the other side's cards and removes Your cards' copies in one transaction.
+  Finish trade adds the other side's cards and removes Your cards' copies in one transaction, each history entry
+  noted with the trade.
 - Routes and templates: Start a trade, side tabs named from Trading with, the camera's side switch, Compare, Finish trade with the no-price warning and a binder per card.
   New CSS and JavaScript in the scan files, through `asset()`.
 - Tests: one per acceptance criterion, in `tests/` next to the scan tests.
