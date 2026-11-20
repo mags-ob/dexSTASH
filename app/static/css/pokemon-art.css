@@ -15,3 +15,6 @@
   .as-where .ltg { flex:none; }
   .as-card form { margin:0; }
   .as-card button { min-height:36px; padding:3px 10px; font-size:13px; white-space:nowrap; }
+  /* A rainbow or gold version of the art: its own card, with its rarity in gold. */
+  .as-gold { flex:none; font-size:12px; font-weight:600; color:#c79a1e; border:1px solid #c79a1e; border-radius:999px; padding:1px 8px; }
+  .as-note { font-size:13px; margin:4px 0 0; }

@@ -5,6 +5,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 ## Unreleased
 
 ### Added
+- **Arts match by the illustration, in every language.** Cards join an art when they have the same artist and the same illustration, compared without the card's frame and text, so the same art printed in English, Japanese and Chinese now groups by itself. Different artists never join. A rainbow or gold version joins its art as a card of its own, with its rarity in gold in the art sheet. With Enhanced Search on, every picture gets an illustration fingerprint in the background (Data sources shows how many), and every Pokémon's cards are grouped into arts, followed or not (#116).
 - **Edit arts on the grid.** On a Pokémon or artist page, Edit arts lets you tick arts and Merge arts; sorts and filters keep edit mode and your ticks. The pencil opens a slim sheet of the art's cards, each with Not this art. Add a card to this art is gone: add a card from its card page with Add to a Pokémon set… (#96).
 - **Filter a Pokémon or artist page by language** (English, Japanese or Chinese). It only narrows which arts show; owned and prices still count every language (#96).
 

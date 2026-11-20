@@ -53,7 +53,12 @@ for a person to check and add them, all on the household's own server with no cl
     card pictures in English, Japanese and mainland Chinese. It's turned on from Data sources, which
     downloads the picture model (CLIP ViT-B/32 as ONNX, about 350 MB) into `data/models/`.
 13. Pictures are downloaded one at a time, fingerprinted and dropped: only the fingerprints are kept, one
-    index per language in `data/index/`.
+    index per language in `data/index/`. Each picture gets two: the whole card (`<lang>.npy`, what Enhanced
+    Search compares) and the illustration only (`<lang>.art.npy`, row for row, for arts; zeros until it's made).
+    Pictures fingerprinted before illustrations existed are downloaded once more in the background
+    ("Fingerprinting illustrations", after new sets, part of Check for updates and once after upgrading); a
+    restart picks up where it stopped. Data sources shows "Illustrations (for arts) N of M". Photos you added
+    never get an illustration.
 14. A photo can be sent to Picture search by hand, for a closer look by picture alone.
 
 ### Review and Add

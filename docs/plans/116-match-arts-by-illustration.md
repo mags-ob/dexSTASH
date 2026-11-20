@@ -43,9 +43,10 @@ and compared every pair. The maintainer judged the pairs the two ways disagreed 
    both; `Index.art_vectors` is read under the same lock. Photo rows (`hand:`, `scan:`) never get one.
 2. **Making them.** `index_sets` crops and fingerprints the illustration from the same opened picture as the whole
    card (one download, two `embed` calls). A new background step, "Fingerprinting illustrations", fills the rows
-   made before this change: one picture at a time through `sites.client()`, newest sets first, after
-   `index_sets` and before regrouping. It's part of Check for updates and runs once after upgrading; it stops for a
-   restart and picks up where it left off (rows still at zero).
+   made before this change: one picture at a time through `sites.client()`, after `index_sets` and before
+   regrouping. It's part of Check for updates and runs once after upgrading (after-upgrade task 10, in the
+   background, only with Enhanced Search on); it stops for a restart and picks up where it left off (rows still at
+   zero).
 3. **Taiwan Chinese** cards take their Japanese twin's fingerprints (same TCGdex set and number). A Taiwan card with
    no twin keeps today's per-Pokémon fetch.
 4. **The rule** (`chase.group`): same artist and illustration ≥ 0.93 (`ART_THRESHOLD`). Artist unknown on either
@@ -93,6 +94,8 @@ a rule (reprints reuse old art years later; it stays only as the cover tie-break
   at the top.
 
 ## Tests
+
+In `tests/test_match_arts.py`.
 
 - AC1: `Index` keeps both arrays row for row through put, keep_only, save and load; zeros for missing.
 - AC2: a Taiwan card gets its Japanese twin's vectors; one with no twin falls back.

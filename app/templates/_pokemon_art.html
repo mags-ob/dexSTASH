@@ -18,7 +18,8 @@
   <a class="pp" href="{{ r.link }}">{% if r.image %}<img src="{{ r.image }}" data-pics="{{ r.pics[1:] | tojson | forceescape }}" alt="" loading="lazy" data-fail="art">{% elif sprite %}<img class="spr" src="{{ sprite }}" alt="">{% endif %}</a>
   <div style="min-width:0">
     <div class="as-where"><span class="ltg ltg-{{ r.group }}{% if r.owned %} h{% endif %}">{{ r.tag }}</span>
-      <a href="{{ r.link }}">{{ r.set_name or r.set_code }}{% if r.set_code and r.set_code | lower not in (r.set_name or "") | lower %} ({{ r.set_code }}){% endif %} &middot; {{ r.number }}</a></div>
+      <a href="{{ r.link }}">{{ r.set_name or r.set_code }}{% if r.set_code and r.set_code | lower not in (r.set_name or "") | lower %} ({{ r.set_code }}){% endif %} &middot; {{ r.number }}</a>
+      {% if r.recolour %}<span class="as-gold">{{ r.recolour }}</span>{% endif %}</div>
     <div class="pr-row">{% for p in r.prints %}<span class="pr-chip{% if p.owned %} have{% endif %}">{% if p.owned %}{{ icon("check", 13) }}{% endif %}{{ p.label }}</span>{% endfor %}</div>
   </div>
   {% if d.rows | length > 1 %}
@@ -29,3 +30,4 @@
   {% else %}<span></span>{% endif %}
 </div>
 {% endfor %}
+{% if d.recolours and d.rows | length > 1 %}<p class="muted as-note">Each card counts on its own: having one doesn't tick the others.</p>{% endif %}

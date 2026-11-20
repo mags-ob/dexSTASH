@@ -30,7 +30,13 @@ KEPT = {"en", "ja", "zh-tw", "zh-cn"}
 LANG_NAMES = {"en": "English", "ja": "Japanese", "zh-tw": "Chinese (Taiwan)", "zh-cn": "Chinese", "zh": "Chinese"}
 LANG_TAGS = {"en": "EN", "ja": "JA", "zh-cn": "ZH", "zh-tw": "ZH"}
 
-THRESHOLD = 0.92   # picture likeness for "the same art"; tune on Clefairy
+THRESHOLD = 0.92   # whole-card likeness for "the same art", when a card has no illustration fingerprint yet
+# Illustration likeness (pictures.crop_art), tuned on Larvitar and Tyranitar in three languages, pairs judged by
+# hand (docs/plans/116-match-arts-by-illustration.md): the same art printed in another language scores 0.93-0.99,
+# different arts by the same artist up to 0.923.
+ART_THRESHOLD = 0.93
+NO_ARTIST_THRESHOLD = 0.95   # either card has no artist (mainland Chinese cards): a stricter bar
+RECOLOUR_THRESHOLD = 0.85    # a rainbow or gold version of a same-artist card (scored 0.88 and 0.93 in the test)
 TOO_MANY = 3000    # a filtered list this long means TCGdex ignored the filter
 WORDS = ((0.92, "Very close"), (0.80, "Possible"), (0.0, "Long shot"))
 
@@ -336,29 +342,45 @@ def picture_key(url: str) -> str:
 
 
 def fingerprints(conn: sqlite3.Connection, dex: int, encoder, job=None, fetch=None, folder=None,
-                 known=None) -> dict:
+                 known=None, art: bool = False):
     """card id -> picture fingerprint, for the Pokémon's cards with a picture.
     Reuses the Enhanced Search indexes; the rest are fetched, fingerprinted
     and let go, into the Pokémon's own index. Without an encoder, only the
-    fingerprints already made (for regrouping after a fix, in a second)."""
+    fingerprints already made (for regrouping after a fix, in a second).
+    art=True gives back (whole cards, illustrations): a Taiwan card takes its
+    Japanese twin's (the same TCGdex card), and a card whose illustration isn't
+    made yet is fetched again only when there's an encoder."""
     import numpy as np
     from . import pictures
     cards = [dict(r) for r in conn.execute(
         "SELECT card_id, lang, set_id, image_url FROM pokemon_cards WHERE dex_id = ? AND how <> 'removed'", (dex,))]
-    out = {}
+    out, out_art = {}, {}
+    known_art: dict = {}
     if known is None:
         known = {}
-        wanted = {c["card_id"] for c in cards}
+        wanted = {c["card_id"] for c in cards} | {twin(c["card_id"]) for c in cards if twin(c["card_id"])}
         for lang in pictures.languages():
             index = pictures.index_for(lang)
             with index.lock:
                 for i, row in enumerate(index.rows):
                     if row["card"] in wanted and not row["key"].startswith(("hand:", "scan:")):
                         known.setdefault(row["card"], index.vectors[i])
+                        if index.art[i].any():
+                            known_art.setdefault(row["card"], index.art[i])
     own = _index(dex, folder)
-    for row, vector in zip(own.rows, own.vectors):
+    for i, (row, vector) in enumerate(zip(own.rows, own.vectors)):
         known.setdefault(row["card"], vector)
-    todo = [c for c in cards if c["card_id"] not in known and c["image_url"]] if encoder is not None else []
+        if own.art[i].any():
+            known_art.setdefault(row["card"], own.art[i])
+    for c in cards:  # Taiwan cards are the Japanese ones: same picture, nothing to fetch
+        t = twin(c["card_id"])
+        if t and t in known:
+            known.setdefault(c["card_id"], known[t])
+            if t in known_art:
+                known_art.setdefault(c["card_id"], known_art[t])
+    todo = []
+    if encoder is not None:
+        todo = [c for c in cards if c["image_url"] and (c["card_id"] not in known or (art and c["card_id"] not in known_art))]
     for i in range(0, len(todo), 8):
         if job is not None:
             job.progress(i, len(todo), "Fingerprinting pictures")
@@ -371,28 +393,40 @@ def fingerprints(conn: sqlite3.Connection, dex: int, encoder, job=None, fetch=No
                 log.info("no picture for %s: %s", c["card_id"], e)
         if images:
             vectors = encoder.embed(images)
-            own.put(rows, vectors)
-            for r, v in zip(rows, vectors):
+            arts = encoder.embed([pictures.crop_art(im) for im in images])
+            own.put(rows, vectors, arts)
+            for r, v, a in zip(rows, vectors, arts):
                 known[r["card"]] = v
+                known_art[r["card"]] = a
     if todo:
         own.save()
     for c in cards:
-        if c["card_id"] in known:
-            v = np.asarray(known[c["card_id"]], np.float32)
-            out[c["card_id"]] = v / max(float(np.linalg.norm(v)), 1e-9)
-    return out
+        for have, put in ((known, out), (known_art, out_art)):
+            if c["card_id"] in have:
+                v = np.asarray(have[c["card_id"]], np.float32)
+                put[c["card_id"]] = v / max(float(np.linalg.norm(v)), 1e-9)
+    return (out, out_art) if art else out
+
+
+def twin(card_id: str) -> str | None:
+    """The Japanese card a Taiwan Chinese one is (TCGdex gives them the same set and number), else None."""
+    return "ja:" + card_id[len("zh-tw:"):] if card_id.startswith("zh-tw:") else None
 
 
 # --- step 4: arts -------------------------------------------------------------------
 
-def group(cards: list[dict], vectors: dict, fixes: list[dict], threshold: float = THRESHOLD) -> list[dict]:
-    """Group cards into arts. cards: {card_id, lang, illustrator, release_date}.
-    Two cards are one art when they have the same illustrator and their
-    pictures score at least threshold. Your fixes win: a card you took out
-    stays on its own, one you added joins that art. A card with no picture is
-    its own art. Returns [{cover, cards: {card_id: score}}], arts with the
-    most cards first."""
+def group(cards: list[dict], vectors: dict, fixes: list[dict], threshold: float = THRESHOLD,
+          art: dict | None = None) -> list[dict]:
+    """Group cards into arts. cards: {card_id, lang, illustrator, release_date, rarity}.
+    vectors: whole-card fingerprints; art: illustration fingerprints. Two cards are one art when
+    (with both illustrations) they have the same illustrator and score at least ART_THRESHOLD,
+    or NO_ARTIST_THRESHOLD when either has no illustrator, or RECOLOUR_THRESHOLD when either is a
+    rainbow or gold version; different illustrators never. A pair without both illustrations
+    falls back to the whole card: the same illustrator and at least threshold. Your fixes win: a
+    card you took out stays on its own, one you added joins that art. A card with no picture is
+    its own art. Returns [{cover, cards: {card_id: score}}], arts with the most cards first."""
     import numpy as np
+    art = art or {}
     ids = [c["card_id"] for c in cards]
     by_id = {c["card_id"]: c for c in cards}
     parent = {i: i for i in ids}
@@ -409,9 +443,21 @@ def group(cards: list[dict], vectors: dict, fixes: list[dict], threshold: float 
             parent[rb] = ra
 
     pinned = {f["card_id"] for f in fixes if f["card_id"] in parent}  # placed by you: no automatic grouping
+    free = [c for c in cards if c["card_id"] not in pinned]
+    # Illustrations: every pair of the Pokémon's cards that has them.
+    drawn = [c for c in free if c["card_id"] in art]
+    if len(drawn) > 1:
+        m = np.stack([art[c["card_id"]] for c in drawn])
+        scores = m @ m.T
+        # Only pairs over the lowest bar need a closer look (Pikachu has over a thousand cards).
+        for i, j in zip(*np.nonzero(np.triu(scores >= min(RECOLOUR_THRESHOLD, ART_THRESHOLD), 1))):
+            bar = art_bar(drawn[i], drawn[j])
+            if bar is not None and scores[i, j] >= bar:
+                union(drawn[i]["card_id"], drawn[j]["card_id"])
+    # Whole cards, for pairs without both illustrations: the same illustrator only, as before.
     by_artist: dict[str, list[str]] = {}
-    for c in cards:
-        if c["card_id"] in vectors and c["card_id"] not in pinned and _norm(c.get("illustrator")):
+    for c in free:
+        if c["card_id"] in vectors and _norm(c.get("illustrator")):
             by_artist.setdefault(_norm(c["illustrator"]), []).append(c["card_id"])
     for members in by_artist.values():
         if len(members) < 2:
@@ -420,7 +466,7 @@ def group(cards: list[dict], vectors: dict, fixes: list[dict], threshold: float 
         scores = m @ m.T
         for i in range(len(members)):
             for j in range(i + 1, len(members)):
-                if scores[i, j] >= threshold:
+                if (members[i] not in art or members[j] not in art) and scores[i, j] >= threshold:
                     union(members[i], members[j])
     for f in fixes:
         if f["card_id"] in parent and f.get("join_card_id") in parent:
@@ -436,6 +482,8 @@ def group(cards: list[dict], vectors: dict, fixes: list[dict], threshold: float 
         for m in members:
             if m == cover:
                 scores[m] = 1.0
+            elif m in art and cover in art:
+                scores[m] = round(float(np.dot(art[m], art[cover])), 3)
             elif m in vectors and cover in vectors:
                 scores[m] = round(float(np.dot(vectors[m], vectors[cover])), 3)
             else:
@@ -443,6 +491,19 @@ def group(cards: list[dict], vectors: dict, fixes: list[dict], threshold: float 
         arts.append({"cover": cover, "cards": scores})
     arts.sort(key=lambda a: (-len(a["cards"]), by_id[a["cover"]].get("release_date") or "9999", a["cover"]))
     return arts
+
+
+def art_bar(a: dict, b: dict) -> float | None:
+    """How alike two cards' illustrations must be to be one art, or None when they never are (different artists)."""
+    from .display import rarity_groups
+    ia, ib = _norm(a.get("illustrator")), _norm(b.get("illustrator"))
+    if ia and ib and ia != ib:
+        return None
+    if not ia or not ib:
+        return NO_ARTIST_THRESHOLD
+    if "secret" in rarity_groups(a.get("rarity")) or "secret" in rarity_groups(b.get("rarity")):
+        return RECOLOUR_THRESHOLD
+    return ART_THRESHOLD
 
 
 def cover_of(cards: list[dict]) -> str:
@@ -456,12 +517,15 @@ def fixes_of(conn: sqlite3.Connection, dex: int) -> list[dict]:
     return [dict(r) for r in conn.execute("SELECT * FROM art_fixes WHERE dex_id = ?", (dex,))]
 
 
-def regroup(conn: sqlite3.Connection, dex: int, vectors: dict, threshold: float = THRESHOLD) -> int:
-    """Rebuild the Pokémon's arts from its cards, fingerprints and your fixes. Returns the number of arts."""
+def regroup(conn: sqlite3.Connection, dex: int, vectors, threshold: float = THRESHOLD) -> int:
+    """Rebuild the Pokémon's arts from its cards, fingerprints and your fixes. vectors: the whole-card
+    fingerprints, or (whole cards, illustrations) as fingerprints(art=True) gives them. Returns the number of arts."""
+    whole, art = vectors if isinstance(vectors, tuple) else (vectors, None)
     cards = [dict(r) for r in conn.execute(
-        "SELECT card_id, lang, illustrator, release_date FROM pokemon_cards WHERE dex_id = ? AND how <> 'removed'", (dex,))]
+        "SELECT card_id, lang, illustrator, release_date, rarity FROM pokemon_cards WHERE dex_id = ? AND how <> 'removed'",
+        (dex,))]
     fixes = fixes_of(conn, dex)
-    arts = group(cards, vectors, fixes, threshold)
+    arts = group(cards, whole, fixes, threshold, art)
     manual = {f["card_id"] for f in fixes if f.get("join_card_id")}
     conn.execute("DELETE FROM art_cards WHERE art_id IN (SELECT id FROM arts WHERE dex_id = ?)", (dex,))
     conn.execute("DELETE FROM arts WHERE dex_id = ?", (dex,))
@@ -596,17 +660,17 @@ def run_follow(conn: sqlite3.Connection, dex: int, names, api_for, encoder, job=
     if job is not None:
         job.progress(0, 0, "Comparing pictures")
     try:
-        vectors = fingerprints(conn, dex, encoder, job, fetch)
+        vectors = fingerprints(conn, dex, encoder, job, fetch, art=True)
     except Exception as e:  # no picture model yet: every card is its own art until it's there
         log.info("no fingerprints for #%s: %s", dex, e)
-        vectors = {}
+        vectors = ({}, {})
     arts = regroup(conn, dex, vectors)
     conn.execute("UPDATE followed_pokemon SET checked_at = ? WHERE dex_id = ?", (now(), dex))
     conn.commit()
     total = conn.execute("SELECT COUNT(*) FROM pokemon_cards WHERE dex_id = ? AND how <> 'removed'", (dex,)).fetchone()[0]
     text = (f"{name}: {new} new card{'' if new == 1 else 's'}." if only_new
             else f"{name}: {total} cards in {arts} art{'' if arts == 1 else 's'}.")
-    if not vectors and total:
+    if not vectors[0] and total:
         text += " Pictures weren't compared: turn on Enhanced Search to group arts."
     if unreachable:
         text += f" Couldn't reach TCGdex for {', '.join(LANG_NAMES.get(l, l) for l in unreachable)}."
@@ -615,7 +679,7 @@ def run_follow(conn: sqlite3.Connection, dex: int, names, api_for, encoder, job=
 
 def run_recheck(conn: sqlite3.Connection, dex: int, encoder, job=None, fetch=None) -> str:
     """↻ Re-check: compare the pictures again (only new ones are fetched). Your fixes stay."""
-    vectors = fingerprints(conn, dex, encoder, job, fetch)
+    vectors = fingerprints(conn, dex, encoder, job, fetch, art=True)
     arts = regroup(conn, dex, vectors)
     return f"Compared again: {arts} art{'' if arts == 1 else 's'}."
 
