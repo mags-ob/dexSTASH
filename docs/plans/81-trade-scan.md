@@ -98,13 +98,47 @@ A trade is a scan batch with two extra fields, not a separate feature. Regular b
 - **New:** the two database fields, side totals and the difference, stash counts on Your cards, Compare, and
   Finish trade (binder per card, and taking Your cards out of the stash, logged as traded).
 
+## Architecture review (20 Nov 2026)
+
+Checked against main (`app/scans.py`, `app/routes/scans.py`, `app/inventory.py`, `app/binders.py`,
+`app/static/photo-queue.js`, `app/static/js/scan-batch.js`).
+
+| Piece | Reuse | Change |
+| --- | --- | --- |
+| Start a trade | `scans.create_batch` | Takes `trade_with`; batch name set to "Trade with <name>" through `set_batch_name` |
+| Photo upload and side | `scans.add_photo`, `/scans/{id}/photos` | Takes `side`. The phone's offline queue (`photo-queue.js`) must save the side with each photo, or a retried upload lands on the wrong side |
+| Reading, matching, card view | All of it, unchanged | None |
+| Tile prices and side totals | `tile_prices` / `scan_tile` (the price each tile already shows) | Side total = sum of tile prices × quantity, so totals always agree with the tiles. No second price path; `prices.resolve` stays the only place a price is worked out |
+| Adding their cards | The Add route's per-card loop: `scans.add_card`, `spending.set_paid`, `binders.put_some`, `_binder_choice` | **Refactor first:** that logic sits inline in the route (`scan_review_add`). Move it to a plain function in `app/scans.py` that takes the lines and a binder per scan; Add N to My Stash and Finish trade both call it. Per-card binders come from the Finish form, so no new column |
+| Taking your cards out | `inventory.set_quantity` (logs every change), then `binders.tidy` | New log source `trade` ("Traded"). Lowering a line takes Not-in-a-binder copies first, then the fullest binder: existing behaviour |
+| Stash counts | A read of `inventory` by card | Count every copy of the card; say which printing/condition will leave |
+| Count row, Set for all, From · Binder | Templates | Hidden when the batch is a trade; plain batches unchanged |
+| One transaction | `db.transaction` | Finish trade adds and removes in one transaction; any failure keeps nothing, as Add does today |
+
+Findings:
+
+1. **Refactor the Add logic out of the route first** (its own commit). It's the biggest reuse, and AGENTS.md wants
+   logic in plain modules, not routes. Plain batches must behave exactly as before; existing Add tests cover it.
+2. **Your cards need the printing and condition you own.** Removing a copy needs the exact stash line
+   (card, printing, condition). Proposal: on Your cards, the card view starts on the copy you own (when there's one
+   line), and Finish warns if that exact line isn't in the stash instead of guessing.
+3. **The other person's name on your copies.** The stash keeps where a copy came from as a word (Trade), not a
+   name. Showing "Trade · Brock" on the card later would need one more field on the log. Proposal: keep the name on
+   the trade batch only (shown on the Scan tab and in Compare) for this issue. Maintainer to decide.
+4. **Offline photo queue** must carry the side (finding above); a test covers a retried upload.
+5. **No new background work.** Prices for matches already come from the existing short price run; nothing new
+   reaches another site.
+6. **Clear finished batches** deletes finished trades too, and with them the record of who a trade was with. Fine
+   if finding 3 stays batch-only; otherwise the name needs to live on the log.
+
 ## Plan (draft, after answers)
 
 Short version goes in the issue's Plan section once the answers are in.
 
 - Database: a new numbered step adds `scan_batches.trade_with` (the other person's name, empty for a plain batch)
   and `scans.side` (`mine` or `theirs`).
-- `app/scans.py`: side totals and "no price" counts from `prices.resolve`; stash counts for Your cards;
+- First, move the Add logic from `scan_review_add` into `app/scans.py`, unchanged in behaviour.
+- `app/scans.py`: side totals from the tile prices; stash counts for Your cards;
   Finish trade adds the other side's cards and removes Your cards' copies in one transaction.
 - Routes and templates: Start a trade, side tabs named from Trading with, the camera's side switch, Compare, Finish trade with the no-price warning and a binder per card.
   New CSS and JavaScript in the scan files, through `asset()`.
