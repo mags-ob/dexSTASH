@@ -48,10 +48,10 @@ Your cards, no Add price sheet, a no-price warning before finishing, and a binde
 | Batch: name, From · Binder, grid, Add N to My Stash ([now-batch](../specs/wireframes/trade-scan/now-batch.png)) | Trade batch: two tabs, **Your cards** and **Brock's cards** (named from Trading with), each with its card count and total, the difference under them, then the same grid for that tab ([your cards](../specs/wireframes/trade-scan/proposed-trade-your-cards.png), [Brock's cards](../specs/wireframes/trade-scan/proposed-trade-their-cards.png)) |
 | none | Your cards tiles say how many you have ("In stash ×2", or "Not in your stash") |
 | Tile shows "No price"; a price is added in the card view | Same as today. The tab says "1 no price" and the total leaves it out |
-| From · Binder sheet | On Brock's cards: From is Trade · Brock, and you pick the binder they go in ([proposed-their-binder](../specs/wireframes/trade-scan/proposed-their-binder.png)) |
+| From · Binder line on the batch | Not on a trade batch. The binders are picked in Finish trade |
 | Camera: "Scanning cards" ([now-camera](../specs/wireframes/trade-scan/now-camera.png)) | Camera: a **Your cards / Brock's cards** switch at the top, named from Trading with; photos go to the side picked ([proposed-camera-side](../specs/wireframes/trade-scan/proposed-camera-side.png)) |
 | none | Compare both sides: one list per side with prices, stash counts and the difference ([proposed-compare](../specs/wireframes/trade-scan/proposed-compare.png)) |
-| Add N to My Stash | **Finish trade**: says what joins and leaves the stash, and warns first when a card has no price ("Add the price first" or "Finish anyway") ([proposed-finish](../specs/wireframes/trade-scan/proposed-finish.png)) |
+| Add N to My Stash | **Finish trade**: warns first when a card has no price, lets you pick a binder for each of Brock's cards (or All of them; default None), and says which of your cards leave the stash. "Add the price first" or "Finish anyway" ([proposed-finish](../specs/wireframes/trade-scan/proposed-finish.png)) |
 
 Kept as they are: batch name editing, language tags, the card view (including adding a price), Set for all, the
 camera's library button and shutter, Added and Deleted scans folds, the delete menu, and plain batches.
@@ -64,10 +64,11 @@ From the maintainer, 20 Nov 2026:
 - Scanning always starts on Your cards; no choice in the New trade sheet.
 - The button says "Finish trade".
 - A card with no price: warn before finishing the trade. Prices are added in the card view, as today.
-- The other person's cards: the user picks the binder they go in.
+- The other person's cards: no From · Binder line on the batch. Finish trade asks which binder each card goes in
+  (with an All of them choice), default None. From is Trade, with their name. (Added 20 Nov 22:01.)
 
 - Sides can be switched any time, from the tabs or the camera switch.
-- Finish trade adds the other person's cards to the stash (From: Trade, with their name, in the binder picked),
+- Finish trade adds the other person's cards to the stash (From: Trade, with their name, in the binders picked in Finish trade),
   and takes Your cards out of the stash, logged as traded. A card that isn't in the stash is skipped and said so.
 - The other person is just a name, typed when the trade starts. No login or shared link.
 
@@ -86,7 +87,7 @@ Short version goes in the issue's Plan section once the answers are in.
   and `scans.side` (`mine` or `theirs`).
 - `app/scans.py`: side totals and "no price" counts from `prices.resolve`; stash counts for Your cards;
   Finish trade adds the other side's cards and removes Your cards' copies in one transaction.
-- Routes and templates: Start a trade, side tabs named from Trading with, the camera's side switch, the binder for the other side, Compare, Finish trade with the no-price warning.
+- Routes and templates: Start a trade, side tabs named from Trading with, the camera's side switch, Compare, Finish trade with the no-price warning and a binder per card.
   New CSS and JavaScript in the scan files, through `asset()`.
 - Tests: one per acceptance criterion, in `tests/` next to the scan tests.
 - Docs impact: scanning spec (new Trade section), My Stash spec (traded-away log), concepts.md (Trade scan,
