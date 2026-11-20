@@ -302,3 +302,21 @@ def test_grouping_a_pokemon_doesnt_wait_for_the_illustrations_fill(client, monke
         box.stop()
         main.conn.execute("DELETE FROM jobs")
         main.conn.commit()
+
+
+def test_the_illustrations_fill_carries_on_after_a_restart(client, monkeypatch):  # noqa: F811
+    from app import web
+    started = []
+    monkeypatch.setattr(web, "_pictures_ready", lambda: True)
+    monkeypatch.setattr(web, "SCANNER_EXTERNAL", True)
+    monkeypatch.setattr(web, "_index_pictures", lambda label="": started.append(label) or True)
+    saved = {}
+    monkeypatch.setattr(pictures, "stats_saved", lambda conn: saved)
+    assert web._resume_illustrations()  # counts from before illustrations: not done
+    saved.update(illustrations=5, illustrations_wanted=9)
+    assert web._resume_illustrations()  # stopped part way
+    saved.update(illustrations=9)
+    assert not web._resume_illustrations() and len(started) == 2  # all done: nothing to start
+    monkeypatch.setattr(web, "_pictures_ready", lambda: False)
+    saved.update(illustrations=0)
+    assert not web._resume_illustrations()  # no Enhanced Search: nothing changes
