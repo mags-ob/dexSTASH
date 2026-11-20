@@ -41,7 +41,8 @@ change (moved here from #116 on 20 Nov 2026). Built after #116 merges.
   chips as today), now on any card page or preview whose art is printed in more than one language, followed
   Pokémon or not (`arts.members`, or the rough rule without Enhanced Search). A tap opens that language's card.
   They move up into the top box, under the name, set and rarity and above the price, and the Languages row
-  further down goes (maintainer, 20 Nov 2026). A card in one language shows no row.
+  further down goes (maintainer, 20 Nov 2026). A card in only one language still shows its one chip there (✓ when
+  you have it), so every card view looks the same (maintainer, 20 Nov 2026; wireframe not redrawn).
 - **Unchanged:** the Pokémon box with sprites, Pokémon set › and ★, Tags, "Don't know the name? Describe it",
   saved searches, other filters and sorts, "Not here? Add it by hand", Find from Scan and Import (they carry their
   language as the filter).
@@ -78,7 +79,7 @@ issue's acceptance criteria.
 - Picking Japanese shows the chip and badge, only arts printed in Japanese, with the Japanese cover; ✕ goes back to
   every language; Korean searches on its own (6).
 - A card page and a preview show Languages for an unfollowed Pokémon's art in two languages; one language shows
-  none; the chips sit in the top box under the rarity, not further down (7).
+  its one language chip; the chips sit in the top box under the rarity, not further down (7).
 - An incomplete language is left out and named (8).
 
 ## Docs impact
