@@ -36,6 +36,15 @@ and compared every pair. The maintainer judged the pairs the two ways disagreed 
 - So: the illustration alone, the same artist, and a 0.93 bar keep none of the wrong pairs and all the
   cross-language ones. The whole-card score is not used for arts.
 
+## Second test: mainland Chinese (20 Nov 2026)
+
+On the test copy, mainland Chinese cards (no artist) rarely joined. A second script scored the 18 mainland Chinese
+Ampharos and Metang cards against every English, Japanese and Taiwan card (Japanese and Taiwan pictures from
+Limitless when TCGdex has none). Their best match with the same art: 0.947-0.985, usually the Japanese or Taiwan
+printing (same layout); 0.928 once, against English only. Different arts by different artists reach 0.925, and a
+mainland card's best wrong match 0.912. So the no-artist bar is 0.94: it adds the 0.947 pair and keeps every
+wrong one out.
+
 ## Design
 
 1. **One store, two fingerprints.** Each language index gets a second array, `<lang>.art.npy`, row for row with
@@ -50,7 +59,7 @@ and compared every pair. The maintainer judged the pairs the two ways disagreed 
 3. **Taiwan Chinese** cards take their Japanese twin's fingerprints (same TCGdex set and number). A Taiwan card with
    no twin keeps today's per-Pokémon fetch.
 4. **The rule** (`chase.group`): same artist and illustration ≥ 0.93 (`ART_THRESHOLD`). Artist unknown on either
-   card: ≥ 0.95. Different artists: never. Rainbow and gold: when either card is in the "secret" rarity group and
+   card: ≥ 0.94 (was 0.95; measured 20 Nov 2026, see below). Different artists: never. Rainbow and gold: when either card is in the "secret" rarity group and
    the artists match, ≥ 0.85 (`RECOLOUR_THRESHOLD`). Hand fixes win, as now. Thresholds are constants, tuned on
    the test above.
 5. **Arts when a Pokémon is followed.** Every indexed card already has both fingerprints, so following a Pokémon or
@@ -102,7 +111,7 @@ In `tests/test_match_arts.py`.
 - AC1: `Index` keeps both arrays row for row through put, keep_only, save and load; zeros for missing.
 - AC2: a Taiwan card gets its Japanese twin's vectors; one with no twin falls back.
 - AC3/AC4: `group()` with fixed vectors: 0.93 same artist joins; 0.92 doesn't; different artists at 0.99 don't;
-  unknown artist needs 0.95; a secret-rarity card at 0.86 joins, a plain one doesn't.
+  unknown artist needs 0.94; a secret-rarity card at 0.86 joins, a plain one doesn't.
 - AC5: a fix still wins over the new rule.
 - AC6: following a Pokémon whose cards are all in the store fetches no pictures; the fill runs through the queue
   (fake fetch counts one request at a time).

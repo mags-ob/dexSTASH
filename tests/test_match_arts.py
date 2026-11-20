@@ -70,7 +70,7 @@ def test_illustrations_written_for_other_rows_are_made_again(tmp_path, monkeypat
 def test_same_artist_joins_at_the_illustration_bar_only():
     assert _joined(0.93) and not _joined(0.92)
     assert not _joined(0.99, artist_b="Atsuko Nishida")  # different artists never
-    assert _joined(0.95, artist_b=None) and not _joined(0.94, artist_b=None)  # no artist: a stricter bar
+    assert _joined(0.94, artist_b=None) and not _joined(0.93, artist_b=None)  # no artist: a stricter bar
     assert _joined(0.86, rarity_b="Rare Rainbow") and not _joined(0.86)  # a rainbow version of the art
     assert _joined(0.86, rarity_a="Hyper rare") and not _joined(0.84, rarity_b="Rare Rainbow")
     assert not _joined(0.90, artist_b="Atsuko Nishida", rarity_b="Rare Rainbow")

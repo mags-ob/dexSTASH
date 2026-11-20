@@ -35,7 +35,9 @@ THRESHOLD = 0.92   # whole-card likeness for "the same art", when a card has no 
 # hand (docs/plans/116-match-arts-by-illustration.md): the same art printed in another language scores 0.93-0.99,
 # different arts by the same artist up to 0.923.
 ART_THRESHOLD = 0.93
-NO_ARTIST_THRESHOLD = 0.95   # either card has no artist (mainland Chinese cards): a stricter bar
+# Either card has no artist (mainland Chinese cards): a stricter bar. Measured 20 Nov 2026 on Ampharos and Metang:
+# a mainland Chinese card scores 0.947-0.985 with the same art elsewhere; different arts reach 0.925.
+NO_ARTIST_THRESHOLD = 0.94
 RECOLOUR_THRESHOLD = 0.85    # a rainbow or gold version of a same-artist card (scored 0.88 and 0.93 in the test)
 TOO_MANY = 3000    # a filtered list this long means TCGdex ignored the filter
 WORDS = ((0.92, "Very close"), (0.80, "Possible"), (0.0, "Long shot"))
