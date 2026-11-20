@@ -34,7 +34,7 @@ change (moved here from #116 on 20 Nov 2026). Built after #116 merges.
   same Pokédex number and same illustrator (`chase.artist_norm`) from `index_cards`. Mainland Chinese cards have no
   illustrator, so they stay their own tiles there. Maintainer OK'd this for this iteration.
 - **Tiles.** Cover: English when there is one, else Japanese, else Chinese (or the picked language). Reuse `tile`
-  with EN/JA/ZH tags (filled when you have that one), "N cards" when the art has more than one, ✓ when you have
+  with EN/JA/ZH tags (filled when you have that one), ✓ when you have
   any card of it, and the cover's price, set code and number. A results line: "6 arts · 13 cards in English,
   Japanese and Chinese". A tap opens the cover card, as a result does today.
 - **No art sheet on Find.** An art's other languages show on the card view instead: the Languages chips, looking
@@ -70,7 +70,7 @@ issue's acceptance criteria.
 - No language buttons on Find; the Filters Language group has none ticked by default (1).
 - One search covers English, Japanese and both Chinese; an English name finds Japanese and Chinese cards (2).
 - Cards of one art make one tile with their tags and count; a followed art's fix wins; a card with no art is its
-  own tile (3, 4).
+  own tile; no card count on the tile (3, 4).
 - Without fingerprints, same Pokédex number and illustrator make one tile; a mainland card stays alone (5).
 - Picking Japanese shows the chip and badge, only arts printed in Japanese, with the Japanese cover; ✕ goes back to
   every language; Korean searches on its own (6).
