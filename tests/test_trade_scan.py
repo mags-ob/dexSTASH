@@ -254,13 +254,14 @@ def test_finishing_swaps_the_cards_and_notes_the_history(client, monkeypatch):
     assert _qty(owner, "t1-1") == 1 and _qty(owner, "t1-2") == 2
     log = main.conn.execute("SELECT card_id, delta, source, origin, note FROM inventory_log WHERE note IS NOT NULL "
                             "ORDER BY id").fetchall()
-    assert [tuple(r) for r in log] == [("t1-1", -1, "trade", None, "Trade with Brock"),
-                                       ("t1-2", 2, "scan", "trade", "Trade with Brock")]
+    assert [tuple(r) for r in log] == [("t1-1", -1, "trade", None, "Traded to Brock"),
+                                       ("t1-2", 2, "scan", "trade", "Added from a trade with Brock")]
     line = main.conn.execute("SELECT id FROM inventory WHERE card_id = 't1-2'").fetchone()[0]
     assert binders.placement(main.conn, owner)[line] == {trades: 2}
     assert main.conn.execute("SELECT COUNT(*) FROM scans WHERE batch_id = ? AND status = 'added'", (batch_id,)).fetchone()[0] == 3
     history = client.get("/cards/t1-2").text
-    assert "Trade with Brock" in history
+    assert "Added from a trade with Brock" in history
+    assert "Traded to Brock" in client.get("/cards/t1-1").text
     assert "Trade finished" in client.get(f"/scans/{batch_id}?finished=1").text
 
 

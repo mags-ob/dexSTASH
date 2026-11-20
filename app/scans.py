@@ -556,12 +556,12 @@ def trade_problems(conn: sqlite3.Connection, batch: dict) -> list[str]:
 def finish_trade(conn: sqlite3.Connection, collection_id: int, user_id: int, batch: dict, theirs: list[dict],
                  binder_for=None, after=None, folder: Path | None = None) -> dict:
     """Finish trade: your cards leave the stash (history: traded away), then their cards join it as add_lines
-    does (From: Trade), each history entry noted "Trade with <name>". A card of yours that isn't in the stash is
+    does (From: Trade). History notes say "Traded to <name>" and "Added from a trade with <name>". A card of yours that isn't in the stash is
     skipped. Gives back {removed, skipped (names), added}."""
     problems = trade_problems(conn, batch)
     if problems:
         raise ValueError(problems[0])
-    note = f"Trade with {batch['trade_with']}"
+    gave, got = f"Traded to {batch['trade_with']}", f"Added from a trade with {batch['trade_with']}"
     removed, skipped = 0, []
     for s in trade_scans(conn, batch, "mine"):
         card_id, line = match_card_id(s, batch), leaving_line(conn, s, batch)
@@ -571,13 +571,13 @@ def finish_trade(conn: sqlite3.Connection, collection_id: int, user_id: int, bat
             else:
                 take = min(s["quantity"] or 1, line["quantity"])
                 inventory.set_quantity(conn, collection_id, card_id, line["variant"], line["condition"],
-                                       line["quantity"] - take, by=user_id, source="trade", note=note)
+                                       line["quantity"] - take, by=user_id, source="trade", note=gave)
                 removed += take
             _drop_photo(conn, s, folder)
             conn.execute("UPDATE scans SET status = 'added', card_id = ?, added_by = ?, message = NULL, "
                          "done_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE id = ?", (card_id, user_id, s["id"]))
     binders.tidy(conn, collection_id)  # copies that left come out of their binders
-    added = add_lines(conn, collection_id, user_id, theirs, "trade", binder_for=binder_for, after=after, note=note)
+    added = add_lines(conn, collection_id, user_id, theirs, "trade", binder_for=binder_for, after=after, note=got)
     return {"removed": removed, "skipped": skipped, "added": added}
 
 

@@ -89,10 +89,10 @@ for a person to check and add them, all on the household's own server with no cl
 24. A trade batch has no From · Binder line, count line or Set for all. Finish trade shows "N cards have no
     price" when any do, a binder for each of the other person's cards (with All of them; None unless picked),
     and how many cards leave your stash, then Back or Finish.
-25. Finish takes Your cards out of the stash (history: traded away; copies leave Not in a binder first, then
+25. Finish takes Your cards out of the stash (history: in a trade; copies leave Not in a binder first, then
     the fullest binder) and adds the other person's cards (From: Trade) to the binders picked. A card of yours
-    that isn't in the stash is skipped. Each history entry is noted "Trade with <name>"; the name isn't kept on
-    the copies. Photos still being read or with no match stay in the batch.
+    that isn't in the stash is skipped. History entries say "Traded to <name>" and "Added from a trade with
+    <name>"; the name isn't kept on the copies. Photos still being read or with no match stay in the batch.
 
 ### After a restart
 

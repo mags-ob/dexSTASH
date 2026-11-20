@@ -236,7 +236,7 @@ def methods(conn: sqlite3.Connection, user_id: int, card_id: str | None = None) 
 
 
 SOURCES = {"manual": "by hand", "pull": "from a purchase", "import": "from an import", "scan": "from a scan",
-           "bulk": "with Select › Remove", "trade": "traded away"}
+           "bulk": "with Select › Remove", "trade": "in a trade"}
 
 
 def history(conn: sqlite3.Connection, user_id: int, card_id: str, limit: int = 20) -> list[dict]:
