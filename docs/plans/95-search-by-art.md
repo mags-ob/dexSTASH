@@ -37,12 +37,12 @@ change (moved here from #116 on 20 Nov 2026). Built after #116 merges.
   with EN/JA/ZH tags (filled when you have that one), ✓ when you have
   any card of it, and the cover's price, set code and number. A results line: "6 arts · 13 cards in English,
   Japanese and Chinese". A tap opens the cover card, as a result does today.
-- **No art sheet on Find.** An art's other languages show on the card view instead: the Languages chips (same
-  chips as today), now on any card page or preview whose art is printed in more than one language, followed
-  Pokémon or not (`arts.members`, or the rough rule without Enhanced Search). A tap opens that language's card.
-  They move up into the top box, under the name, set and rarity and above the price, and the Languages row
-  further down goes (maintainer, 20 Nov 2026). A card in only one language still shows its one chip there (✓ when
-  you have it), so every card view looks the same (maintainer, 20 Nov 2026; wireframe not redrawn).
+- **No art sheet on Find.** An art's languages show on the card view instead, as language chips on every card
+  page and preview, followed Pokémon or not (`arts.members`, or the rough rule without Enhanced Search). They sit
+  in the top box, under the name, set and rarity and above the price; the Languages row further down goes. Each
+  chip uses its language's colour (EN blue, JA red, ZH gold), filled when you have a card of that language and
+  outlined when you don't, like the EN/JA/ZH tags on Find's tiles; no ✓. A tap opens that language's card. A card
+  in only one language still shows its one chip, so every card view looks the same. (Maintainer, 20 Nov 2026.)
 - **Unchanged:** the Pokémon box with sprites, Pokémon set › and ★, Tags, "Don't know the name? Describe it",
   saved searches, other filters and sorts, "Not here? Add it by hand", Find from Scan and Import (they carry their
   language as the filter).
@@ -79,7 +79,8 @@ issue's acceptance criteria.
 - Picking Japanese shows the chip and badge, only arts printed in Japanese, with the Japanese cover; ✕ goes back to
   every language; Korean searches on its own (6).
 - A card page and a preview show Languages for an unfollowed Pokémon's art in two languages; one language shows
-  its one language chip; the chips sit in the top box under the rarity, not further down (7).
+  its one language chip; the chips sit in the top box under the rarity, not further down; a chip is filled in its
+  language colour when owned and outlined when not, with no ✓ (7).
 - An incomplete language is left out and named (8).
 
 ## Docs impact
