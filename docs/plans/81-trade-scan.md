@@ -85,6 +85,19 @@ From the maintainer, 20 Nov 2026:
 - Which copy leaves the stash when there's more than one: assumed the one in the fewest binders, then the oldest.
   A Trade binder (#80) could go first later.
 
+## What's reused and what's new
+
+A trade is a scan batch with two extra fields, not a separate feature. Regular batches don't change: with no
+`trade_with` they look and work exactly as today.
+
+- **Reused as is:** the batch and its name, the camera and upload, photo reading and Enhanced Search, matching and
+  the card view (fixing a match, printing, condition, price paid, adding a price), price lookups, language tags,
+  Added and Deleted scans, deleting a batch, and the code that adds cards to the stash.
+- **Reused with a switch:** the batch page and camera show the side tabs, totals and side switch only when the
+  batch is a trade; the Scan tab shows Start a trade beside Start.
+- **New:** the two database fields, side totals and the difference, stash counts on Your cards, Compare, and
+  Finish trade (binder per card, and taking Your cards out of the stash, logged as traded).
+
 ## Plan (draft, after answers)
 
 Short version goes in the issue's Plan section once the answers are in.
