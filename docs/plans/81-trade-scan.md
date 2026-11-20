@@ -86,8 +86,8 @@ Short version goes in the issue's Plan section once the answers are in.
 
 - Database: a new numbered step adds `scan_batches.trade_with` (the other person's name, empty for a plain batch)
   and `scans.side` (`mine` or `theirs`).
-- `app/scans.py`: side totals and "no price" counts from `prices.resolve`; stash counts for You give cards;
-  Finish trade adds You get cards and removes You give copies in one transaction.
+- `app/scans.py`: side totals and "no price" counts from `prices.resolve`; stash counts for Your cards;
+  Finish trade adds the other side's cards and removes Your cards' copies in one transaction.
 - Routes and templates: Start a trade, side tabs named from Trading with, the camera's side switch, the binder for the other side, Compare, Finish trade with the no-price warning.
   New CSS and JavaScript in the scan files, through `asset()`.
 - Tests: one per acceptance criterion, in `tests/` next to the scan tests.
