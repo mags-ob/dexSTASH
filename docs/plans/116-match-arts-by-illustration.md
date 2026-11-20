@@ -63,6 +63,8 @@ and compared every pair. The maintainer judged the pairs the two ways disagreed 
    time.
    For #95: `arts.lookup(conn, card_ids)` gives back, in one local query, each card's art id (followed arts first,
    then `card_arts`) and its rarity group ("secret" for the rainbow label). A card with no art is left out.
+   `arts.members(conn, card_id)` gives back every card id in that card's art (followed art first, else `card_arts`),
+   so #95 can show the card page's Languages chips for any card.
 6. **Card page Languages** stays exactly as it is (maintainer, 20 Nov 2026): chips for an art of a followed Pokémon
    or artist, now grouped by the new rule.
 7. **Rainbow label.** In the Edit art sheet, a card in the "secret" rarity group shows its rarity label (Rainbow
@@ -103,41 +105,11 @@ a rule (reprints reuse old art years later; it stays only as the cover tie-break
 
 ## Docs impact
 
-- `docs/specs/chases.md` item 8 (the art rule), 
+- `docs/specs/chases.md` item 8 (the art rule),
   `docs/specs/scanning.md` (the illustration fingerprint, Enhanced Search unchanged), Data sources text.
 - `docs/concepts.md`: "art" = the same illustration, by the same artist; a rainbow or gold version is the same art
   and its own card.
 - README, product.md: none.
 
-## Added 20 Nov 2026: Find language buttons move into Filters
-
-Folded in from #117 (closed as a duplicate), at the maintainer's ask.
-
-**Context.** Find shows English, Japanese and Chinese buttons under the search box (`lang_chips` in
-`app/templates/search.html`). The Filters panel already has a Language group with every language. Korean and the
-other non-button languages already show as a removable chip under the search box and count on the Filters badge
-(`BUTTON_LANGS` in `app/routes/search.py`). The card page's Languages chips are a different screen and don't change.
-
-**Design.** Remove the buttons row. English is the default (what "Clear all" goes back to). Any other language works
-the way Korean does today: a chip under the search box ("Japanese ✕") and +1 on the Filters badge; ✕ goes back to
-English. Set aside: showing nothing, since the language sticks between searches and you could search in Japanese
-without knowing it (open question to the maintainer).
-
-**Files.**
-- `app/templates/search.html`: drop the `find-chips` row and the `lang_chips` import.
-- `app/routes/search.py`: the chip and badge rule becomes "any language but English" (`BUTTON_LANGS` becomes the
-  default `"en"`); drop `lang_url`.
-- `app/static/css/search.css`: drop the `.find-chips` rules.
-- `lang_chips` stays in `_macros.html`; Scan still uses it.
-
-**Tests.** No language buttons row on Find; Japanese or Chinese shows a chip whose link goes back to English and
-counts on the badge; English shows no chip and no count; the Filters Language group still ticks the current language.
-
-**Docs impact.** `docs/specs/sets-and-search.md` Find item 1 (language chosen under Filters, shown as a chip unless
-English); CHANGELOG line.
-
-**UI/UX.** `now-find-language.png`, `proposed-find-language.png`, `proposed-find-filters.png` in this wireframes
-folder.
-
-**Related.** #95 (Find grouped by art) planned a trial chip beside the language buttons; with them gone, that choice
-would sit in the Filters Language group.
+Updated 20 Nov 2026: the Find language change briefly added here (from #117) moved to #95, which changes Find's
+language default to all languages grouped by art.
