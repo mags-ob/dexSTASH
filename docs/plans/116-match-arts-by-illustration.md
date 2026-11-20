@@ -52,18 +52,20 @@ and compared every pair. The maintainer judged the pairs the two ways disagreed 
    card: ≥ 0.95. Different artists: never. Rainbow and gold: when either card is in the "secret" rarity group and
    the artists match, ≥ 0.85 (`RECOLOUR_THRESHOLD`). Hand fixes win, as now. Thresholds are constants, tuned on
    the test above.
-5. **Arts for every Pokémon.** A new catalog table, `catalog.card_arts (lang, card_id, dex_id, art_id)`, holds an
-   art for every indexed card with a Pokédex number, rebuilt per Pokémon after its fingerprints change (only cards
-   of the same Pokémon are compared, so each rebuild is small). Illustrator, rarity and Pokédex numbers come from
-   `catalog.index_cards`; mainland Chinese from `cards`. It can be rebuilt any time, so it lives in `catalog.sql`.
-   Followed Pokémon and artists keep their own `arts`/`art_cards` (with your fixes), built with the same rule.
-6. **Card page Languages** (`chase_pages.art_languages`): a followed art first, as now; otherwise the card's
-   `card_arts` art. A language whose card isn't stored opens its search preview, like Find.
+5. **Arts when a Pokémon is followed.** Every indexed card already has both fingerprints, so following a Pokémon or
+   artist builds its arts straight away from the store, with no picture downloads (Taiwan cards with no Japanese
+   twin are the only fetches). Followed Pokémon and artists keep their own `arts`/`art_cards` (with your fixes).
+   Updated 20 Nov 2026: no arts table for unfollowed Pokémon, since nothing shows them now that the card page's
+   Languages chips go (item 6). #95 and #29 can add one later from the same fingerprints.
+6. **Card page Languages removed** (maintainer, 20 Nov 2026). The Languages section goes from the card page and the
+   Find preview (`chase_pages.art_languages`, `card.html`, `routes/cards.py`, `routes/search.py`). The same art in
+   other languages stays together on the Pokémon's page. A card with no picture still borrows the same art's
+   picture in another language (sets and search item 15).
 7. **Rainbow label.** In the Edit art sheet, a card in the "secret" rarity group shows its rarity label (Rainbow
    Rare, Hyper Rare…) in gold. It's its own card with its own printings and ticks, as every card is today.
 8. **Enhanced Search** keeps reading only the whole-card fingerprint (#115 may use both later).
 9. **Without Enhanced Search** (model not downloaded), nothing changes from today: followed Pokémon use their own
-   fingerprints and today's rule, and `card_arts` stays empty.
+   fingerprints and today's rule.
 
 Set aside: a perceptual hash (not needed after the test), a bigger model (heavy for a home server), release date as
 a rule (reprints reuse old art years later; it stays only as the cover tie-break), suggested merges in Edit arts
@@ -75,14 +77,13 @@ a rule (reprints reuse old art years later; it stays only as the cover tie-break
   `index_sets`, new `fill_illustrations(conn, encoder, job, fetch)`, counts for Data sources.
 - `app/chase.py`: thresholds, `group()` rule (illustration vectors, secret-rarity bar), `fingerprints()` returns
   illustration vectors, Taiwan twins, `regroup` unchanged otherwise.
-- `app/catalog.sql`: `card_arts`. `app/arts.py` (new): build `card_arts` per Pokémon, look up a card's art.
-- `app/chase_pages.py`: `art_languages` falls back to `card_arts`; sheet rows carry the rarity label.
-- `app/jobs.py` / updates: run `fill_illustrations` and the `card_arts` rebuild after `index_sets`.
-- `app/templates/pokemon_set.html` (sheet), `card.html` (no change expected), `data_sources.html` (illustrations
-  row), CSS for the gold label.
+- `app/chase_pages.py`: `art_languages` removed; sheet rows carry the rarity label.
+- `app/routes/cards.py`, `app/routes/search.py`, `app/templates/card.html`: Languages section removed.
+- `app/jobs.py` / updates: run `fill_illustrations` after `index_sets`, then regroup followed Pokémon.
+- `app/templates/pokemon_set.html` (sheet), `data_sources.html` (illustrations row), CSS for the gold label.
 - `app/upgrades.py`: regroup followed Pokémon once illustrations exist.
-- Database: `card_arts` is a catalog table (rebuilt, no data of yours). If a numbered step turns out to be needed,
-  the PR says so at the top.
+- Database: no change expected (fingerprints are files). If a numbered step turns out to be needed, the PR says so
+  at the top.
 
 ## Tests
 
@@ -91,13 +92,13 @@ a rule (reprints reuse old art years later; it stays only as the cover tie-break
 - AC3/AC4: `group()` with fixed vectors: 0.93 same artist joins; 0.92 doesn't; different artists at 0.99 don't;
   unknown artist needs 0.95; a secret-rarity card at 0.86 joins, a plain one doesn't.
 - AC5: a fix still wins over the new rule.
-- AC6: `card_arts` built for an unfollowed Pokémon; `art_languages` shows chips for it; fill runs through the queue
-  (fake fetch counts one request at a time).
+- AC6: following a Pokémon whose cards are all in the store fetches no pictures; the fill runs through the queue
+  (fake fetch counts one request at a time); the card page and Find preview have no Languages section.
 - AC7: the 8 wrong and 2 rainbow pairs from the test, as fixed score fixtures, give the judged answers.
 
 ## Docs impact
 
-- `docs/specs/chases.md` item 8 (the art rule), `docs/specs/sets-and-search.md` item 13 (Languages for every card),
+- `docs/specs/chases.md` item 8 (the art rule), `docs/specs/sets-and-search.md` item 13 (Languages removed),
   `docs/specs/scanning.md` (the illustration fingerprint, Enhanced Search unchanged), Data sources text.
 - `docs/concepts.md`: "art" = the same illustration, by the same artist; a rainbow or gold version is the same art
   and its own card.
