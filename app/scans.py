@@ -16,7 +16,7 @@ import threading
 import uuid
 from pathlib import Path
 
-from . import catalog, db, fx, inventory, pictures, scanner, search
+from . import binders, catalog, db, fx, inventory, pictures, scanner, search, spending
 
 log = logging.getLogger("dexstash.scan")
 GUESSES = 5  # guesses kept per photo, best first
@@ -219,6 +219,32 @@ def add_card(conn: sqlite3.Connection, scan: dict, user_id: int, card_id: str, v
                      "added_by = ?, message = NULL, done_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE id = ?",
                      (card_id, variant, condition, quantity, user_id, scan["id"]))
     return qty
+
+
+def add_lines(conn: sqlite3.Connection, collection_id: int, user_id: int, lines: list[dict], origin: str | None,
+              purchase_id: int | None = None, binder_for=None, after=None) -> int:
+    """Add each checked line to the stash, as Add N to My Stash does: the card, its price paid (as a purchase's pull
+    when purchase_id is given), and its copies into the binder binder_for(scan) gives (None for no binder).
+    Each line is {scan, card_id, variant, condition, quantity, paid, paid_currency, in_binder}. after(card_id) runs
+    once each card is added. Raises ValueError and keeps nothing more once a line can't be added.
+    Gives back how many lines were added."""
+    for line in lines:
+        scan, card_id = line["scan"], line["card_id"]
+        variant, condition, quantity = line["variant"], line["condition"], line["quantity"]
+        add_card(conn, scan, user_id, card_id, variant, condition, quantity, origin)
+        if purchase_id is not None:
+            spending.record_pull(conn, purchase_id, card_id, variant, condition, quantity, line["paid"], line["paid_currency"])
+        elif line["paid"] is not None:
+            spending.set_paid(conn, collection_id, card_id, variant, condition, line["paid"], line["paid_currency"])
+        if after:
+            after(card_id)
+        binder_id = binder_for(scan) if binder_for else None
+        if binder_id and line["in_binder"]:
+            row = conn.execute("SELECT id FROM inventory WHERE user_id = ? AND card_id = ? AND variant = ? AND condition = ?",
+                               (collection_id, card_id, variant, condition)).fetchone()
+            if row:  # the copies just added, taken from Not in a binder
+                binders.put_some(conn, collection_id, {row["id"]: quantity}, binder_id)
+    return len(lines)
 
 
 def _keep_scan_picture(conn: sqlite3.Connection, scan: dict, card_id: str, folder: Path | None = None) -> None:

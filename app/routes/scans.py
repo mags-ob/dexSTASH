@@ -775,23 +775,16 @@ async def scan_review_add(request: Request, batch_id: int, user=Depends(current_
         if came == "new" or to_binder == "new":  # the next Add from this batch goes to the same purchase and binder
             scans.set_from(conn, batch_id, "add" if purchase_id else came, purchase_id, "", None,
                            str(binder_id) if binder_id else "", "")
-        for row, variant, condition, quantity, paid, paid_currency in lines:
-            try:
-                scans.add_card(conn, row["s"], user["id"], row["card_id"], variant, condition, quantity, origin)
-            except ValueError as e:
-                conn.rollback()  # none of this Add is kept
-                return fail(str(e))
-            if purchase_id is not None:
-                spending.record_pull(conn, purchase_id, row["card_id"], variant, condition, quantity, paid, paid_currency)
-            elif paid is not None:
-                spending.set_paid(conn, user["collection_id"], row["card_id"], variant, condition, paid, paid_currency)
-            _store_price(row["card_id"])
-            in_binder = form.get(f"binder-{row['s']['id']}") if f"binder-{row['s']['id']}" in form else row["s"]["in_binder"]
-            if binder_id and in_binder:
-                line = conn.execute("SELECT id FROM inventory WHERE user_id = ? AND card_id = ? AND variant = ? AND condition = ?",
-                                    (user["collection_id"], row["card_id"], variant, condition)).fetchone()
-                if line:  # the copies just added, taken from Not in a binder
-                    binders.put_some(conn, user["collection_id"], {line["id"]: quantity}, binder_id)
+        add = [{"scan": row["s"], "card_id": row["card_id"], "variant": variant, "condition": condition,
+                "quantity": quantity, "paid": paid, "paid_currency": paid_currency,
+                "in_binder": form.get(f"binder-{row['s']['id']}") if f"binder-{row['s']['id']}" in form else row["s"]["in_binder"]}
+               for row, variant, condition, quantity, paid, paid_currency in lines]
+        try:
+            scans.add_lines(conn, user["collection_id"], user["id"], add, origin, purchase_id,
+                            lambda scan: binder_id, _store_price)
+        except ValueError as e:
+            conn.rollback()  # none of this Add is kept
+            return fail(str(e))
         if not scans.needs_match(conn, batch_id):
             scans.drop_deleted(conn, batch_id)  # nothing left waiting, so deleted scans' photos go
         return RedirectResponse(f"/scans/{batch_id}?added=1", status_code=303)
