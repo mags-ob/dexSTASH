@@ -50,8 +50,8 @@ Your cards, no Add price sheet, a no-price warning before finishing, and a binde
 | Tile shows "No price"; a price is added in the card view | Same as today. The tab says "1 no price" and the total leaves it out |
 | From · Binder line on the batch | Not on a trade batch. The binders are picked in Finish trade |
 | Camera: "Scanning cards" ([now-camera](../specs/wireframes/trade-scan/now-camera.png)) | Camera: a **Your cards / Brock's cards** switch at the top, named from Trading with; photos go to the side picked ([proposed-camera-side](../specs/wireframes/trade-scan/proposed-camera-side.png)) |
-| none | Compare both sides: one list per side with prices, stash counts and the difference ([proposed-compare](../specs/wireframes/trade-scan/proposed-compare.png)) |
-| Add N to My Stash | **Finish trade**: warns first when a card has no price, lets you pick a binder for each of Brock's cards (or All of them; default None), and says which of your cards leave the stash. "Add the price first" or "Finish anyway" ([proposed-finish](../specs/wireframes/trade-scan/proposed-finish.png)) |
+| none | Compare both sides (link on its own line, centred, under "Brock's cards are worth $X more/less"): one list per side with prices, stash counts and the difference, with a close button ([proposed-compare](../specs/wireframes/trade-scan/proposed-compare.png)) |
+| Add N to My Stash | **Finish trade**: "N card(s) have no price" warning when any do, a binder for each of Brock's cards (or All of them; default None), "Cards leaving your stash: N", then Back or Finish ([proposed-finish](../specs/wireframes/trade-scan/proposed-finish.png)) |
 
 Kept as they are: batch name editing, language tags, the card view (including adding a price), Set for all, the
 camera's library button and shutter, Added and Deleted scans folds, the delete menu, and plain batches.
@@ -66,6 +66,9 @@ From the maintainer, 20 Nov 2026:
 - A card with no price: warn before finishing the trade. Prices are added in the card view, as today.
 - The other person's cards: no From · Binder line on the batch. Finish trade asks which binder each card goes in
   (with an All of them choice), default None. From is Trade, with their name. (Added 20 Nov 22:01.)
+- Finish trade sheet: warning just says "N card(s) have no price"; buttons Back and Finish; "Cards leaving your
+  stash: N" with no list. Compare has a close button. The Compare link sits on its own line, centred, under
+  "<name>'s cards are worth $X more/less". (Added 20 Nov 22:09.)
 
 - Sides can be switched any time, from the tabs or the camera switch.
 - Finish trade adds the other person's cards to the stash (From: Trade, with their name, in the binders picked in Finish trade),
