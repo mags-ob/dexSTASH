@@ -1,0 +1,18 @@
+{# A trade's two sides, each a tab with its cards and total, and how much more one side is worth.
+   The batch page draws it, and swaps it in again as prices arrive. #}
+{% set t = trade.totals %}
+{% macro side_tab(key, label) -%}
+{% set x = t[key] %}
+<a href="?side={{ key }}" class="tr-tab{% if trade.side == key %} on{% endif %}"{% if trade.side == key %} aria-current="page"{% endif %}>
+  {{ label }}<br><b>{{ x.total | money }}</b><br><span class="tr-n">{{ x.cards }} card{{ "s" if x.cards != 1 }}{% if x.no_price %} &middot; {{ x.no_price }} no price{% endif %}</span>
+</a>
+{%- endmacro %}
+<div id="trade-sum">
+  <nav class="seg tr-tabs" aria-label="Sides of the trade">{{ side_tab("mine", "Your cards") }}{{ side_tab("theirs", trade.with ~ "'s cards") }}</nav>
+  <p class="muted tr-diff">
+    {% if t.difference > 0 %}{{ trade.with }}'s cards are worth <b>{{ t.difference | money }} more</b>
+    {% elif t.difference < 0 %}{{ trade.with }}'s cards are worth <b>{{ (-t.difference) | money }} less</b>
+    {% else %}Both sides are worth the same{% endif %}{% if t.mine.pricing or t.theirs.pricing %} &middot; prices still coming in{% endif %}
+    <br><button type="button" class="linkish" data-open-sheet="compare-sheet">Compare both sides &rsaquo;</button>
+  </p>
+</div>

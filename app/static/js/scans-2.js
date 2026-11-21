@@ -41,3 +41,6 @@
     });
     if (sessionStorage.getItem("dsPhotosLater")) note(); else run();
   })();
+
+// Start a trade opens its sheet (who it's with).
+document.querySelectorAll("[data-open-sheet]").forEach(b => b.addEventListener("click", () => document.getElementById(b.dataset.openSheet).showModal()));

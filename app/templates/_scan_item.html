@@ -9,11 +9,13 @@
 {% set section = "grid" if (open or s.status in reading_states) else ("added" if s.status == "added" else ("deleted" if s.status == "skipped" else "gone")) %}
 {% set details = "/scans/item/" ~ s.id ~ "/details?open=1" %}
 {% set tile = scan_tile(s, batch) %}
+{# On a trade, each photo is on your side or theirs; the page shows one side at a time. #}
+{% set side_attr = (' data-side="' ~ scan_side(s) ~ '"') | safe if batch.trade_with else "" %}
 {% if section == "grid" %}
 {% set matched = open and g %}
 {% set word = scan_word(g) if matched else None %}
 {% set edge = "edge-none" if open and not g else ("edge-" ~ word_classes[word] if word and word_classes[word] != "close" else "") %}
-<div id="scan-{{ s.id }}" class="bt{% if matched %} bt-matched{% endif %}" data-rev="{{ s.rev }}" data-section="grid"
+<div id="scan-{{ s.id }}" class="bt{% if matched %} bt-matched{% endif %}" data-rev="{{ s.rev }}" data-section="grid"{{ side_attr }}
      {%- if matched %} data-matched="1"{% if s.checked %} data-checked="1"{% endif %}{% endif %}>
   {% if open or s.status in ("picture_waiting", "picture_searching") %}
   <a class="bt-tap" href="{{ details }}" hx-get="{{ details }}" hx-target="#ts" hx-swap="innerHTML"
@@ -35,6 +37,8 @@
     {% if matched %}
       <span class="bt-sub one">{{ g.set_name }} &middot; <span class="cno">#{{ g.number }}</span></span>
       <span class="bt-sub one">{% if tile and tile.label %}{{ tile.label }}{% else %}&hellip;{% endif %} &middot; {% if tile.condition != "NM" %}<b>{{ tile.condition }}</b>{% else %}NM{% endif %} &middot; {% if tile.quantity != 1 %}<b>&times;{{ tile.quantity }}</b>{% else %}&times;1{% endif %}</span>
+      {% if batch.trade_with and scan_side(s) == "mine" %}{% set owned = scan_owned(s, batch) %}
+      <span class="bt-sub one">{% if owned %}In stash &times;{{ owned }}{% else %}<b>Not in your stash</b>{% endif %}</span>{% endif %}
     {% elif open %}
       <span class="bt-sub one amber"><b>No match yet</b></span>
       <span class="bt-sub one">Tap to find it</span>
@@ -53,7 +57,7 @@
   {% endif %}
 </div>
 {% elif section == "added" %}
-<div id="scan-{{ s.id }}" class="scan-row" data-rev="{{ s.rev }}" data-section="added">
+<div id="scan-{{ s.id }}" class="scan-row" data-rev="{{ s.rev }}" data-section="added"{{ side_attr }}>
   <div class="scan-tap">
     <span class="st st-done" title="Added">{{ icon("check", 14) }}</span>
     <span class="scan-pic match">{% if s.card %}{{ card_picture(card_pics(s.card.id, s.card.image_url), s.card.name, s.card.number, small=True, caption=False) }}{% endif %}</span>
@@ -65,7 +69,7 @@
   </div>
 </div>
 {% elif section == "deleted" %}
-<div id="scan-{{ s.id }}" class="scan-row" data-rev="{{ s.rev }}" data-section="deleted">
+<div id="scan-{{ s.id }}" class="scan-row" data-rev="{{ s.rev }}" data-section="deleted"{{ side_attr }}>
   <div class="scan-tap">
     <span class="st" aria-hidden="true"></span>
     <span class="scan-pic">{% if s.photo %}<img src="/scans/photo/{{ s.id }}?v={{ s.photo[:12] }}" alt="Your photo" data-fail="retry">{% endif %}</span>

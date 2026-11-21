@@ -374,7 +374,7 @@
   </form>
   <h2 class="cv-sub" id="history">History</h2>
   {% for h in history %}
-  <div class="muted" style="font-size:12px;padding:2px 0">{{ h.at | when }} &middot; {{ "%+d" % h.delta }} {{ h.variant_label }}, {{ condition_labels.get(h.condition, h.condition) }} &middot; {{ h.source_label }}{% if h.origin_label %} ({{ h.origin_label }}){% endif %}{% if h.name %} &middot; {{ h.name }}{% endif %}</div>
+  <div class="muted" style="font-size:12px;padding:2px 0">{{ h.at | when }} &middot; {{ "%+d" % h.delta }} {{ h.variant_label }}, {{ condition_labels.get(h.condition, h.condition) }} &middot; {{ h.source_label }}{% if h.origin_label %} ({{ h.origin_label }}){% endif %}{% if h.note %} &middot; {{ h.note }}{% endif %}{% if h.name %} &middot; {{ h.name }}{% endif %}</div>
   {% else %}<p class="muted" style="margin:4px 0">Nothing yet.</p>
   {% endfor %}
 </div>

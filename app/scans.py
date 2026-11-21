@@ -16,7 +16,7 @@ import threading
 import uuid
 from pathlib import Path
 
-from . import catalog, db, fx, inventory, pictures, scanner, search
+from . import binders, catalog, db, fx, inventory, pictures, scanner, search, spending
 
 log = logging.getLogger("dexstash.scan")
 GUESSES = 5  # guesses kept per photo, best first
@@ -55,10 +55,13 @@ def _shrink(data: bytes) -> bytes:
 # --- batches and photos -----------------------------------------------------
 
 def create_batch(conn: sqlite3.Connection, collection_id: int, user_id: int, origin: str | None = None,
-                 language: str = "en") -> int:
+                 language: str = "en", trade_with: str | None = None) -> int:
+    """A new batch; with trade_with, a trade with that person, named "Trade with <name>". Gives back its id."""
     origin = origin if origin in inventory.ORIGINS else None
-    batch_id = conn.execute("INSERT INTO scan_batches (collection_id, created_by, origin, language) VALUES (?, ?, ?, ?)",
-                            (collection_id, user_id, origin, language)).lastrowid
+    trade_with = " ".join((trade_with or "").split())[:TRADE_NAME_MAX] or None
+    name = f"Trade with {trade_with}"[:BATCH_NAME_MAX] if trade_with else None
+    batch_id = conn.execute("INSERT INTO scan_batches (collection_id, created_by, origin, language, name, trade_with) "
+                            "VALUES (?, ?, ?, ?, ?, ?)", (collection_id, user_id, origin, language, name, trade_with)).lastrowid
     conn.commit()
     return batch_id
 
@@ -71,6 +74,7 @@ def get_batch(conn: sqlite3.Connection, collection_id: int, batch_id: int) -> di
 
 
 BATCH_NAME_MAX = 60
+TRADE_NAME_MAX = 40
 
 
 def set_batch_name(conn: sqlite3.Connection, batch_id: int, name: str) -> str | None:
@@ -100,7 +104,9 @@ class Repeat(Exception):
 
 
 def add_photo(conn: sqlite3.Connection, batch: dict, user_id: int, data: bytes, folder: Path | None = None,
-              client_id: str | None = None) -> int:
+              client_id: str | None = None, side: str | None = None) -> int:
+    """Save a photo to the batch, waiting to be read. On a trade it goes on side (yours unless "theirs").
+    Gives back the scan's id."""
     if len(data) > MAX_BYTES:
         raise ValueError("That photo is too big.")
     if not _looks_like_image(data):
@@ -111,8 +117,10 @@ def add_photo(conn: sqlite3.Connection, batch: dict, user_id: int, data: bytes, 
     (folder / name).write_bytes(_shrink(data))
     try:
         scan_id = conn.execute(
-            "INSERT INTO scans (batch_id, collection_id, created_by, photo, status, client_id) VALUES (?, ?, ?, ?, 'waiting', ?)",
-            (batch["id"], batch["collection_id"], user_id, name, client_id or None)).lastrowid
+            "INSERT INTO scans (batch_id, collection_id, created_by, photo, status, client_id, side) "
+            "VALUES (?, ?, ?, ?, 'waiting', ?, ?)",
+            (batch["id"], batch["collection_id"], user_id, name, client_id or None,
+             side_of({"side": side}) if is_trade(batch) else None)).lastrowid
     except sqlite3.IntegrityError:  # the same photo arrived twice at once
         (folder / name).unlink(missing_ok=True)
         conn.commit()  # The failed insert's transaction mustn't stay open
@@ -197,7 +205,7 @@ def delete_batch(conn: sqlite3.Connection, collection_id: int, batch_id: int, fo
 # --- confirming -------------------------------------------------------------
 
 def add_card(conn: sqlite3.Connection, scan: dict, user_id: int, card_id: str, variant: str, condition: str,
-             quantity: int, origin: str | None, folder: Path | None = None) -> int:
+             quantity: int, origin: str | None, folder: Path | None = None, note: str | None = None) -> int:
     """Add the card for a scan, then forget the photo and what was read from it.
     card_id is our id (the set must be loaded). Returns the new quantity."""
     if scan["status"] not in OPEN:
@@ -211,7 +219,7 @@ def add_card(conn: sqlite3.Connection, scan: dict, user_id: int, card_id: str, v
             (scan["collection_id"], card_id, variant, condition)).fetchone()
         qty = inventory.set_quantity(conn, scan["collection_id"], card_id, variant, condition,
                                      (current["quantity"] if current else 0) + quantity, by=user_id,
-                                     source="scan", origin=origin)
+                                     source="scan", origin=origin, note=note)
         _keep_scan_picture(conn, scan, card_id, folder)
         pictures.learn(conn, scan, card_id)  # Enhanced Search's score, and what it learns
         _drop_photo(conn, scan, folder)
@@ -219,6 +227,32 @@ def add_card(conn: sqlite3.Connection, scan: dict, user_id: int, card_id: str, v
                      "added_by = ?, message = NULL, done_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE id = ?",
                      (card_id, variant, condition, quantity, user_id, scan["id"]))
     return qty
+
+
+def add_lines(conn: sqlite3.Connection, collection_id: int, user_id: int, lines: list[dict], origin: str | None,
+              purchase_id: int | None = None, binder_for=None, after=None, note: str | None = None) -> int:
+    """Add each checked line to the stash, as Add N to My Stash does: the card, its price paid (as a purchase's pull
+    when purchase_id is given), and its copies into the binder binder_for(scan) gives (None for no binder).
+    Each line is {scan, card_id, variant, condition, quantity, paid, paid_currency, in_binder}. after(card_id) runs
+    once each card is added; note goes on each history entry. Raises ValueError and keeps nothing more once a line can't be added.
+    Gives back how many lines were added."""
+    for line in lines:
+        scan, card_id = line["scan"], line["card_id"]
+        variant, condition, quantity = line["variant"], line["condition"], line["quantity"]
+        add_card(conn, scan, user_id, card_id, variant, condition, quantity, origin, note=note)
+        if purchase_id is not None:
+            spending.record_pull(conn, purchase_id, card_id, variant, condition, quantity, line["paid"], line["paid_currency"])
+        elif line["paid"] is not None:
+            spending.set_paid(conn, collection_id, card_id, variant, condition, line["paid"], line["paid_currency"])
+        if after:
+            after(card_id)
+        binder_id = binder_for(scan) if binder_for else None
+        if binder_id and line["in_binder"]:
+            row = conn.execute("SELECT id FROM inventory WHERE user_id = ? AND card_id = ? AND variant = ? AND condition = ?",
+                               (collection_id, card_id, variant, condition)).fetchone()
+            if row:  # the copies just added, taken from Not in a binder
+                binders.put_some(conn, collection_id, {row["id"]: quantity}, binder_id)
+    return len(lines)
 
 
 def _keep_scan_picture(conn: sqlite3.Connection, scan: dict, card_id: str, folder: Path | None = None) -> None:
@@ -452,6 +486,99 @@ def set_all(conn: sqlite3.Connection, batch_id: int, condition: str | None = Non
                  (*(v for _, v in sets), *ids))
     conn.commit()
     return len(ids)
+
+
+# --- trades -------------------------------------------------------------------
+# A trade is a batch with trade_with set. Each photo is on your side ("mine": cards that leave your stash) or
+# theirs ("theirs": cards that join it). A photo of your card points at the stash line it leaves from.
+
+SIDES = ("mine", "theirs")
+
+
+def is_trade(batch: dict | None) -> bool:
+    return bool((batch or {}).get("trade_with"))
+
+
+def side_of(scan: dict) -> str:
+    """The side a trade photo is on; yours unless it says theirs."""
+    return "theirs" if scan.get("side") == "theirs" else "mine"
+
+
+def match_card_id(scan: dict, batch: dict | None = None) -> str | None:
+    """Our id for a matched photo's card, or None with no match."""
+    if not scan.get("guesses"):
+        return None
+    g = scan["guesses"][0]
+    return g["id"] if ":" in g["id"] else catalog.local_id(g.get("lang") or lang_of(scan, batch), g["id"])
+
+
+def owned_lines(conn: sqlite3.Connection, collection_id: int, card_id: str | None) -> list[dict]:
+    """The stash lines (printing and condition) holding this card, each with its id and quantity."""
+    if not card_id:
+        return []
+    rows = conn.execute("SELECT id, card_id, variant, condition, quantity FROM inventory WHERE user_id = ? AND card_id = ? "
+                        "AND quantity > 0 ORDER BY id", (collection_id, card_id)).fetchall()
+    return [dict(r, variant_label=inventory.VARIANTS.get(r["variant"], r["variant"]),
+                 condition_label=inventory.CONDITION_LABELS.get(r["condition"], r["condition"])) for r in rows]
+
+
+def leaving_line(conn: sqlite3.Connection, scan: dict, batch: dict) -> dict | None:
+    """The stash line a photo of your card leaves from: the one picked, else the only one you have, else None."""
+    lines = owned_lines(conn, scan["collection_id"], match_card_id(scan, batch))
+    picked = [line for line in lines if line["id"] == scan.get("from_line")]
+    return picked[0] if picked else (lines[0] if len(lines) == 1 else None)
+
+
+def set_from_line(conn: sqlite3.Connection, scan: dict, batch: dict, line_id: int) -> None:
+    """Which of your copies this photo trades away. The photo takes that copy's printing and condition."""
+    lines = [line for line in owned_lines(conn, scan["collection_id"], match_card_id(scan, batch)) if line["id"] == line_id]
+    if not lines:
+        raise ValueError("Pick one of your copies of this card.")
+    conn.execute("UPDATE scans SET from_line = ?, variant = ?, condition = ? WHERE id = ?",
+                 (line_id, lines[0]["variant"], lines[0]["condition"], scan["id"]))
+    conn.commit()
+
+
+def trade_scans(conn: sqlite3.Connection, batch: dict, side: str) -> list[dict]:
+    """A trade's matched photos on one side that aren't done yet."""
+    return [s for s in to_review(conn, batch["id"]) if side_of(s) == side]
+
+
+def trade_problems(conn: sqlite3.Connection, batch: dict) -> list[str]:
+    """What stops Finish trade: each of your cards you have more than one copy of, with none picked."""
+    problems = []
+    for s in trade_scans(conn, batch, "mine"):
+        if leaving_line(conn, s, batch) is None and owned_lines(conn, s["collection_id"], match_card_id(s, batch)):
+            problems.append(f"Pick which copy of {s['guesses'][0]['name']} you're trading. Open it to choose.")
+    return problems
+
+
+def finish_trade(conn: sqlite3.Connection, collection_id: int, user_id: int, batch: dict, theirs: list[dict],
+                 binder_for=None, after=None, folder: Path | None = None) -> dict:
+    """Finish trade: your cards leave the stash (history: traded away), then their cards join it as add_lines
+    does (From: Trade). History notes say "Traded to <name>" and "Added from a trade with <name>". A card of yours that isn't in the stash is
+    skipped. Gives back {removed, skipped (names), added}."""
+    problems = trade_problems(conn, batch)
+    if problems:
+        raise ValueError(problems[0])
+    gave, got = f"Traded to {batch['trade_with']}", f"Added from a trade with {batch['trade_with']}"
+    removed, skipped = 0, []
+    for s in trade_scans(conn, batch, "mine"):
+        card_id, line = match_card_id(s, batch), leaving_line(conn, s, batch)
+        with db.transaction(conn):
+            if line is None:
+                skipped.append(s["guesses"][0]["name"])
+            else:
+                take = min(s["quantity"] or 1, line["quantity"])
+                inventory.set_quantity(conn, collection_id, card_id, line["variant"], line["condition"],
+                                       line["quantity"] - take, by=user_id, source="trade", note=gave)
+                removed += take
+            _drop_photo(conn, s, folder)
+            conn.execute("UPDATE scans SET status = 'added', card_id = ?, added_by = ?, message = NULL, "
+                         "done_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE id = ?", (card_id, user_id, s["id"]))
+    binders.tidy(conn, collection_id)  # copies that left come out of their binders
+    added = add_lines(conn, collection_id, user_id, theirs, "trade", binder_for=binder_for, after=after, note=got)
+    return {"removed": removed, "skipped": skipped, "added": added}
 
 
 CAME = ("add", "new", "none")
