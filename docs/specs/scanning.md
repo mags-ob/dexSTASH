@@ -57,8 +57,9 @@ for a person to check and add them, all on the household's own server with no cl
     Search compares) and the illustration only (`<lang>.art.npy`, row for row, for arts; zeros until it's made).
     Pictures fingerprinted before illustrations existed are downloaded once more in the background
     ("Fingerprinting illustrations", after new sets, part of Check for updates and once after upgrading); a
-    restart picks up where it stopped. Data sources shows "Illustrations (for arts) N of M". Photos you added
-    never get an illustration.
+    restart picks up where it stopped. A picture that can't be downloaded again counts as tried, so the fill
+    finishes; it's tried again when its set's pictures are fingerprinted again. Data sources shows
+    "Illustrations (for arts) N of M". Photos you added never get an illustration.
 14. A photo can be sent to Picture search by hand, for a closer look by picture alone.
 
 ### Review and Add

@@ -434,15 +434,14 @@ def twin(card_id: str) -> str | None:
 def group(cards: list[dict], vectors: dict, fixes: list[dict], threshold: float = THRESHOLD,
           art: dict | None = None) -> list[dict]:
     """Group cards into arts. cards: {card_id, lang, illustrator, release_date, rarity}.
-    vectors: whole-card fingerprints; art: illustration fingerprints. Two cards are one art when
-    (with both illustrations) they have the same illustrator and score at least ART_THRESHOLD
-    (OTHER_LANGUAGE_THRESHOLD between languages),
-    or NO_ARTIST_THRESHOLD when either has no illustrator, or RECOLOUR_THRESHOLD when either is a
-    rainbow or gold version; different illustrators never, not even through a card with no artist.
-    A pair without both illustrations
-    falls back to the whole card: the same illustrator and at least threshold. Your fixes win: a
-    card you took out stays on its own, one you added joins that art. A card with no picture is
-    its own art. Returns [{cover, cards: {card_id: score}}], arts with the most cards first."""
+    vectors: whole-card fingerprints; art: illustration fingerprints. Two cards with both illustrations
+    are one art when they score at least art_bar's bar: the same illustrator (a lower bar between
+    languages, a lower one still for a rainbow or gold version), a stricter one when either has no
+    illustrator, and different illustrators never, not even through a card with no illustrator. A
+    pair without both illustrations falls back to the whole card: the same illustrator and at least
+    threshold. Your fixes win: a card you took out stays on its own, one you added joins that art. A
+    card with no picture is its own art. Returns [{cover, cards: {card_id: score}}], arts with the
+    most cards first."""
     import numpy as np
     art = art or {}
     ids = [c["card_id"] for c in cards]

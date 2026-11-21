@@ -327,10 +327,19 @@ class Index:
                     self.art[where[key]] = v
 
     def missing_art(self) -> list[dict]:
-        """Catalog pictures whose illustration isn't made yet (photos you added and scans never get one)."""
+        """Catalog pictures whose illustration isn't made yet (photos you added and scans never get one, and a
+        picture that couldn't be downloaded again waits until its set's pictures are fingerprinted again)."""
         with self.lock:
             done = self.art.any(axis=1) if len(self.art) else []
-            return [r for r, d in zip(self.rows, done) if not d and not r["key"].startswith(("hand:", "scan:"))]
+            return [r for r, d in zip(self.rows, done)
+                    if not d and not r.get("no_art") and not r["key"].startswith(("hand:", "scan:"))]
+
+    def mark_no_art(self, keys: list[str]) -> None:
+        """Pictures that couldn't be downloaded for their illustration: the fill counts them as tried, so it can
+        finish (and a restart doesn't start it again for them). Saved with the rows."""
+        keys = set(keys)
+        with self.lock:
+            self.rows = [dict(r, no_art=1) if r["key"] in keys else r for r in self.rows]
 
     def art_count(self) -> int:
         with self.lock:
@@ -616,17 +625,20 @@ def fill_illustrations(encoder, job=None, fetch=None) -> tuple[int, int]:
         for i in range(0, len(todo), 8):
             if job is not None:
                 job.progress(i, len(todo), f"Fingerprinting illustrations · {_LANG_NAMES.get(lang, lang)}")
-            keys, images = [], []
+            keys, images, missed = [], [], []
             for row in todo[i:i + 8]:
                 try:
                     images.append(crop_art(picture_image(row, fetch)))
                     keys.append(row["key"])
                 except Exception as e:
-                    failed += 1
+                    missed.append(row["key"])
                     log.info("no picture for %s: %s", row["card"], e)
             if images:
                 index.put_art(keys, encoder.embed(images))
                 made += len(keys)
+            if missed:
+                index.mark_no_art(missed)
+                failed += len(missed)
             if made and (i // 8 + 1) % (FILL_SAVE_EVERY // 8) == 0:
                 index.save()
         if todo:

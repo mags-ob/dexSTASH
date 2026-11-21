@@ -217,7 +217,7 @@ def test_taiwan_cards_borrow_the_japanese_fingerprints_and_following_fetches_not
     assert chase.twin("zh-tw:SM7-1") == "ja:SM7-1" and chase.twin("ja:SM7-1") is None
 
 
-def test_illustrations_are_filled_one_picture_at_a_time_and_pick_up_after_a_restart(store, monkeypatch):
+def test_illustrations_are_filled_one_picture_at_a_time_and_a_missing_picture_doesnt_stop_the_fill(store, monkeypatch):
     v = np.eye(DIM, dtype=np.float32)
     index = pictures.index_for("en")
     index.put([{"card": f"c-{i}", "set": "s", "key": f"k{i}", "url": f"https://assets.example/{i}"} for i in range(10)],
@@ -237,11 +237,14 @@ def test_illustrations_are_filled_one_picture_at_a_time_and_pick_up_after_a_rest
     monkeypatch.setattr(pictures, "FILL_SAVE_EVERY", 8)
     made, failed = pictures.fill_illustrations(FakeEncoder(), fetch=fetch)
     assert (made, failed) == (9, 1) and most[0] == 1 and len(fetched) == 10
-    pictures.forget_loaded()  # a restart: only the one that failed is tried again
+    pictures.forget_loaded()  # a restart: the one that couldn't be downloaded counts as tried, so the fill is done
     fetched.clear()
-    assert pictures.fill_illustrations(FakeEncoder(), fetch=fetch) == (0, 1) and fetched == ["https://assets.example/3"]
+    assert pictures.fill_illustrations(FakeEncoder(), fetch=fetch) == (0, 0) and fetched == []
     stats = pictures.stats()
-    assert stats["illustrations"] == 9 and stats["illustrations_wanted"] == 10
+    assert stats["illustrations"] == 9 and stats["illustrations_wanted"] == 9
+    # Its set's pictures fingerprinted again (Check for updates) give it another try.
+    pictures.index_for("en").put([{"card": "c-3", "set": "s", "key": "k3", "url": "https://assets.example/3"}], v[3:4])
+    assert [r["key"] for r in pictures.index_for("en").missing_art()] == ["k3"]
 
 
 def test_without_illustrations_the_store_fill_does_no_fetching(store):
