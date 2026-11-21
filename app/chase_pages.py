@@ -186,11 +186,18 @@ def art_detail(conn: sqlite3.Connection, collection_id: int, dex: int, card_id: 
         rows.append({"card_id": c["card_id"], "lang": c["lang"], "tag": chase.LANG_TAGS.get(c["lang"], c["lang"].upper()),
                      "group": lang_group(c["lang"]), "owned": bool(mine), "link": _link(conn, c), "name": c["name"],
                      "set_name": c["set_name"], "set_code": c["set_code"], "number": c["number"],
-                     "image": pics[0][0] if pics else None, "pics": pics,
+                     "image": pics[0][0] if pics else None, "pics": pics, "recolour": _recolour(c.get("rarity")),
                      "prints": [{"variant": v, "label": VARIANTS.get(v, v), "owned": v in mine} for v in variants]})
     cover = every.get(art["cover"]) or members[0]
-    return {"art": art, "cover": cover, "rows": rows, "cards": len(members),
+    return {"art": art, "cover": cover, "rows": rows, "recolours": any(r["recolour"] for r in rows), "cards": len(members),
             "printings": sum(len(r["prints"]) for r in rows), "langs": _langs(members, have), "anchor": art["cover"]}
+
+
+def _recolour(rarity: str | None) -> str | None:
+    """A rainbow or gold version's rarity name ("Rainbow Rare"), for its gold label in the art sheet, else None."""
+    if "secret" not in display.rarity_groups(rarity):
+        return None
+    return display.rarity(rarity)["label"].split(" · ", 1)[-1]
 
 
 def art_languages(conn: sqlite3.Connection, collection_id: int, card_id: str) -> list[dict]:

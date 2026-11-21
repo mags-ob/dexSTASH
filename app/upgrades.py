@@ -70,7 +70,7 @@ def chase_languages(conn: sqlite3.Connection) -> None:
     """Pokémon sets keep English, Japanese and Chinese only (a check that ran at every start before round 22)."""
     from . import chase
     for dex in chase.purge_languages(conn):
-        chase.regroup(conn, dex, chase.fingerprints(conn, dex, None))
+        chase.regroup(conn, dex, chase.fingerprints(conn, dex, None, art=True))
 
 
 def english_names(conn: sqlite3.Connection) -> None:
@@ -104,6 +104,14 @@ def move_keys(conn: sqlite3.Connection) -> None:
     keys.move_env_tokens()
 
 
+def illustrations(conn: sqlite3.Connection) -> None:
+    """0.30: arts match by the illustration (#116). Enhanced Search adds an illustration fingerprint to every
+    picture it has, in the background, then groups every Pokémon's arts again."""
+    from . import web
+    if web._pictures_ready():
+        web._index_pictures("Fingerprinting illustrations")
+
+
 TASKS: list[Task] = [
     Task(1, "Remove TCG Pocket sets", no_pocket),
     Task(2, "Remove pictures saved from English versions", no_english_pictures),
@@ -116,6 +124,7 @@ TASKS: list[Task] = [
     Task(7, "Find English names for Japanese and Chinese sets", english_names),
     Task(8, "Match sets to TCGplayer again", tcgplayer_matches),
     Task(9, "Move the CardTrader token from .env into the app", move_keys),
+    Task(10, "Fingerprint card illustrations for arts", illustrations, slow=True),
 ]
 
 

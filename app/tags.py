@@ -84,6 +84,32 @@ def chs_tags(details: dict, name: str = "") -> list[str]:
     return list(dict.fromkeys(t for t in out if t))
 
 
+# Saved automatic tags of a mainland Chinese card that aren't its illustrator (chs_tags gives these and the artists).
+_CHS_NOT_ARTISTS = {t.casefold() for t in (*_CHS_STAGES.values(), *_CHS_KINDS.values(), *_CHS_TRAINERS.values(),
+                                           *_CHS_MECHANICS.values(), "ex", "EX", "GX", "V", "VMAX", "VSTAR", "BREAK",
+                                           "Mega")}
+
+
+def chs_illustrators(conn: sqlite3.Connection, card_ids: list[str] | None = None) -> dict[str, str]:
+    """card id -> illustrator of mainland Chinese cards, from the tags saved when their sets were stored
+    (PTCG-CHS-Datasets names the artist; the cards table has no column for it). Cards with none are left out."""
+    sql = "SELECT card_id, tag FROM card_tags WHERE kind = 'auto' AND card_id LIKE 'zh-cn:%'"
+    rows = []
+    if card_ids is None:
+        rows = conn.execute(sql + " ORDER BY card_id, tag").fetchall()
+    else:
+        ids = [c for c in dict.fromkeys(card_ids) if c.startswith("zh-cn:")]
+        for i in range(0, len(ids), 500):
+            part = ids[i:i + 500]
+            rows += conn.execute(sql + f" AND card_id IN ({','.join('?' * len(part))}) ORDER BY card_id, tag",
+                                 part).fetchall()
+    out: dict[str, str] = {}
+    for card_id, tag in rows:
+        if tag.casefold() not in _CHS_NOT_ARTISTS:
+            out.setdefault(card_id, tag)
+    return out
+
+
 def save_auto(conn: sqlite3.Connection, tags_by_card: dict[str, list[str]]) -> None:
     """Replace the saved automatic tags of these cards (inside the caller's transaction)."""
     ids = list(tags_by_card)

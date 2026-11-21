@@ -30,6 +30,7 @@ ERASE = [
     ("card-images", "pictures kept by older versions"),
     ("index/zh-cn.npy", "Enhanced Search fingerprints of Chinese cards (they include cards added by hand)"),
     ("index/zh-cn.json", None),
+    ("index/zh-cn.art.npy", None),
 ]
 # Kept: downloads that are the same for everyone.
 KEEP = [

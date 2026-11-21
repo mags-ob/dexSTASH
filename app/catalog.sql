@@ -165,3 +165,13 @@ CREATE TABLE IF NOT EXISTS catalog.index_cards (
 );
 CREATE INDEX IF NOT EXISTS catalog.index_cards_number ON index_cards(lang, local_id);
 CREATE INDEX IF NOT EXISTS catalog.index_cards_set ON index_cards(lang, set_id);
+-- Arts for every Pokémon (arts.py): cards of one Pokémon with the same illustration, from the Enhanced Search
+-- fingerprints, rebuilt after they change. Only cards that share their art with another card are here. Followed
+-- Pokémon keep their own arts (arts, art_cards) with your fixes, and those come first.
+CREATE TABLE IF NOT EXISTS catalog.card_arts (
+    card_id TEXT PRIMARY KEY,                -- our card id ('sv03-125', 'ja:SV3-055', 'zh-tw:SV3-055')
+    dex_id  INTEGER NOT NULL,
+    art     TEXT NOT NULL,                   -- the art's cover card id
+    secret  INTEGER NOT NULL DEFAULT 0       -- a rainbow or gold version (display.rarity_groups 'secret')
+);
+CREATE INDEX IF NOT EXISTS catalog.card_arts_art ON card_arts(dex_id, art);

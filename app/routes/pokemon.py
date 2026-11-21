@@ -34,7 +34,7 @@ def _start_follow(dex: int, only_new: bool = False) -> bool:
 
 def _regroup(dex: int) -> None:
     """After one of your fixes: group again with the fingerprints already made (a second)."""
-    chase.regroup(conn, dex, chase.fingerprints(conn, dex, None))
+    chase.regroup(conn, dex, chase.fingerprints(conn, dex, None, art=True))
 
 
 @router.get("/pokemon")

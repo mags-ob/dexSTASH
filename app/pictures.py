@@ -165,6 +165,19 @@ def crops(image, box=None) -> list:
     return found or [image]
 
 
+# The illustration window of a card picture (left, top, right, bottom as fractions), for art matching:
+# without the frame, text box and language, the same art printed in English and Japanese looks the same.
+# Tried on Larvitar and Tyranitar in English, Japanese and Taiwan Chinese (docs/plans/116-match-arts-by-illustration.md).
+ART_BOX = (0.08, 0.10, 0.92, 0.50)
+
+
+def crop_art(image):
+    """The illustration part of a card picture."""
+    left, top, right, bottom = ART_BOX
+    w, h = image.size
+    return image.crop((int(left * w), int(top * h), int(right * w), int(bottom * h)))
+
+
 def _pixels(image):
     """Squared up on white (cards are tall, the model wants a square) and scaled like CLIP was trained."""
     import numpy as np
@@ -248,7 +261,9 @@ def photo_vector(encoder, image, box=None):
 
 class Index:
     """Fingerprints of one language's card pictures. rows[i] says what
-    vectors[i] is: {"card": our card id, "set": our set id, "key": the picture}."""
+    vectors[i] is: {"card": our card id, "set": our set id, "key": the picture}.
+    art[i] is the same picture's illustration only (for arts), or zeros when it
+    isn't made yet; photos never get one."""
 
     def __init__(self, lang: str, folder: Path | None = None):
         import numpy as np
@@ -256,6 +271,7 @@ class Index:
         self.lock = threading.RLock()  # a search never sees rows and vectors out of step
         self.rows: list[dict] = []
         self.vectors = np.zeros((0, DIM), np.float32)
+        self.art = np.zeros((0, DIM), np.float32)
         npy, meta = self._files()
         if npy.exists() and meta.exists():
             try:
@@ -265,9 +281,21 @@ class Index:
                 log.warning("picture index %s unreadable, starting again: %s", lang, e)
             if len(self.rows) != len(self.vectors):
                 self.rows, self.vectors = [], np.zeros((0, DIM), np.float32)
+        self.art = np.zeros((len(self.rows), DIM), np.float32)
+        art = self._art_file()
+        if art.exists() and self.rows:
+            try:
+                kept = np.load(art).astype(np.float32)
+                if len(kept) == len(self.rows):  # written with these rows; otherwise made again
+                    self.art = kept
+            except Exception as e:
+                log.warning("illustrations of %s unreadable, making them again: %s", lang, e)
 
     def _files(self) -> tuple[Path, Path]:
         return self.folder / f"{self.lang}.npy", self.folder / f"{self.lang}.json"
+
+    def _art_file(self) -> Path:
+        return self.folder / f"{self.lang}.art.npy"
 
     def keys(self) -> set[str]:
         return {r["key"] for r in self.rows}
@@ -275,15 +303,47 @@ class Index:
     def sets(self) -> set[str]:
         return {r["set"] for r in self.rows}
 
-    def put(self, rows: list[dict], vectors) -> None:
+    def put(self, rows: list[dict], vectors, art=None) -> None:
+        """Add or replace pictures (by key). art: their illustrations, or None (made later)."""
         import numpy as np
         if not rows:
             return
         new = {r["key"] for r in rows}
+        art = np.zeros((len(rows), DIM), np.float32) if art is None else np.asarray(art, np.float32).reshape(-1, DIM)
         with self.lock:
             keep = [i for i, r in enumerate(self.rows) if r["key"] not in new]
             self.rows = [self.rows[i] for i in keep] + list(rows)
             self.vectors = np.concatenate([self.vectors[keep], np.asarray(vectors, np.float32).reshape(-1, DIM)])
+            self.art = np.concatenate([self.art[keep], art])
+
+    def put_art(self, keys: list[str], art) -> None:
+        """The illustrations of pictures already here, by key."""
+        import numpy as np
+        art = np.asarray(art, np.float32).reshape(-1, DIM)
+        with self.lock:
+            where = {r["key"]: i for i, r in enumerate(self.rows)}
+            for key, v in zip(keys, art):
+                if key in where:
+                    self.art[where[key]] = v
+
+    def missing_art(self) -> list[dict]:
+        """Catalog pictures whose illustration isn't made yet (photos you added and scans never get one, and a
+        picture that couldn't be downloaded again waits until its set's pictures are fingerprinted again)."""
+        with self.lock:
+            done = self.art.any(axis=1) if len(self.art) else []
+            return [r for r, d in zip(self.rows, done)
+                    if not d and not r.get("no_art") and not r["key"].startswith(("hand:", "scan:"))]
+
+    def mark_no_art(self, keys: list[str]) -> None:
+        """Pictures that couldn't be downloaded for their illustration: the fill counts them as tried, so it can
+        finish (and a restart doesn't start it again for them). Saved with the rows."""
+        keys = set(keys)
+        with self.lock:
+            self.rows = [dict(r, no_art=1) if r["key"] in keys else r for r in self.rows]
+
+    def art_count(self) -> int:
+        with self.lock:
+            return int(self.art.any(axis=1).sum()) if len(self.art) else 0
 
     def keep_only(self, keep) -> int:
         import numpy as np
@@ -292,26 +352,31 @@ class Index:
             dropped = len(self.rows) - len(idx)
             self.rows = [self.rows[i] for i in idx]
             self.vectors = self.vectors[idx] if idx else np.zeros((0, DIM), np.float32)
+            self.art = self.art[idx] if idx else np.zeros((0, DIM), np.float32)
         return dropped
 
     def drop(self) -> None:
         """Forget this index, files and all."""
         with self.lock:
-            self.rows, self.vectors = [], self.vectors[:0]
-        for f in self._files():
+            self.rows, self.vectors, self.art = [], self.vectors[:0], self.art[:0]
+        for f in (*self._files(), self._art_file()):
             f.unlink(missing_ok=True)
 
     def save(self) -> None:
         import numpy as np
         self.folder.mkdir(parents=True, exist_ok=True)
         npy, meta = self._files()
-        buf = io.BytesIO()
+        buf, art = io.BytesIO(), io.BytesIO()
         with self.lock:
             np.save(buf, self.vectors.astype(np.float16))
+            np.save(art, self.art.astype(np.float16))
             rows = list(self.rows)
         tmp = npy.with_suffix(".npy.tmp")
         tmp.write_bytes(buf.getvalue())
         tmp.replace(npy)
+        tmp = self._art_file().with_suffix(".tmp")
+        tmp.write_bytes(art.getvalue())
+        tmp.replace(self._art_file())
         tmp = meta.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(rows))
         tmp.replace(meta)
@@ -339,7 +404,8 @@ def index_for(lang: str) -> Index:
 
 
 def languages() -> list[str]:
-    return sorted(p.stem for p in INDEX.glob("*.npy")) if INDEX.exists() else []
+    # <lang>.npy; <lang>.art.npy beside it holds the illustrations, not another language.
+    return sorted(p.stem for p in INDEX.glob("*.npy") if "." not in p.stem) if INDEX.exists() else []
 
 
 def forget_loaded() -> None:
@@ -350,7 +416,10 @@ def forget_loaded() -> None:
 def stats() -> dict:
     """For the Data sources page."""
     per_lang = {lang: len(index_for(lang).rows) for lang in languages()}
+    art_of = {lang: index_for(lang) for lang in languages()}
     return {"per_lang": per_lang, "pictures": sum(per_lang.values()),
+            "illustrations": sum(i.art_count() for i in art_of.values()),
+            "illustrations_wanted": sum(i.art_count() + len(i.missing_art()) for i in art_of.values()),
             "model_bytes": model_path().stat().st_size if model_path().exists() else 0}
 
 
@@ -515,8 +584,8 @@ def index_sets(conn, encoder, api_for, job=None, fetch=None) -> str:
                     except Exception as e:
                         failed += 1
                         log.info("no picture for %s: %s", pic["card"], e)
-                if images:
-                    index.put(rows, encoder.embed(images))
+                if images:  # the whole card for Enhanced Search, the illustration for arts, from one download
+                    index.put(rows, encoder.embed(images), encoder.embed([crop_art(im) for im in images]))
                     done += len(rows)
             # Pictures of cards that left the set (rare) go too; photos you added stay.
             wanted = {p["key"] for p in pics}
@@ -526,12 +595,55 @@ def index_sets(conn, encoder, api_for, job=None, fetch=None) -> str:
             job.progress(len(todo), len(todo))
         if not _again.is_set():
             break
+    made, missed = fill_illustrations(encoder, job, fetch)
+    failed += missed
+    from . import arts
+    if done or made or not arts.built(conn):
+        arts.rebuild(conn, job)
     names = {"en": "English", "ja": "Japanese"}
     note = (f" Couldn't reach TCGdex for {' or '.join(names[l] for l in unreachable)}." if unreachable else "")
-    if not done and not failed:
+    if not done and not made and not failed:
         return "Enhanced Search is up to date." + note
     text = f"Fingerprinted {done} picture{'' if done == 1 else 's'}."
+    if made:
+        text += f" Added {made} illustration{'' if made == 1 else 's'} for arts."
     return text + (f" {failed} couldn't be fetched; Check for updates tries again." if failed else "") + note
+
+
+FILL_SAVE_EVERY = 64  # illustrations made between saves, so a restart loses little
+_LANG_NAMES = {"en": "English", "ja": "Japanese", "zh-cn": "Chinese"}
+
+
+def fill_illustrations(encoder, job=None, fetch=None) -> tuple[int, int]:
+    """Make the illustration fingerprints the index doesn't have yet (pictures fingerprinted before arts
+    used them): each picture is downloaded again through the queue, one at a time, and let go. A restart
+    picks up where it stopped (rows still without one). Returns (made, couldn't be fetched)."""
+    made = failed = 0
+    for lang in LANGS:
+        index = index_for(lang)
+        todo = index.missing_art()
+        for i in range(0, len(todo), 8):
+            if job is not None:
+                job.progress(i, len(todo), f"Fingerprinting illustrations · {_LANG_NAMES.get(lang, lang)}")
+            keys, images, missed = [], [], []
+            for row in todo[i:i + 8]:
+                try:
+                    images.append(crop_art(picture_image(row, fetch)))
+                    keys.append(row["key"])
+                except Exception as e:
+                    missed.append(row["key"])
+                    log.info("no picture for %s: %s", row["card"], e)
+            if images:
+                index.put_art(keys, encoder.embed(images))
+                made += len(keys)
+            if missed:
+                index.mark_no_art(missed)
+                failed += len(missed)
+            if made and (i // 8 + 1) % (FILL_SAVE_EVERY // 8) == 0:
+                index.save()
+        if todo:
+            index.save()
+    return made, failed
 
 
 def add_photo(conn, encoder, card_id: str, photo_name: str) -> None:

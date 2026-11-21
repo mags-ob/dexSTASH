@@ -15,3 +15,9 @@
   .as-where .ltg { flex:none; }
   .as-card form { margin:0; }
   .as-card button { min-height:36px; padding:3px 10px; font-size:13px; white-space:nowrap; }
+  /* A rainbow or gold version of the art: its own card, with its rarity in gold. */
+  /* Its own line, so a narrow phone keeps the set name and number. A darker gold on light (#8a6a00, 5:1 on white). */
+  .as-gold { --gold:#8a6a00; display:inline-block; max-width:100%; margin:0 0 6px; font-size:12px; font-weight:600; color:var(--gold);
+             border:1px solid var(--gold); border-radius:999px; padding:1px 8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  :root[data-mode=dark] .as-gold { --gold:#c79a1e; }
+  .as-note { font-size:13px; margin:4px 0 0; }
