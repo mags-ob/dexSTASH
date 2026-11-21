@@ -14,7 +14,7 @@ window.dsPhotos = (() => {
   };
   return {
     newId: () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`),
-    put: (batch, id, blob) => run("readwrite", s => s.put({id, batch, blob, at: Date.now()})),
+    put: (batch, id, blob, side) => run("readwrite", s => s.put({id, batch, blob, side, at: Date.now()})),
     remove: id => run("readwrite", s => s.delete(id)),
     list: batch => run("readonly", s => (batch == null ? s.getAll() : s.index("batch").getAll(batch))),
     // Sends one photo. Returns the response; throws when the phone is offline.
@@ -22,6 +22,7 @@ window.dsPhotos = (() => {
       const body = new FormData();
       body.append("photos", rec.blob, "photo.jpg");
       body.append("client_id", rec.id);
+      if (rec.side) body.append("side", rec.side);  // a trade's photo keeps its side, even sent later
       return fetch(`/scans/${batch}/photos`, {method: "POST", body, headers: {"X-Scan-Upload": "1", "HX-Request": "true"}});
     },
   };

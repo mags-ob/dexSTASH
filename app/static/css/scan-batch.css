@@ -1,0 +1,20 @@
+  /* A trade batch: the two sides, Compare and Finish trade. */
+  .tr-tabs { margin:10px 0 6px; }
+  .tr-tabs .tr-tab { line-height:1.3; white-space:normal; }
+  .tr-tabs .tr-tab b { font-size:17px; }
+  .tr-tabs .tr-tab.on { background:var(--surface-2); color:var(--fg); }
+  .tr-n { font-size:12px; }
+  .tr-diff { margin:0 2px 8px; font-size:13px; text-align:center; }
+  .tr-diff b { color:var(--fg); }
+  #scan-list[data-show="mine"] [data-side="theirs"], #scan-list[data-show="theirs"] [data-side="mine"] { display:none; }
+  .tr-list > div { display:flex; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .tr-list > div > span:first-child { flex:1; min-width:0; }
+  .tr-head { display:flex; justify-content:space-between; gap:8px; }
+  .tr-binder { display:flex; align-items:center; gap:8px; padding:4px 0; }
+  .tr-binder > span { flex:1; min-width:0; }
+  .tr-binder select { width:9.5em; }
+  .tr-all { border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:4px; }
+  .tr-warn { margin:0; }
+  .cam-sides { margin:0; padding:3px; display:inline-flex; }
+  .cam-sides button { border:0; background:none; color:var(--muted); padding:4px 12px; border-radius:8px; font:inherit; font-size:14px; min-height:32px; }
+  .cam-sides button.on { background:var(--accent); color:var(--on); }

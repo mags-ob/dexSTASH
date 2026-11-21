@@ -244,7 +244,7 @@ def test_find_finds_a_japanese_set_by_its_english_name(client):
 def test_step_19(tmp_path):
     conn = db.connect(tmp_path / "old.db")
     db.init(conn)
-    assert db.LATEST == 19 and db.version(conn) == 19
+    assert db.version(conn) == db.LATEST >= 19  # later steps (20: trades) run after it
     assert "english_name" in {r[1] for r in conn.execute("PRAGMA main.table_info(sets)")}
     assert conn.execute("SELECT 1 FROM sqlite_master WHERE name = 'scan_matches'").fetchone()
 

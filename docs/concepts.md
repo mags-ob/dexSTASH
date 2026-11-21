@@ -45,6 +45,11 @@ earliest). Not this art takes one card back out. ([chases.md](specs/chases.md))
 **Binder**
 A named group of copies a person can share. ([sharing.md](specs/sharing.md))
 
+**Trade scan**
+A scan batch for a trade with someone, named "Trade with <name>". It has two sides: **Your cards** (the cards
+that leave your stash, each pointing at the copy that leaves) and **<name>'s cards** (the cards that join it).
+**Finish trade** makes the swap; the other person's name is kept only in each card's history. ([scanning.md](specs/scanning.md), #81)
+
 **Host**
 The person who runs dexSTASH on their own server. The first account is the admin.
 

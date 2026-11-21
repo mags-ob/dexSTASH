@@ -33,7 +33,15 @@ const PAGE = JSON.parse(document.currentScript.dataset.page);
   }
 
   // Sheets: From · Binder, Set for all.
-  document.querySelectorAll("[data-open-sheet]").forEach(b => b.addEventListener("click", () => document.getElementById(b.dataset.openSheet).showModal()));
+  // (A trade's side summary is drawn again as prices arrive, so its Compare button is found when tapped.)
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-open-sheet]");
+    if (b) document.getElementById(b.dataset.openSheet).showModal();
+  });
+  // Finish trade: "All of them" sets every card's binder.
+  document.querySelector("[data-binder-all]")?.addEventListener("change", e => {
+    document.querySelectorAll('#finish-sheet select[name^="binder-"]').forEach(s => { s.value = e.target.value; });
+  });
   document.querySelectorAll("dialog.sheet").forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
   const from = document.querySelector(".from-form");
   from.querySelectorAll("input[name=came]").forEach(r => r.addEventListener("change", () => {
@@ -61,7 +69,8 @@ const PAGE = JSON.parse(document.currentScript.dataset.page);
   let state = {to_add: PAGE.toAdd, unchecked: PAGE.unchecked};
   const addAll = document.querySelector("[data-add-all]");
   function summary(c) {
-    if (c) {
+    if (c && c.trade_html) document.getElementById("trade-sum").outerHTML = c.trade_html;
+    if (c && addAll) {  // a trade has no count line and no Add button
       state = c;
       document.querySelector("[data-sum]").textContent = `${c.photos} photo${c.photos !== 1 ? "s" : ""} · ${c.checked} checked`;
       const needs = document.querySelector("[data-needs]");
@@ -80,7 +89,7 @@ const PAGE = JSON.parse(document.currentScript.dataset.page);
   async function changes() {
     if (document.hidden) return;
     try {
-      const resp = await fetch(`/scans/${PAGE.batch}/changes?since=${listEl.dataset.rev}`, {headers: {"HX-Request": "true"}});
+      const resp = await fetch(`/scans/${PAGE.batch}/changes?since=${listEl.dataset.rev}${PAGE.side ? `&side=${PAGE.side}` : ""}`, {headers: {"HX-Request": "true"}});
       if (resp.headers.get("HX-Redirect")) { location = resp.headers.get("HX-Redirect"); return; }
       if (!resp.ok) return;
       const data = await resp.json();
@@ -112,7 +121,7 @@ const PAGE = JSON.parse(document.currentScript.dataset.page);
 
   // Add N to My Stash: asks first when some cards haven't been checked.
   const unchecked = document.getElementById("unchecked-sheet");
-  addAll.addEventListener("click", e => {
+  addAll?.addEventListener("click", e => {
     if (!state.unchecked.length) return;
     e.preventDefault();
     const n = state.unchecked.length;
@@ -185,10 +194,10 @@ const PAGE = JSON.parse(document.currentScript.dataset.page);
     const o = over; over = null; total = sent = 0;
     setTimeout(() => { if (!pending && !over) o.hide(); }, 1500);
   }
-  function send(blob, rec) {  // rec: a photo kept on the phone from before
+  function send(blob, rec, side) {  // rec: a photo kept on the phone from before; side: a trade's side
     pending++; total++; show(); progress();
-    rec = rec || {id: dsPhotos.newId(), blob};
-    const kept = rec.batch ? Promise.resolve() : dsPhotos.put(BATCH, rec.id, blob).catch(() => {});  // private windows can't keep it
+    rec = rec || {id: dsPhotos.newId(), blob, side};
+    const kept = rec.batch ? Promise.resolve() : dsPhotos.put(BATCH, rec.id, blob, rec.side).catch(() => {});  // private windows can't keep it
     queue = queue.then(async () => {
       await kept;
       try {
@@ -231,6 +240,22 @@ const PAGE = JSON.parse(document.currentScript.dataset.page);
   const offBox = cam.querySelector("[data-cam-off-box]"), retryBtn = cam.querySelector("[data-cam-retry]");
   const big = cam.querySelector("[data-big]"), ask = cam.querySelector("[data-ask]");
   let stream = null, shots = [], torch = false, bigIndex = -1;
+  // On a trade, the switch at the top says which side the photos go to. Photos taken before a switch
+  // go to the side they were taken for.
+  let camSide = PAGE.side;
+  const sideNames = {};
+  cam.querySelectorAll("[data-cam-side]").forEach(b => {
+    sideNames[b.dataset.camSide] = b.textContent.trim();
+    b.addEventListener("click", () => {
+      if (b.dataset.camSide === camSide) return;
+      for (const s of shots) { send(s.blob, null, camSide); URL.revokeObjectURL(s.url); }
+      shots = [];
+      camSide = b.dataset.camSide;
+      cam.querySelectorAll("[data-cam-side]").forEach(x => x.classList.toggle("on", x === b));
+      drawShots();
+    });
+  });
+  if (camSide) drawShots();  // the Add button names the side
 
   function drawShots() {
     shotsEl.replaceChildren(...shots.map((s, i) => {
@@ -247,7 +272,8 @@ const PAGE = JSON.parse(document.currentScript.dataset.page);
     cam.querySelector("[data-count]").textContent = shots.length;
     cam.querySelector("[data-sum-hint]").hidden = !shots.length;
     addBtn.disabled = !shots.length;
-    addBtn.textContent = shots.length ? `Add ${shots.length} to batch` : "Add to batch";
+    const where = camSide ? sideNames[camSide] : "batch";
+    addBtn.textContent = shots.length ? `Add ${shots.length} to ${where}` : `Add to ${where}`;
   }
   function drop(i) { URL.revokeObjectURL(shots[i].url); shots.splice(i, 1); drawShots(); }
   function keep(blob) { shots.push({blob, url: URL.createObjectURL(blob)}); drawShots(); }
@@ -344,6 +370,11 @@ const PAGE = JSON.parse(document.currentScript.dataset.page);
     release();
     cam.hidden = true; big.hidden = true; ask.hidden = true;
     document.documentElement.style.overflow = "";
+    if (camSide && camSide !== PAGE.side) showSide(camSide);  // back on the side just scanned
+  }
+  function showSide(side) {  // once the photos are sent
+    const go = () => { location = `${location.pathname}?side=${side}`; };
+    if (!pending) go(); else queue = queue.then(go);
   }
   retryBtn.addEventListener("click", start);  // a tap: the phone asks again
   addEventListener("pagehide", release);
@@ -407,8 +438,8 @@ const PAGE = JSON.parse(document.currentScript.dataset.page);
     shots.forEach(s => URL.revokeObjectURL(s.url)); shots = []; drawShots(); stop();
   });
   addBtn.addEventListener("click", () => {
-    for (const s of shots) { send(s.blob); URL.revokeObjectURL(s.url); }
+    for (const s of shots) { send(s.blob, null, camSide); URL.revokeObjectURL(s.url); }
     shots = []; drawShots(); stop();
   });
-  if (PAGE.camera) { start(); history.replaceState(null, "", location.pathname); }
+  if (PAGE.camera) { start(); history.replaceState(null, "", location.pathname + (PAGE.side ? `?side=${PAGE.side}` : "")); }
 })();
