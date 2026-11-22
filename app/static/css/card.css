@@ -25,6 +25,8 @@
   .lchip.have.lchip-en { background:var(--lang-en); } .lchip.have.lchip-ja { background:var(--lang-ja); }
   .lchip.have.lchip-zh { background:var(--lang-zh); }
   .lchip.have { color:#fff; }
+  /* Dark text where white is too faint on the fill (contrast 4.5:1): mainland yellow, and every colour in dark mode. */
+  .lchip.have.lchip-zh, :root[data-mode=dark] .lchip.have { color:#1d1d1f; }
   .copies { display:grid; gap:10px; margin-top:12px; }
   .copy { border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); overflow:hidden; }
   .copy-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 14px; font-size:15px;

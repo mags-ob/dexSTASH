@@ -11,6 +11,8 @@
   #find-grid .ltg.h.ltg-en { background:var(--lang-en); border-color:var(--lang-en); }
   #find-grid .ltg.h.ltg-ja { background:var(--lang-ja); border-color:var(--lang-ja); }
   #find-grid .ltg.h.ltg-zh { background:var(--lang-zh); border-color:var(--lang-zh); }
+  #find-grid .ltg.h.ltg-zh, :root[data-mode=dark] #find-grid .ltg.h { color:#1d1d1f; }  /* 4.5:1 on the fill */
+  #find-grid .vh { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
   .filter-btn { position:relative; }
   .filter-btn .badge { position:absolute; top:-4px; right:-4px; min-width:20px; height:20px; padding:0 5px; border-radius:8px;
                        background:var(--accent-tint); color:var(--ink); font-size:12px; font-weight:600; display:grid; place-items:center; }

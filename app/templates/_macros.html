@@ -141,8 +141,8 @@
       {% if owned %}<span class="own-ck" aria-label="You have it">{{ icon("check", 14) }}</span>{% endif %}
       {% if star %}<span class="star-ck" aria-label="Chasing">{{ icon("heart-on", 13) }}</span>{% endif %}
       {% if lang_tag %}<span class="lang-tag">{{ lang_tag }}</span>{% endif %}
-      {% if langs %}<span class="ltags" aria-label="{% for l in langs %}{{ l.label }} {{ 'owned' if l.owned else 'missing' }}{{ ', ' if not loop.last }}{% endfor %}">
-        {%- for l in langs %}<span class="ltg ltg-{{ l.key }}{% if l.owned %} h{% endif %}">{{ l.tag }}</span>{% endfor %}</span>{% endif %}
+      {% if langs %}<span class="ltags"><span class="vh">{% for l in langs %}{{ l.label }}{{ ', you have it' if l.owned }}{{ ', ' if not loop.last }}{% endfor %}</span>
+        {%- for l in langs %}<span class="ltg ltg-{{ l.key }}{% if l.owned %} h{% endif %}" aria-hidden="true">{{ l.tag }}</span>{% endfor %}</span>{% endif %}
       {% if qty > 1 %}<span class="badge-q">&times;{{ qty }}</span>{% endif %}
       {% if tag %}<span class="badge-l">{{ tag }}</span>{% endif %}</span>
     <span class="n">{{ name }}</span>

@@ -305,6 +305,16 @@ def complete(conn, api) -> bool:
     return ok
 
 
+def ready(api) -> bool:
+    """The index is on and holds every set of api's language, so a search needn't wait on TCGdex for it."""
+    if not enabled():
+        return False
+    try:
+        return complete(_db(), api)
+    except Exception:
+        return False
+
+
 def _like(text: str) -> str:
     return "%" + text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
 

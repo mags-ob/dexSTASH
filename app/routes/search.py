@@ -590,17 +590,8 @@ def _loading(lang: str) -> list[str]:
     language is today; with the catalog switched off, every language asks TCGdex."""
     if lang != ALL or not card_index.enabled():
         return []
-    out = []
-    for one in find_arts.FIND_LANGS:
-        if one in ("en", chinese.LANG):
-            continue
-        try:
-            ready = card_index.complete(card_index._db(), web.api_for(one))
-        except Exception:
-            ready = False
-        if not ready:
-            out.append(one)
-    return out
+    return [one for one in find_arts.FIND_LANGS
+            if one not in ("en", chinese.LANG) and not card_index.ready(web.api_for(one))]
 
 
 @router.get("/describe", response_class=HTMLResponse)
