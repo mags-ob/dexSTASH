@@ -102,3 +102,10 @@ Phone width (375px), real pages with demo data and drawn placeholders (no real c
 ## Branch
 
 `feature/search-by-art`, rebased on #116 once it merges; a draft pull request after the go.
+
+## Build notes (22 Nov 2026)
+
+- The grouping lives in `app/find_arts.py` (a plain module): `tiles` for Find, `card_languages` for the card view.
+- Still loading (AC8): only Japanese and Taiwan Chinese can be left out and named, because only they are in the
+  local card catalog. English and mainland Chinese are always searched. With the catalog turned off, every
+  language asks TCGdex as before. Not in the plan; asked the maintainer.

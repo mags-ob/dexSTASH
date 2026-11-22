@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% set keep_place = true %}{# Opens where you left it when you come back #}
 {% set wide = true %}
-{% from "_macros.html" import cname, card_picture, tile, lang_chips, x_close %}
+{% from "_macros.html" import cname, card_picture, tile, x_close %}
 {% from "_mycards.html" import active_chips, chip_group %}
 {% from "_evolution.html" import evolution %}
 {% from "_pokemon_tags.html" import pokemon_tags %}
@@ -9,7 +9,7 @@
 {% block heading %}Find{% endblock %}
 {% block filters %}
 <form method="get" action="/search">
-  <h2>Filters <a href="/search?lang=en{% if q %}&amp;q={{ q | urlencode }}{% endif %}{{ carry | replace('?', '&') }}">Clear all</a></h2>
+  <h2>Filters <a href="/search?lang=all{% if q %}&amp;q={{ q | urlencode }}{% endif %}{{ carry | replace('?', '&') }}">Clear all</a></h2>
   <input type="hidden" name="q" value="{{ q }}">
   {% if fix %}<input type="hidden" name="fix" value="{{ fix }}">{% endif %}
   {% if scan %}<input type="hidden" name="scan" value="{{ scan }}">{% endif %}
@@ -61,7 +61,6 @@
   <input type="hidden" name="lang" value="{{ lang }}">
   {% for key, value in keep.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
 </form>
-<div class="find-chips">{{ lang_chips("lang", lang, url=lang_url) }}</div>
 <script src="{{ asset("js/search.js") }}"></script>
 {% if this_query %}
 <form method="post" action="/search/saved" class="save-form" hidden data-save-form>
@@ -106,9 +105,10 @@
 <p class="describe-link"><a href="#" data-describe-open>{{ icon("help", 18) }} Don't know the name? Describe it</a></p>
 {% include "_describe.html" %}
 
-{% if translation and translation.name != translation.english %}<p>Searching {{ languages[lang] }} cards for <strong>{{ translation.name }}</strong> ({{ translation.english }}).</p>{% endif %}
+{% if translation and translation.name != translation.english and lang != "all" %}<p>Searching {{ languages[lang] }} cards for <strong>{{ translation.name }}</strong> ({{ translation.english }}).</p>{% endif %}
 {% if translate_error %}<p class="muted">{{ translate_error }}</p>{% endif %}
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if loading and (q or set) %}<p class="muted" style="font-size:13px">{{ loading | unique | join(" and ") }} cards are still loading, so they're left out for now.</p>{% endif %}
 
 {% if set_matches %}
 <h2 style="font-size:16px;margin:4px 0 8px">Sets</h2>
@@ -117,7 +117,7 @@
   <a class="set-hit" href="{{ '/sets/' ~ s.set_id ~ '?from=find' if s.stored else '/set-preview/' ~ s.lang ~ '/' ~ (s.id | urlencode) }}">
     {% if s.logo %}<span class="logo"><img src="{{ s.logo }}" alt="" data-fail="remove-parent"></span>{% endif %}
     <span style="flex:1;min-width:0"><strong>{{ s.plain_name }}</strong><br>
-      <span class="muted" style="font-size:12px">{{ s.id }}{% if lang == "zh" %} &middot; {{ "mainland" if s.lang == "zh-cn" else "Taiwan & Hong Kong" }}{% endif %}{% if s.owned %} &middot; you have cards from it{% endif %}</span></span>
+      <span class="muted" style="font-size:12px">{{ s.id }}{% if lang == "zh" or (lang == "all" and s.lang.startswith("zh")) %} &middot; {{ "mainland" if s.lang == "zh-cn" else "Taiwan & Hong Kong" }}{% endif %}{% if s.owned %} &middot; you have cards from it{% endif %}</span></span>
     <span class="muted" aria-hidden="true">&rsaquo;</span>
   </a>
   {% endfor %}
@@ -143,7 +143,11 @@
 
 {% if results %}
 {% if set_matches or hand %}<h2 style="font-size:16px;margin:4px 0 8px">Cards</h2>{% endif %}
+{% if by_art %}{# One tile per art, every language together unless one is picked (#95) #}
+<p class="muted" style="font-size:13px;margin:0 2px 8px"><span id="find-count">{% if token %}{{ page }} of {% endif %}{{ results|length }}</span> art{{ "s" if results|length != 1 }} &middot; {{ found_cards }}{% if found_cards >= max_results %}+{% endif %} card{{ "s" if found_cards != 1 }}</p>
+{% else %}
 <p class="muted" style="font-size:13px;margin:0 2px 8px"><span id="find-count">{% if token %}{{ page }} of {% endif %}{{ results|length }}</span>{% if results|length >= max_results %}+{% endif %} match{{ "es" if results|length != 1 }}</p>
+{% endif %}
 <div class="cgrid" id="find-grid">
   {% with rows = results[:page], next = page, total = results | length, more = False %}{% include "_find_page.html" %}{% endwith %}
 </div>
@@ -168,7 +172,7 @@
 {% endif %}
 {% endif %}
 {% if q %}
-<p style="font-size:14px;margin-top:18px">Not here? <a href="/cards/new?lang={{ "zh-cn" if lang == "zh" else lang }}&number={{ ((number or '') ~ ('/' ~ total if total else '')) | urlencode }}&name={{ (name or '') | urlencode }}{% if scan %}&scan={{ scan }}{% elif fix %}&fix={{ fix }}{% endif %}">Add it by hand</a></p>
+<p style="font-size:14px;margin-top:18px">Not here? <a href="/cards/new?lang={{ "zh-cn" if lang == "zh" else "en" if lang == "all" else lang }}&number={{ ((number or '') ~ ('/' ~ total if total else '')) | urlencode }}&name={{ (name or '') | urlencode }}{% if scan %}&scan={{ scan }}{% elif fix %}&fix={{ fix }}{% endif %}">Add it by hand</a></p>
 {% endif %}
 <script src="{{ asset("js/search-pages.js") }}" data-page="{{ page }}"></script>
 <script src="{{ asset("js/find-prices.js") }}" defer></script>

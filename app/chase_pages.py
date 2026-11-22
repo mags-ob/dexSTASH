@@ -200,32 +200,6 @@ def _recolour(rarity: str | None) -> str | None:
     return display.rarity(rarity)["label"].split(" · ", 1)[-1]
 
 
-def art_languages(conn: sqlite3.Connection, collection_id: int, card_id: str) -> list[dict]:
-    """A card page's Languages: the language groups of the card's art on a Pokémon or artist you follow,
-    each owned or not, with the version a tap opens (the one you have, else English, else the earliest).
-    Empty when the card is in no followed art, or its art is in one language only."""
-    followed = {f["dex_id"] for f in chase.followed(conn, collection_id)} | \
-               {f["dex_id"] for f in chase.followed(conn, collection_id, artists=True)}
-    for r in conn.execute("""SELECT a.dex_id FROM art_cards ac JOIN arts a ON a.id = ac.art_id
-                             WHERE ac.card_id = ? ORDER BY a.dex_id < 0, a.dex_id""", (card_id,)):
-        if r["dex_id"] not in followed:
-            continue
-        every = cards(conn, r["dex_id"])
-        art = next((a for a in arts(conn, r["dex_id"]) if card_id in a["card_ids"]), None)
-        members = [every[c] for c in (art or {}).get("card_ids", []) if c in every]
-        if not members or card_id not in every:
-            continue
-        have = owned(conn, collection_id, r["dex_id"])
-        out = []
-        for g in _langs(members, have):
-            group = sorted((c for c in members if lang_group(c["lang"]) == g["key"]),
-                           key=lambda c: (c["card_id"] not in have, c["lang"] != "en", c["release_date"] or "9999", c["card_id"]))
-            here = lang_group(every[card_id]["lang"]) == g["key"]
-            out.append(dict(g, here=here, link=None if here else _link(conn, group[0])))
-        return out if len(out) > 1 else []
-    return []
-
-
 def followed_list(conn: sqlite3.Connection, collection_id: int) -> list[dict]:
     return [dict(f, **summary(conn, collection_id, f["dex_id"])) for f in chase.followed(conn, collection_id)]
 

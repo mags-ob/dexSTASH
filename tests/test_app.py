@@ -308,11 +308,12 @@ def test_search_language_sticks_and_drops_foreign_set(client, monkeypatch):
     client.post("/setup", data={"code": web.setup_code(), "username": "misty", "password": "pikachu123"})
     client.get("/search", params={"lang": "ja"})
     page = client.get("/search", params={"q": "1"}).text
-    assert 'class="chip lc-ja on"' in page
-    assert "lang=fr" not in page  # only English, Japanese and Chinese are buttons
+    assert 'name="lang" value="ja" checked' in page and "Japanese <svg" in page  # picked under Filters, shown as a chip
+    assert 'class="chip lc-' not in page  # no language buttons under the search box (#95)
     page = client.get("/search", params={"lang": "en", "set": "nope"}).text
     assert "No cards found" not in page and "Couldn't search" not in page
-    assert 'class="chip lc-en on"' in client.get("/search", params={"lang": "xx"}).text
+    page = client.get("/search", params={"lang": "xx"}).text  # an unknown language: every language again
+    assert 'name="lang" value="en" checked' not in page and 'name="lang" value="ja" checked' not in page
 
 
 def test_chinese_searches_both_chinese_languages(client, monkeypatch):
@@ -2407,7 +2408,7 @@ def test_card_extras_price_and_pictures(client, monkeypatch):
 def test_card_page_from_find_and_set_colors(client):
     user_id = _setup_with_set(client)
     page = client.get("/cards/t1-1?from=find").text
-    assert '<a href="/search?lang=en" class="on">' in page and "Not in your stash" in page
+    assert '<a href="/search?lang=all" class="on">' in page and "Not in your stash" in page
     assert '<a href="/collection" class="on"><svg' in client.get("/cards/t1-1").text  # a line icon since round 25
     grid = client.get("/sets/t1").text
     assert "grayscale" not in grid and "api.tcgdex.net/v2/en/sets/t1" in grid  # a set you don't own: all in color
@@ -2425,7 +2426,7 @@ def test_find_shows_matching_sets_and_previews_them(client, monkeypatch):
     # A set that isn't stored: every card in color, each opening its preview.
     page = client.get("/set-preview/en/t1").text
     assert "/preview/en/t1-1" in page and "grayscale" not in page and "You don't have any yet" in page
-    assert '<a href="/search?lang=en" class="on"' in page  # Find stays lit, and tapping it starts over
+    assert '<a href="/search?lang=all" class="on"' in page  # Find stays lit, and tapping it starts over (every language)
     assert '<a href="/search" class="on"' not in page
     # Once stored, the set's own page opens instead.
     client.post("/search/add", data={"card_id": "t1-1", "set_id": "t1", "variant": "normal", "condition": "NM"})
@@ -2434,7 +2435,8 @@ def test_find_shows_matching_sets_and_previews_them(client, monkeypatch):
     assert "/sets/t1?from=find" in client.get("/search", params={"q": "test set"}).text
     # The filters are in the Filter panel, with a chip for each one that's on.
     page = client.get("/search", params={"q": "1", "lang": "ja", "owned": "no"}).text
-    assert 'data-filter-toggle' in page and '<span class="badge">1</span>' in page and "Not owned <svg class=\"ic\"" in page
+    assert 'data-filter-toggle' in page and '<span class="badge">2</span>' in page and "Not owned <svg class=\"ic\"" in page
+    assert "Japanese <svg class=\"ic\"" in page  # a picked language is a filter too (#95)
 
 
 def test_check_for_updates_fills_in_sets_loaded_one_at_a_time(client, chs, monkeypatch):

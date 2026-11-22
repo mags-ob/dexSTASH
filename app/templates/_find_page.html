@@ -8,7 +8,7 @@
           r.number, r.set_logo, price=r.price, third=set_label(r.set_id, r.set_name), owned=r.owned,
           title=r.set_name ~ " #" ~ r.number ~ (" · " ~ r.rarity if r.rarity else ""),
           pic_id=(r.id if r.local else our_card_id(r.id, r.lang or lang)), star=r.chased,
-          pending=(r.lang or lang) ~ "|" ~ r.id if r.price_pending else none) %}
+          pending=(r.lang or lang) ~ "|" ~ r.id if r.price_pending else none, langs=r.langs) %}
   {%- if use_for %}{# Finding the card for a photo or an import row: only "Use this" #}
   <form method="post" action="/find/use" class="use-this"><input type="hidden" name="ref" value="{{ href.split('?')[0] }}">
     <input type="hidden" name="{{ use_for[0] }}" value="{{ use_for[1] }}"><button>{{ icon("check", 16) }} Use this</button></form>

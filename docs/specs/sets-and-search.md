@@ -9,8 +9,19 @@ it on a page that says what it is, what you have of it and what it's worth.
 
 ### Find
 
-1. Find searches every set in one language at a time: English, Japanese, Chinese (Taiwan and Hong Kong sets
-   from TCGdex plus the mainland sets stored here) or Korean. The language sticks between searches.
+1. With no language picked (the default), Find searches English, Japanese and Chinese (Taiwan and Hong Kong
+   sets from TCGdex plus the mainland sets stored here) at once and shows one tile per art: the same
+   illustration by the same artist in any language (see [chases](chases.md)). A tile's picture is the English
+   card when there is one, else the Japanese, else the Chinese; EN, JA and ZH tags on it show the languages the
+   art is printed in, filled when you have a card in that language; ✓ when you have any. A line says how many
+   arts and cards were found, and a tap opens the cover card. The arts are the picture-matched ones (Enhanced
+   Search); without them, cards of the same Pokémon by the same artist group (mainland Chinese cards stay
+   alone then). A card in no art is a tile of its own. Japanese and Taiwan Chinese are left out until their card
+   catalog is here (the page says so); English is searched as one language always was (#95).
+   A language is picked only in the Filters Language group (English, Japanese, Chinese or Korean; nothing is
+   ticked by default). A picked language shows as a chip under the search box with ✕ (back to every language),
+   counts on the Filters badge and sticks between searches. English, Japanese and Chinese still show one tile
+   per art, with that language's card as the picture; Korean shows its cards one by one.
 2. A search can be a name, a number (`125`), a number with its printed total (`125/197`), or both
    (`charizard 125`). Accents and case don't matter.
 3. An English Pokémon name also finds the card in the searched language, from PokéAPI's names list, so
@@ -48,9 +59,11 @@ it on a page that says what it is, what you have of it and what it's worth.
     prices per printing with where each came from (see [prices](prices.md)), what the household has of it
     (by printing and condition) with add and remove, binders, tags, notes, the Chase box when chased, links
     out to shops and price sites, prices or links typed by hand, and the history of who added and removed
-    copies. When the card is in an art of a Pokémon or artist you follow, and that art is printed in more than
-    one language, Languages (under Printings) has a chip for each, ✓ when you have it; a tap opens that
-    language's card.
+    copies. Under the name, set and rarity (above the price), a chip for each language the card's art is printed
+    in (English, Japanese, Chinese), on every card page and preview, followed Pokémon or not: outlined in the
+    language's colour, filled when you have a card in that language, the card's own ringed. A tap opens that
+    language's card (the one you have, else English, else Taiwan, else mainland). A card in one language shows its
+    one chip. Korean and other languages show none (#95).
     A tag chip opens Find with every card tagged with it, except the artist's automatic tag, which searches
     Find for the artist's name, the same as typing it (#67). The artist's tag is the automatic tag whose name
     is on TCGdex's illustrator list kept here; the card page never asks TCGdex for it.

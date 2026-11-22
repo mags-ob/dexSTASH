@@ -74,6 +74,15 @@
     {# The set name opens the set. #}
     <div class="muted" style="font-size:14px"><a class="muted" href="{{ ('/set-preview/' ~ lang ~ '/' ~ (tcgdex_set | urlencode)) if preview else ('/sets/' ~ card.set_id) }}">{{ set_label(card.set_id, card.set_name) }}</a> &middot; <span class="cno">#{{ card.number }}</span></div>
     {% if card.rarity or card_types(card.types) %}<div class="cv-kind">{{ rarity_line(card.rarity) }}{% if card.rarity and card_types(card.types) %} &middot; {% endif %}{{ type_line(card.types) }}</div>{% endif %}
+    {% if card_languages %}{# The languages the card's art is printed in, near the picture (#95): each in its colour,
+       filled when you have that language; a tap opens that language's card. One chip for a card in one language. #}
+    <div class="pr-row cv-langs" aria-label="Languages">
+      {% for l in card_languages %}
+      {% if l.link %}<a class="pr-chip lchip lchip-{{ l.key }}{% if l.owned %} have{% endif %}" href="{{ l.link }}" aria-label="{{ l.label }}{{ ', you have it' if l.owned }}">{{ l.label }}</a>
+      {% else %}<span class="pr-chip lchip lchip-{{ l.key }} here{% if l.owned %} have{% endif %}" aria-current="page" aria-label="{{ l.label }}{{ ', you have it' if l.owned }}">{{ l.label }}</span>{% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
     {# One card's price: the first printing you own, else the printing picked for adding. #}
     {% macro source_text(label, src) -%}
       {{ label }}{% if src %} &middot; {% if src.short in ("Your link", "Found") and src.url %}<a href="{{ src.url }}" target="_blank" rel="noopener">{{ src.label }}</a>{% else %}{{ src.label }}{% if src.label == "TCGplayer" %} price{% endif %}{% endif %}{% endif %}
@@ -178,17 +187,6 @@
     {% for v in offered %}{% set have = v in owned_variants %}{% set src = price_sources.get(v) %}
     <span class="pr-chip{% if have %} have{% endif %}">{% if have %}{{ icon("check", 13) }}{% elif chase %}{{ icon("heart-on", 13) }}{% endif %}{{ variants[v] }}
       {%- if not owned_count %} <small>{% if v in price_map %}{% if src and src.label.startswith("≈") %}&asymp;&#8202;{% endif %}{{ price_map[v] | money }}{% else %}no price{% endif %}</small>{% endif %}</span>
-    {% endfor %}
-  </div>
-</section>
-{% endif %}
-{% if art_languages %}
-<section class="cv-prints" aria-label="Languages">{# The same art in other languages (a followed Pokémon or artist), ✓ the ones you have #}
-  <h2 class="cv-label">Languages</h2>
-  <div class="pr-row">
-    {% for l in art_languages %}{% set inner %}{% if l.owned %}{{ icon("check", 13) }}{% endif %}{{ l.label }}{% endset %}
-    {% if l.link %}<a class="pr-chip{% if l.owned %} have{% endif %}" href="{{ l.link }}">{{ inner }}</a>
-    {% else %}<span class="pr-chip here{% if l.owned %} have{% endif %}" aria-current="page">{{ inner }}</span>{% endif %}
     {% endfor %}
   </div>
 </section>
