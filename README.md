@@ -2,12 +2,11 @@
 
 <h1 align="center">dexSTASH</h1>
 
-<p align="center">A self-hosted Pokémon card collection app for your phone. Track every set you're completing, scan cards in batches, and keep an eye on what your collection is worth, on your own server.</p>
+<p align="center">A self-hosted Pokémon card collection app for your phone. Track every set you're completing, find any card in every language grouped by its art, scan cards in batches or for a trade, and keep an eye on what your collection is worth, on your own server.</p>
 
 <p align="center">
 <a href="LICENSE"><img src="https://img.shields.io/badge/licence-AGPL--3.0-blue" alt="Licence: AGPL-3.0"></a>
-<a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.28.0-purple" alt="Version 0.28.0"></a>
-<a href="https://github.com/mags-ob/dexSTASH/actions/workflows/tests.yml"><img src="https://github.com/mags-ob/dexSTASH/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+<a href="https://github.com/mags-ob/dexSTASH/releases/latest"><img src="https://img.shields.io/github/v/release/mags-ob/dexSTASH?color=purple&label=version" alt="Latest release"></a>
 </p>
 
 <p align="center">
@@ -22,8 +21,10 @@
 ## Features
 
 - **Set completion:** see how much of each set you have, with secret rares counted apart.
-- **Find any card** in English, Japanese, Chinese, Korean and the other languages TCGdex covers, by name or by describing the Pokémon.
+- **Find any card** in English, Japanese, Chinese, Korean and the other languages TCGdex covers, by name or by describing the Pokémon. A search covers every language at once and shows each art once, tagged with the languages it's printed in.
+- **Arts across languages:** the same illustration printed in English, Japanese and Chinese groups as one art, on Find and on a followed Pokémon's or artist's page, where you can merge arts or take a card out by hand.
 - **Scan cards in batches** with your phone's camera; the server reads and matches each photo.
+- **Trade scans:** scan your cards and theirs, see each side's total, then finish the trade to move the cards in and out of your stash.
 - **Prices** from TCGplayer (through TCGCSV), CardTrader and PriceCharting (with your own API keys) and your own, averaged, with history and top movers.
 - **Your collection, your way:** printings, conditions, binders you can share, chases, spending and pack pulls.
 - **Shared logins** on one collection, with who added what.
@@ -165,6 +166,7 @@ The rest of [Quick start](#quick-start) is the same. To update, `git pull` and r
 ## Contributing, security and licence
 
 - [CONTRIBUTING.md](.github/CONTRIBUTING.md): running the tests and the code style.
+- [docs/lifecycle.md](docs/lifecycle.md): how a change moves from an issue to a release.
 - [SECURITY.md](.github/SECURITY.md): how to report a security problem privately.
 - [CHANGELOG.md](CHANGELOG.md): what changed in each version.
 
@@ -177,6 +179,6 @@ dexSTASH is a fan project. It is not affiliated with, endorsed by or sponsored b
 dexSTASH is built and maintained with Anthropic's Claude.
 
 - **Code:** Claude writes most of the code, tests and docs; the designer reviews every change before it's merged.
-- **Process:** each change goes from issue to spec, plan, build and tests, with the designer's approval at each step, to keep the app accurate and stable.
+- **Process:** each change is an issue that moves through Define, Build, Validate and Done ([docs/lifecycle.md](docs/lifecycle.md)). The designer approves the plan before any code and the pull request before it's merged, to keep the app accurate and stable.
 - **Rules:** [AGENTS.md](AGENTS.md) and [rules/](rules/) keep personal details, secrets and unlicensed data out, and keep the code consistent.
 - **In the app:** nothing is sent to an AI service; scanning runs on your own server.
