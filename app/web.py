@@ -608,6 +608,16 @@ def _index_pictures(label: str = "Fingerprinting card pictures") -> bool:
     return started
 
 
+def _resume_illustrations() -> bool:
+    """Startup: the illustrations fill a restart stopped carries on (only rows still without one are fetched)."""
+    if not _pictures_ready():
+        return False
+    stats = pictures.stats_saved(conn) if SCANNER_EXTERNAL else pictures.stats()
+    if stats.get("illustrations_wanted") is not None and stats.get("illustrations", 0) >= stats["illustrations_wanted"]:
+        return False
+    return _index_pictures("Fingerprinting illustrations")
+
+
 def _index_new_set(card_id: str) -> None:
     if not _pictures_ready():
         return

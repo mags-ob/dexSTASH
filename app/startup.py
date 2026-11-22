@@ -87,6 +87,7 @@ def after_first_page(conn) -> threading.Thread:
                     log.exception("the upgrade's last part didn't finish; it's tried again at the next start")
                 finally:
                     STATE["finishing"] = False
+            web._resume_illustrations()  # a restart stopped the illustrations fill: it carries on
             scans.drop_chinese_batches(work_conn)
             web.picture_saver.poke_if_changed(work_conn)  # notes what's kept now, so a change after this is seen
             if web.SCANNER_MODE == "threads":  # the scanner does this when it starts

@@ -258,7 +258,9 @@
   <table class="list">
     {% for lang, n in picture_stats.per_lang.items() %}<tr><td>{{ language_names.get(lang, lang) }}</td><td class="num">{{ n }} pictures</td></tr>
     {% else %}<tr><td class="muted">{% if picture_model %}Nothing fingerprinted yet.{% else %}Waiting for the model to download.{% endif %}</td></tr>{% endfor %}
+    {% if picture_stats.illustrations_wanted %}<tr id="illustrations"><td>Illustrations (for arts)</td><td class="num">{{ "{:,}".format(picture_stats.illustrations or 0) }} of {{ "{:,}".format(picture_stats.illustrations_wanted) }}</td></tr>{% endif %}
   </table>
+  {% if picture_stats.illustrations_wanted %}<p class="muted ds-sub">Illustrations are added a few at a time in the background, behind searches and page loads. Taiwan cards use their Japanese twin's.</p>{% endif %}
   {% if picture_score %}<p id="picture-score" class="muted ds-sub">{% if picture_score.scans %}Your card was first in {{ picture_score.first }} of {{ picture_score.scans }} scan{{ "s" if picture_score.scans != 1 }}, in the top 5 in {{ picture_score.top5 }}.{% else %}No scores yet: they count each scan you add after using Enhanced Search.{% endif %}
     {% if picture_score.learned %} It learned from {{ picture_score.learned }} of your confirmed scans.{% endif %}</p>{% endif %}
   <div class="ds-acts">

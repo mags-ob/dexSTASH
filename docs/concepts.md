@@ -34,7 +34,8 @@ card, any printing. ([chases.md](specs/chases.md))
 
 **Art**
 One picture of a Pokémon or by an artist, across every language and set it was printed in: cards with the same
-illustrator and near-identical pictures, plus hand fixes. A followed Pokémon's or artist's page is a grid of arts.
+illustrator and the same illustration (matched on the picture without its frame and text), plus hand fixes. A
+rainbow or gold version of the art is in the same art, as a card of its own with its own printings. A followed Pokémon's or artist's page is a grid of arts.
 ([chases.md](specs/chases.md))
 
 **Merge arts**
