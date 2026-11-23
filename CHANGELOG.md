@@ -12,6 +12,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 - **Filter a Pokémon or artist page by language** (English, Japanese or Chinese). It only narrows which arts show; owned and prices still count every language (#96).
 
 ### Fixed
+- **Arts and Find's groups work for English, Japanese and Taiwan cards.** TCGdex stopped sending each card's artist and Pokémon with its set, so only mainland Chinese cards were grouped into arts. Find's card catalog now fetches them card by card in the background after this update (a couple of hours, once), and groups the arts again when it's done (#95).
 - **A CardTrader token saves.** A key can be up to 4,000 characters (CardTrader's is over 500, which was turned away, so Data sources kept saying "no key"). Spaces and line breaks that come with a paste are dropped, and what Save, Test or Remove did now shows in green or red on the key's own row instead of at the top of the page, out of view (#64).
 - **opentelemetry-api raised to 1.45.2**, which fixes a known vulnerability pip-audit reported in 1.45.1 (#101).
 - **Cards you add to an art by hand stay there.** Taking a card out with Not this art moves only that card, even when it's the card the others were added to. Your hand choices keep their place after ↻ Re-check and Check for updates (#71).

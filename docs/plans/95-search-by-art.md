@@ -109,3 +109,21 @@ Phone width (375px), real pages with demo data and drawn placeholders (no real c
 - Still loading (AC8): only Japanese and Taiwan Chinese can be left out and named, because only they are in the
   local card catalog. English and mainland Chinese are always searched. With the catalog turned off, every
   language asks TCGdex as before. Not in the plan; asked the maintainer.
+
+## Amended 22 Nov 2026: the card catalog's details
+
+Testing on the test copy: Find grouped nothing. TCGdex's GraphQL now fails a set when any card misses a
+non-null field (rarity, category) and returns no Japanese or Taiwan sets, so `card_index` stored the plain
+set lists: 0 of 42,000 English, Japanese and Taiwan cards had an artist or Pokémon, and arts (#116) could only
+group mainland Chinese cards. The maintainer chose to fix it here (no rough fallback while picture matching
+can work).
+
+- `card_index.fill_details(api)`: cards kept without details (`illustrator IS NULL`) are asked of TCGdex one at
+  a time (`/cards/<id>`, through the sites queue at its background pace, about 2½ hours once for her catalog).
+  No artist is kept as `''` so it isn't asked again. Taiwan cards take the Japanese twin's `dex_ids`.
+- `store_set` keeps those details when a set is fetched again without them; GraphQL cards get `''` for no artist.
+- Runs after each language's catalog job and the nightly refresh; arts are rebuilt after (only when Enhanced
+  Search has illustrations, so a rebuild never empties them).
+- After-upgrade task 11 starts it on existing installs. No database step.
+- Tests: `tests/test_round15d.py` (GraphQL failing: details card by card, Taiwan borrows, kept on refetch; GraphQL
+  cards never asked again).
