@@ -22,7 +22,8 @@
 
 - **Set completion:** how much of each set you have, secret rares counted apart.
 - **Find any card** in every language TCGdex covers, by name or by describing the Pokémon. The same art in English, Japanese and Chinese shows once.
-- **Scan cards** in batches with your phone's camera, or scan both sides of a trade.
+- **Scan cards** in batches with your phone's camera.
+- **Trade:** scan your cards and theirs, compare each side's total, and finish the trade to update your stash.
 - **Prices** from several sources, averaged, with history and top movers.
 - **Your collection, your way:** binders you can share, chases, conditions, spending and pack pulls, with shared logins.
 - **Looks after itself:** nightly backups and price updates.
