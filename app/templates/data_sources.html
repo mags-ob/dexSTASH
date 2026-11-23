@@ -26,7 +26,7 @@
   <p class="ds-line">{% if updates_checked_at %}Last checked {{ updates_checked_at[0] | when }}.{% else %}Not checked yet.{% endif %}</p>
   <div class="ds-acts"><form method="post" action="/account/data/check" data-heavy="Checking for updates…"><button>Check for updates</button></form></div>
   <details class="ds-about"><summary>About</summary>
-    <p class="muted">Looks for new and changed sets on TCGdex and in the Chinese sets, new cards of the Pokémon you follow, new sprites, and adds new sets to Enhanced Search. Missing and borrowed card pictures are looked for again. Nothing else checks for updates; prices have their own nightly update, below.</p>
+    <p class="muted">Looks for new and changed sets on TCGdex and in the Chinese sets, new cards of the Pokémon you follow, new sprites, and adds new sets to Enhanced Search. Missing and borrowed card pictures are looked for again. The nightly update, below, checks for updates too, before it updates prices.</p>
   </details>
 </div>
 

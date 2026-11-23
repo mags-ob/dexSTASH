@@ -465,7 +465,23 @@ def _after_nightly() -> None:
         rollup_conn.close()
 
 
-nightly = sync.Nightly(updater, after=_after_nightly, jobs=background)
+def _nightly_checks(c, job) -> str | None:
+    """The nightly Check for updates, unless the Chinese sets are loading or a check is already going."""
+    if background.running("chs") or background.running("update"):
+        return None
+    from .routes import data_sources  # the routes import this module, so not at the top
+    return data_sources.check_updates(c, job or jobs.Job("nightly-checks", "Nightly check for updates"), nightly=True)
+
+
+def _nightly_pictures(c, job) -> str | None:
+    """New sets for Enhanced Search, after the price update has filled the card catalog's artists and Pokémon."""
+    if _pictures_ready() and _index_pictures("Adding new sets to Enhanced Search"):
+        return "New sets are being added to Enhanced Search."
+    return None
+
+
+nightly = sync.Nightly(updater, after=_after_nightly, jobs=background, checks=_nightly_checks,
+                       pictures=_nightly_pictures)
 
 matcher = importer.Matcher(lambda lang: api_for(lang), jobs=background)
 

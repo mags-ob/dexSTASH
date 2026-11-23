@@ -150,3 +150,17 @@ Checks on the test copy (Ampharos, #181):
 - After-upgrade task 12 runs both. Bar and rule unchanged.
 - Open: cards with no TCGdex picture at all (most Japanese; Taiwan 蒼空烈流) stay alone unless Limitless pictures
   are fingerprinted too (asked the maintainer; Limitless publishes no terms for its pictures).
+
+## 23 Nov 2026: Check for updates in the nightly run (maintainer asked)
+
+New sets only reached Enhanced Search and arts when someone pressed Check for updates. The nightly run now adds
+these jobs, in this order (same priority, so the runner keeps the order):
+1. Check for updates (`data_sources.check_updates(nightly=True)`): stored TCGdex sets, Chinese sets, the artist
+   list, followed Pokémon, sprites. Skipped when the Chinese sets are loading or a check is already going.
+   First, so new cards are priced the same night.
+2. The price update, which also fetches Find's catalog: new sets, then each card's artist and Pokémon.
+3. New sets for Enhanced Search (`web._nightly_pictures`): pictures, illustrations, then arts, after the
+   catalog's details so new cards group.
+4. The chores (backup, picture tidy and recheck, history roll-up). The picture recheck stays here only.
+A failed step is logged; the rest still run. Arts may be grouped twice on a night with both new catalog
+details and new pictures; that's a few minutes at night, kept simple.

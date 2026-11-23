@@ -2153,6 +2153,22 @@ def test_turning_on_enhanced_search_fingerprints_every_set(client, pics):
     _all_jobs_done()
     results = {job.label: job.result for job in web.background.current()}
     assert results["Adding new sets to Enhanced Search"] == "Enhanced Search is up to date." and len(pics) == 3
+    # The nightly run checks for updates too, then adds new sets to Enhanced Search after the price update.
+    class Updater:
+        running, last_result, last_failed = False, "Updated prices for 0 cards in 0s.", False
+
+        def run(self, conn, only_missing=False, job=None):
+            return self.last_result
+
+    night = sync.Nightly(Updater(), jobs=web.background, checks=web._nightly_checks, pictures=web._nightly_pictures)
+    assert night.run_once(web.conn)
+    _all_jobs_done()
+    time.sleep(0.05)
+    _all_jobs_done()
+    results = {job.label: job.result for job in web.background.current()}
+    assert results["Nightly check for updates"].startswith("Refreshed")
+    assert results["Nightly new sets for Enhanced Search"] == "New sets are being added to Enhanced Search."
+    assert results["Adding new sets to Enhanced Search"] == "Enhanced Search is up to date." and len(pics) == 3
     client.post("/account/data/pictures/off")
     assert "Turn on Enhanced Search" in client.get("/account/data").text
 
@@ -2837,6 +2853,37 @@ def test_nightly_price_update(client, monkeypatch):
     assert s["last"].startswith("Oct 9, 2026, 12:00 AM") and "offline" in s["error"]  # shown in Eastern time
     up.running = True  # already updating: skipped
     assert not night.run_once(main.conn) and up.starts == 1
+
+
+def test_nightly_checks_for_updates_first_then_prices_then_enhanced_search_then_chores():
+    import app.main as main
+    from app import sync, web
+
+    order = []
+
+    class Updater:
+        running, last_result, last_failed = False, None, False
+
+        def run(self, conn, only_missing=False, job=None):
+            order.append("prices")
+            return "done"
+
+    def checks(conn, job):
+        order.append("checks")
+        raise RuntimeError("TCGdex offline")  # a failed check doesn't stop the night
+
+    def pictures(conn, job):
+        order.append("pictures")
+
+    night = sync.Nightly(Updater(), after=lambda: order.append("chores"), jobs=web.background, checks=checks,
+                         pictures=pictures)
+    assert night.run_once(main.conn)
+    web.background.last("nightly-chores").wait(10)
+    assert order == ["checks", "prices", "pictures", "chores"]
+    order.clear()  # with no runner, as in some tests: the same order, run now
+    sync.Nightly(Updater(), after=lambda: order.append("chores"), checks=checks, pictures=pictures).run_once(main.conn)
+    assert order == ["checks", "prices", "pictures", "chores"]
+    assert web.nightly.checks is web._nightly_checks and web.nightly.pictures is web._nightly_pictures
 
 
 # --- Pokémon chase (9c) ----------------------------------------------------------------
