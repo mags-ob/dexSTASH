@@ -20,113 +20,71 @@
 
 ## Features
 
-- **Set completion:** see how much of each set you have, with secret rares counted apart.
-- **Find any card** in English, Japanese, Chinese, Korean and the other languages TCGdex covers, by name or by describing the Pokémon. A search covers every language at once and shows each art once, tagged with the languages it's printed in.
-- **Arts across languages:** the same illustration printed in English, Japanese and Chinese groups as one art, on Find and on a followed Pokémon's or artist's page, where you can merge arts or take a card out by hand.
-- **Scan cards in batches** with your phone's camera; the server reads and matches each photo.
-- **Trade scans:** scan your cards and theirs, see each side's total, then finish the trade to move the cards in and out of your stash.
-- **Prices** from TCGplayer (through TCGCSV), CardTrader and PriceCharting (with your own API keys) and your own, averaged, with history and top movers.
-- **Your collection, your way:** printings, conditions, binders you can share, chases, spending and pack pulls.
-- **Shared logins** on one collection, with who added what.
-- **Import and export:** CSV import, and CSV downloads of your stash, binders and chases.
-- **Looks after itself:** nightly backups and price updates, and an activity log you can read on your phone.
-- **Your currency and time zone,** and Pokémon colour themes in light and dark.
+- **Set completion:** how much of each set you have, secret rares counted apart.
+- **Find any card** in every language TCGdex covers, by name or by describing the Pokémon. The same art in English, Japanese and Chinese shows once.
+- **Scan cards** in batches with your phone's camera, or scan both sides of a trade.
+- **Prices** from several sources, averaged, with history and top movers.
+- **Your collection, your way:** binders you can share, chases, conditions, spending and pack pulls, with shared logins.
+- **Looks after itself:** nightly backups and price updates.
 
 ## What you need
 
-- A computer, NAS or small server that runs Docker with Compose (amd64 or arm64).
-- **Without scanning** (the default): give it about 0.5 GB of memory. It uses about 120 MB most of the time, about half a CPU and about 1 GB of storage; the number of cards barely matters.
-- **With scanning:** about 2 GB of memory in all. Reading photos and Enhanced Search peak at 1.5 to 2 GB, and the models and picture fingerprints take 2 to 3 GB of storage. [Scanning](docs/scanning.md) has the three ways to run it.
-- To use it away from home: a domain name and a reverse proxy that serves HTTPS, such as Caddy. A phone's camera only works on an HTTPS page.
+- A computer, NAS or small server with Docker and Docker Compose (amd64 or arm64).
+- About 0.5 GB of memory, or about 2 GB with scanning on.
+- A domain name and HTTPS, so phones can sign in and use the camera. The setup guide shows how, including a free DuckDNS name and a bundled Caddy.
 
 ## Quick start
 
-dexSTASH is a Docker app. Download the compose file and settings, then start it:
+On your server:
 
 ```sh
 mkdir dexstash && cd dexstash
 curl -fsSLO https://raw.githubusercontent.com/mags-ob/dexSTASH/main/docker-compose.yml
 curl -fsSL -o .env https://raw.githubusercontent.com/mags-ob/dexSTASH/main/.env.example
+```
+
+**If you already run a reverse proxy in Docker** (Caddy, Nginx, Traefik): in `.env`, set `DEXSTASH_NETWORK` to the Docker network your proxy is on and `DEXSTASH_NETWORK_EXTERNAL=true`, point your domain at `dexstash:8000`, then start it:
+
+```sh
 docker compose up -d
 ```
 
-[docs/deploy.md](docs/deploy.md) has the full setup, [Configuration](docs/configuration.md) every setting, and [Building from source](#building-from-source) how to build it yourself.
+**If you don't,** use the bundled Caddy. Your domain must point at your server, with ports 80 and 443 forwarded to it. Set `DEXSTASH_DOMAIN` in `.env`, then:
+
+```sh
+mkdir deploy && curl -fsSL -o deploy/Caddyfile https://raw.githubusercontent.com/mags-ob/dexSTASH/main/deploy/Caddyfile
+docker compose --profile caddy up -d
+```
+
+Open your domain. The first visit asks for a one-time setup code, which is in the app's log (`docker logs dexstash`), and then a short setup wizard runs.
+
+**The full setup guide is [docs/deploy.md](docs/deploy.md):** every step, HTTPS, scanning, backups and updating.
 
 ## Where data comes from
 
-dexSTASH uses a few open sources for the card catalogue and everyday prices, plus official APIs you give it a key for. A few picture and data sites have a switch under Data sources › Price and picture sites; a new install starts with each of them off, and turning one off never deletes anything. Every request names itself with the User-Agent `dexSTASH/<version> (+https://github.com/mags-ob/dexSTASH)`.
+The app downloads card data and prices into your own `data/` folder while it runs; none of it is in this repository. [NOTICE.md](NOTICE.md) credits each source and its terms.
 
-### Always on
+| Source | What it gives | |
+| --- | --- | --- |
+| [TCGdex](https://tcgdex.dev) | Sets, cards and card pictures | Always on |
+| [PokéAPI](https://pokeapi.co) | Pokémon names, types and sprites | Always on |
+| [TCGCSV](https://tcgcsv.com) | TCGplayer's daily prices | On, can be turned off |
+| [European Central Bank](https://www.ecb.europa.eu) | Exchange rates | On, can be turned off |
+| [CardTrader](https://www.cardtrader.com/docs/api/full/reference) and [PriceCharting](https://www.pricecharting.com/api-documentation) | More prices | Optional, with your own API key |
+| Limitless TCG | Japanese card pictures TCGdex lacks | Optional |
+| [PTCG-CHS-Datasets](https://github.com/duanxr/PTCG-CHS-Datasets) and [PTCG-card-data](https://github.com/zsjy947/PTCG-card-data) | Mainland Chinese cards | Optional |
+| [Bulbapedia](https://bulbapedia.bulbagarden.net) | Pokémon descriptions for Describe search | Optional |
+| CLIP picture model | Enhanced Search and scanning | Optional |
 
-**[TCGdex](https://tcgdex.dev)**: sets, cards, card pictures, and TCGplayer prices for printings TCGCSV doesn't have.
-
-- **When:** while you browse and search; Find's card catalog fetches each set of a language once, then new sets nightly.
-- **Terms:** open-source API built for apps like this; card art © its owners.
-
-**[TCGCSV](https://tcgcsv.com)**: TCGplayer's daily prices and product ids.
-
-- **When:** in the nightly update. Turn off with `DEXSTASH_TCGCSV=0`.
-- **Terms:** free daily copy of TCGplayer's price data.
-
-**[European Central Bank](https://www.ecb.europa.eu)**: daily exchange rates.
-
-- **When:** once a day. Turn off with `DEXSTASH_EURO_RATE=0`.
-- **Terms:** free reuse with the source named.
-
-**[PokéAPI](https://pokeapi.co)**: Pokémon names in every language, types, colours and Pokédex text; sprites for themes.
-
-- **When:** downloaded once into `data/` (sprites when an admin presses Download).
-- **Terms:** BSD data; sprites and Pokédex text © Nintendo / GAME FREAK.
-
-**CLIP model** (Jina's clip-as-service copy): the Enhanced Search picture model.
-
-- **When:** downloaded once, when you turn Enhanced Search on.
-- **Terms:** MIT.
-
-### With your own API key
-
-Keys go in Data sources › Prices › API keys.
-
-**[CardTrader API](https://www.cardtrader.com/docs/api/full/reference)**: each kept card's lowest listing.
-
-- **When:** in the nightly update, one request a second.
-- **Terms:** CardTrader's API terms.
-
-**[PriceCharting API](https://www.pricecharting.com/api-documentation)**: each kept card's ungraded price (needs a paid plan).
-
-- **When:** a search once a week and a price once a day, one request a second.
-- **Terms:** PriceCharting's API terms.
-
-### Switches, off on a new install
-
-**Limitless TCG**: Japanese card pictures TCGdex doesn't have.
-
-- **When:** a card is shown or saved.
-- **Terms:** Limitless's terms.
-
-**[PTCG-CHS-Datasets](https://github.com/duanxr/PTCG-CHS-Datasets) and [PTCG-card-data](https://github.com/zsjy947/PTCG-card-data)**: mainland Chinese sets, pictures and their English names.
-
-- **When:** an admin presses Load.
-- **Terms:** personal, non-commercial use only; PTCG-card-data is CC0.
-
-**[Bulbapedia](https://bulbapedia.bulbagarden.net)**: Pokémon "Origin" text for Describe search.
-
-- **When:** an admin presses Download, one page a second.
-- **Terms:** CC BY-NC-SA, personal use.
-
-### Links
-
-Search buttons for TCGplayer, PriceCharting and eBay sold listings, and links you save on a card, open those sites in your browser. A price you see there can be typed in beside the link.
-
-Data from these sources is downloaded into your own `data/` folder while the app runs; none of it is in this repository. [NOTICE.md](NOTICE.md) and Account › About credit each one.
+Optional sources are off until an admin turns them on or downloads them in the app. API keys go in Data sources › Prices › API keys.
 
 ## Guides
 
-- [docs/deploy.md](docs/deploy.md): installing on your server, step by step, with Caddy and HTTPS.
+- [Setup](docs/deploy.md): installing on your server, step by step.
 - [Configuration](docs/configuration.md): every setting in `.env` and in the app.
 - [Updating](docs/updating.md): getting a new version, and going back.
 - [Backups and moving servers](docs/backups.md)
-- [Scanning](docs/scanning.md): the three ways to run the scanner.
+- [Scanning](docs/scanning.md): the ways to run the scanner.
 
 ## Development
 
