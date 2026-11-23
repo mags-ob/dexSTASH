@@ -243,6 +243,8 @@ def search_view(
     found_cards = len(results)
     by_art = lang in BY_ART
     if by_art:  # one tile per art; the covers' prices are worked out as they come on screen
+        if lang == ALL and not sort:  # every language: newest sets first across them, not English then the rest
+            results = sorted(results, key=lambda r: -set_rank.get((r.get("lang"), catalog.tcgdex_set_id(r.get("set_id") or "")), 0))
         results = find_arts.tiles(conn, results, owned_ids, _our_id)
     # Load as you scroll: 24 now, priced; the rest 24 at a time as they come on screen.
     _price_results(results[:search.PAGE] + hand, user)

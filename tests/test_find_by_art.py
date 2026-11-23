@@ -151,3 +151,11 @@ def test_a_korean_card_page_has_no_language_chips(client, monkeypatch):
     _setup(client, monkeypatch)
     client.post("/search/add", data={"card_id": "t1-1", "set_id": "t1", "lang": "ko", "variant": "normal", "condition": "NM"})
     assert 'aria-label="Languages"' not in client.get("/cards/ko:t1-1").text
+
+
+def test_every_language_lists_newest_sets_first_across_languages(client, monkeypatch):
+    _setup(client, monkeypatch)
+    order = [href for href, _ in _tiles(client.get("/search", params={"q": "1"}).text)]
+    # Test Set is the newest in every language, then Dotted Set, then Old Set: not English first, then the rest.
+    assert [h.rsplit("/", 1)[1].split("-")[0] for h in order] == ["t1"] * 3 + ["sv03.5"] * 3 + ["old"] * 3
+    assert order[:3] == ["/preview/en/t1-1", "/preview/ja/t1-1", "/preview/zh-tw/t1-1"]

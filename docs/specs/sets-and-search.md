@@ -13,7 +13,8 @@ it on a page that says what it is, what you have of it and what it's worth.
    sets from TCGdex plus the mainland sets stored here) at once and shows one tile per art: the same
    illustration by the same artist in any language (see [chases](chases.md)). A tile's picture is the English
    card when there is one, else the Japanese, else the Chinese; EN, JA and ZH tags on it show the languages the
-   art is printed in, filled when you have a card in that language; ✓ when you have any. A line says how many
+   art is printed in, filled when you have a card in that language; ✓ when you have any. With Best match, arts
+   come newest set first across the languages (each set ranked within its own language). A line says how many
    arts and cards were found, and a tap opens the cover card. The arts are the picture-matched ones (Enhanced
    Search); without them, cards of the same Pokémon by the same artist group (mainland Chinese cards stay
    alone then). A card in no art is a tile of its own. Japanese and Taiwan Chinese are left out until their card

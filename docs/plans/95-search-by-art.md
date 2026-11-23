@@ -127,3 +127,10 @@ can work).
 - After-upgrade task 11 starts it on existing installs. No database step.
 - Tests: `tests/test_round15d.py` (GraphQL failing: details card by card, Taiwan borrows, kept on refetch; GraphQL
   cards never asked again).
+
+## 23 Nov 2026: order across languages
+
+Testing: with Best match, every English art came first and the Japanese and Chinese-only arts last, because
+each language's results were simply joined. With every language and no sort picked, results are now ordered by
+how new their set is within its language (the same rank Newest set uses), before grouping, so an art takes the
+place of its newest card. A picked language or another sort is unchanged.
