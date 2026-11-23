@@ -29,7 +29,7 @@ The first public release: Find searches every language with one tile per art, ar
 - **A card or set TCGdex doesn't answer for no longer shows "Can't reach your server".** The app's own page says "Couldn't load this card" (or set) with Try again and Back, and writes why to the log. The offline screen is only for a server that really can't be reached, and the "upgrade didn't finish" page now shows on a phone too (#77).
 
 ### Changed
-- **A shorter README** with a Quick start that works: the steps for your own reverse proxy or the bundled Caddy, where the setup code is, and a link to the full setup guide. Where data comes from is one table of sources, saying which are optional.
+- **A shorter README.** Quick start now gets the app reachable, with the steps for your own reverse proxy or the bundled Caddy, where the setup code is, and a link to the full setup guide. Where data comes from is one table of sources, saying which are optional.
 - **Set codes instead of Japanese and Chinese set names.** Find's tiles show the set code and number ("SV8a · 054/106") in every language, and Find's set results and the card view show a Japanese or Chinese set by its code, so they read the same whatever the language. English sets keep their names on the card view (#95).
 - **The project scan reads private words only from `rules/private-words.txt`**, no longer from the `DEXSTASH_PRIVATE_WORDS` variable; move any words still set there into the file. It also finds Python on Windows (#108).
 - **"Last price update" on Data sources › Prices shows the latest full run only.** Older ones (the last 30) are on a new Older price updates page, linked under it. A latest run with problems still opens by itself (#65).

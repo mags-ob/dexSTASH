@@ -24,9 +24,9 @@
 - **Find any card** in every language TCGdex covers, by name or by describing the Pokémon. The same art in English, Japanese and Chinese shows once.
 - **Scan cards** in batches with your phone's camera.
 - **Trade:** scan your cards and theirs, compare each side's total, and finish the trade to update your stash.
-- **Prices** from several sources, averaged, with history and top movers.
-- **Your collection, your way:** binders you can share, chases, conditions, spending and pack pulls, with shared logins.
-- **Looks after itself:** nightly backups and price updates.
+- **Prices** from TCGplayer, CardTrader and PriceCharting, averaged, with history and top movers.
+- **Binders and chases:** binders you can share, chases, conditions, spending and pack pulls, with shared logins.
+- **Nightly jobs:** backups and price updates run on their own.
 
 ## What you need
 
@@ -65,7 +65,7 @@ Open your domain. The first visit asks for a one-time setup code, which is in th
 
 The app downloads card data and prices into your own `data/` folder while it runs; none of it is in this repository. [NOTICE.md](NOTICE.md) credits each source and its terms.
 
-| Source | What it gives | |
+| Source | What it gives | On? |
 | --- | --- | --- |
 | [TCGdex](https://tcgdex.dev) | Sets, cards and card pictures | Always on |
 | [PokéAPI](https://pokeapi.co) | Pokémon names, types and sprites | Always on |
