@@ -305,3 +305,12 @@ def test_the_diagrams_match_the_code():
     for name, _ in make_diagrams.SWITCHED:
         assert name in overview
     assert [n for n, _ in make_diagrams.SWITCHED] == [label for label, _ in sites.SITES.values()]
+
+
+def test_tests_never_reach_another_site():
+    """#128: a request to another site is refused at once, naming the site, on every machine."""
+    import httpx
+    import pytest
+    from app import sites
+    with pytest.raises(httpx.ConnectError, match="api.tcgdex.net"):
+        sites.get("https://api.tcgdex.net/v2/en/sets", timeout=5)
