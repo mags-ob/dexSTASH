@@ -407,17 +407,22 @@ def next_run(now: datetime, at: str) -> datetime:
 
 
 class Nightly:
-    """The scheduler (round 23): at the nightly time it adds the nightly update as a job, and its chores (backup,
-    picture tidy and weekly recheck, history roll-up, Value over time) as the next job. A night it's off, or one
+    """The scheduler (round 23): at the nightly time it adds, as jobs one after another: Check for updates (new
+    sets and followed Pokémon, so their cards are priced tonight), the price update (with the card catalog's new
+    sets and details), new sets for Enhanced Search (pictures, then illustrations, then arts, which need the
+    catalog's artists and Pokémon), and the chores (backup, picture tidy and weekly recheck, history roll-up,
+    Value over time) last. A night it's off, or one
     already waiting or running, is skipped. A night missed while the server was off isn't caught up: prices update
     the next night, or when you press Update prices. A failed run is tried again the next night."""
-    KEY, CHORES = "nightly", "nightly-chores"
+    KEY, CHECKS, PICTURES, CHORES = "nightly", "nightly-checks", "nightly-pictures", "nightly-chores"
 
-    def __init__(self, updater: PriceUpdater, now=display.now, after=None, jobs=None):
+    def __init__(self, updater: PriceUpdater, now=display.now, after=None, jobs=None, checks=None, pictures=None):
         self.updater = updater
         self.now = now
         self.after = after  # the chores
         self.jobs = jobs
+        self.checks = checks  # Check for updates: (conn, job) -> what it did
+        self.pictures = pictures  # new sets for Enhanced Search: (conn, job) -> what it did
         self._stop = threading.Event()
 
     def start(self) -> None:
@@ -457,18 +462,38 @@ class Nightly:
         _set_meta(conn, NIGHTLY_ERROR, self.updater.last_result if self.updater.last_failed else None)
         return self.updater.last_result
 
+    @staticmethod
+    def _step(fn, conn, job=None) -> str | None:
+        """One nightly step; one that fails is logged and the rest of the night still runs."""
+        if fn is None:
+            return None
+        try:
+            return fn(conn, job)
+        except Exception:
+            log.exception("nightly step didn't finish")
+            return None
+
     def run_once(self, conn) -> bool:
         """Add tonight's update and its chores (with no runner, as in some tests: run them now). False if a price
         update or tonight's run is already waiting or running."""
         if self.jobs is None:
+            self._step(self.checks, conn)
             self.run_night(conn)
+            self._step(self.pictures, conn)
             if self.after:
                 self.after()
             return True
         if self.jobs.running(self.KEY) or self.updater.running:
             log.info("nightly price update skipped: one is already running")
             return False
+        # Added in this order with the same priority, so the runner takes them in this order.
+        if self.checks:
+            self.jobs.start(self.CHECKS, "Nightly check for updates", lambda c, job: self._step(self.checks, c, job),
+                            priority=1)
         self.jobs.start(self.KEY, "Nightly price update", lambda c, job: self.run_night(c, job), priority=1)
+        if self.pictures:
+            self.jobs.start(self.PICTURES, "Nightly new sets for Enhanced Search",
+                            lambda c, job: self._step(self.pictures, c, job), priority=1)
         if self.after:
             def chores(c, job):
                 self.after()

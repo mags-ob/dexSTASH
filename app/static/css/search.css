@@ -3,8 +3,16 @@
               margin:12px -16px 8px; padding:8px 16px; background:var(--bg); }
   .save-btn { width:50px; height:50px; }
   .find-bar { grid-template-columns:1fr auto; margin-bottom:4px; }
-  .find-chips { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 6px; }
-  .find-chips .lang-chips { display:contents; }
+  /* Every language by art (#95): the languages an art is printed in, over the picture's bottom edge,
+     filled when you have one, outlined when not (as on a Pokémon's page). */
+  #find-grid .ltags { position:absolute; left:4px; bottom:4px; z-index:2; display:flex; gap:3px; }
+  #find-grid .ltg { font-size:10px; font-weight:700; line-height:13px; padding:1px 4px; border-radius:4px; border:1px solid rgba(255,255,255,.8);
+                    background:rgba(20,20,22,.78); color:#fff; letter-spacing:.02em; }
+  #find-grid .ltg.h.ltg-en { background:var(--lang-en); border-color:var(--lang-en); }
+  #find-grid .ltg.h.ltg-ja { background:var(--lang-ja); border-color:var(--lang-ja); }
+  #find-grid .ltg.h.ltg-zh { background:var(--lang-zh); border-color:var(--lang-zh); }
+  #find-grid .ltg.h.ltg-zh, :root[data-mode=dark] #find-grid .ltg.h { color:#1d1d1f; }  /* 4.5:1 on the fill */
+  #find-grid .vh { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
   .filter-btn { position:relative; }
   .filter-btn .badge { position:absolute; top:-4px; right:-4px; min-width:20px; height:20px; padding:0 5px; border-radius:8px;
                        background:var(--accent-tint); color:var(--ink); font-size:12px; font-weight:600; display:grid; place-items:center; }

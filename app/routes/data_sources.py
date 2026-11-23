@@ -229,43 +229,48 @@ def _refresh_tcgdex(job_conn, job) -> str:
     return f"Refreshed {len(sets) - len(failed)} TCGdex sets." + (f" Couldn't reach: {', '.join(failed[:5])}." if failed else "")
 
 
+def check_updates(job_conn, job, nightly: bool = False) -> str:
+    """Check for updates: TCGdex sets, the Chinese sets and their English versions, then new cards of followed
+    Pokémon. Returns what was done. The nightly run leaves Enhanced Search and the picture check to its own
+    later steps, so they come after the price update and its card catalog."""
+    done = [_refresh_tcgdex(job_conn, job)]
+    if chinese.loaded_codes(job_conn):
+        try:
+            done.append(chinese.load_all(job_conn, job, only_changed=True))
+        except Exception as e:
+            log.warning("Chinese sets not checked: %s", e)
+            done.append(f"Couldn't check the Chinese sets ({e.__class__.__name__}).")
+    tcgdex.artist_names(web.api, max_age=0)  # The artist list for search and follow
+    for dex in sorted({r[0] for r in job_conn.execute("SELECT dex_id FROM followed_pokemon")}):
+        try:
+            done.append(chase.run_follow(job_conn, dex, web.names, chase_api, None if web.SCANNER_EXTERNAL else web.picture_encoder,
+                                         job, only_new=True))
+            _group_in_scanner(dex)
+        except Exception as e:
+            log.warning("followed Pokémon #%s not checked: %s", dex, e)
+    if not nightly and _pictures_ready():
+        _index_pictures("Adding new sets to Enhanced Search")
+        done.append("New sets are being added to Enhanced Search.")
+    if not nightly and picture_saver.enabled:
+        picture_saver.poke(recheck=True)  # twins, then missing and borrowed pictures
+        done.append("Card pictures are being checked.")
+    if themes.counts(job_conn)["normal"]:  # New sprites too, when sprites are here
+        try:
+            themes.download(job_conn, job)
+        except Exception as e:
+            log.warning("sprites not checked: %s", e)
+    job_conn.execute("INSERT INTO app_meta (key, value) VALUES ('updates_checked_at', ?) "
+                     "ON CONFLICT (key) DO UPDATE SET value = excluded.value", (clock.now(),))
+    job_conn.commit()
+    return " ".join(done)
+
+
 @router.post("/account/data/check")
 def data_check(user=Depends(owner_user)):
-    """Check for updates: TCGdex sets, the Chinese sets and their English versions, then new cards of followed Pokémon."""
-    def run(job_conn, job):
-        done = [_refresh_tcgdex(job_conn, job)]
-        if chinese.loaded_codes(job_conn):
-            try:
-                done.append(chinese.load_all(job_conn, job, only_changed=True))
-            except Exception as e:
-                log.warning("Chinese sets not checked: %s", e)
-                done.append(f"Couldn't check the Chinese sets ({e.__class__.__name__}).")
-        tcgdex.artist_names(web.api, max_age=0)  # The artist list for search and follow
-        for dex in sorted({r[0] for r in job_conn.execute("SELECT dex_id FROM followed_pokemon")}):
-            try:
-                done.append(chase.run_follow(job_conn, dex, web.names, chase_api, None if web.SCANNER_EXTERNAL else web.picture_encoder,
-                                             job, only_new=True))
-                _group_in_scanner(dex)
-            except Exception as e:
-                log.warning("followed Pokémon #%s not checked: %s", dex, e)
-        if _pictures_ready():
-            _index_pictures("Adding new sets to Enhanced Search")
-            done.append("New sets are being added to Enhanced Search.")
-        if picture_saver.enabled:
-            picture_saver.poke(recheck=True)  # twins, then missing and borrowed pictures
-            done.append("Card pictures are being checked.")
-        if themes.counts(job_conn)["normal"]:  # New sprites too, when sprites are here
-            try:
-                themes.download(job_conn, job)
-            except Exception as e:
-                log.warning("sprites not checked: %s", e)
-        job_conn.execute("INSERT INTO app_meta (key, value) VALUES ('updates_checked_at', ?) "
-                         "ON CONFLICT (key) DO UPDATE SET value = excluded.value", (clock.now(),))
-        job_conn.commit()
-        return " ".join(done)
+    """Check for updates now, from Data sources."""
     if background.running("chs"):
         return RedirectResponse(f"/account/data?message={quote('Wait for the Chinese sets to finish loading.')}", status_code=303)
-    return _started(background.start("update", "Checking for updates", run), "Checking for updates")
+    return _started(background.start("update", "Checking for updates", check_updates), "Checking for updates")
 
 
 @router.post("/account/data/tcgdex/clear")

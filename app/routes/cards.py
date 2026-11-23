@@ -5,7 +5,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 
-from .. import catalog, extras, handmade, inventory, notes, prices, scans, spending, wants
+from .. import catalog, extras, find_arts, handmade, inventory, notes, prices, scans, spending, wants
 from .. import (binders, card_pictures, recent, value as worth, chase_box, chase_pages, pokemon_words,
                 tags, tcgdex)
 from ..tcgdex import LANGUAGES
@@ -115,7 +115,7 @@ def card_view(request: Request, card_id: str, user=Depends(current_user)):
         "from_find": _came_from_find(request),
         "pokemon": _card_pokemon(user, card["name"], card_id if ":" in card_id else lang, card["twin_name"]),
         "pokemon_sets": chase_pages.sets_for_card(conn, user["collection_id"], card_id),
-        "art_languages": chase_pages.art_languages(conn, user["collection_id"], card_id),
+        "card_languages": find_arts.card_languages(conn, user["collection_id"], card_id),
         "card_tags": _card_tags_with_pokemon(card_id, card), "tags_used": tags.used(conn), "binders": binder_list,
         "binder_error": request.query_params.get("binder_error"),
         "variants": inventory.VARIANTS, "conditions": inventory.CONDITIONS,

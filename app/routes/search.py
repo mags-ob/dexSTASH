@@ -10,8 +10,8 @@ from urllib.parse import quote, urlencode
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from .. import catalog, chinese, display, english, extras, handmade, inventory, notes, prices, search, spending
-from .. import (card_pictures, recent, chase, chase_pages, pokemon_words, saved_searches, smart, spelling, tags,
+from .. import catalog, chinese, display, english, extras, find_arts, handmade, inventory, notes, prices, search, spending
+from .. import (card_index, card_pictures, recent, chase, pokemon_words, saved_searches, smart, spelling, tags,
                 tcgdex, themes, tile_prices)
 from ..tcgdex import LANGUAGES
 from .. import web
@@ -28,12 +28,15 @@ def search_view(
     request: Request, q: str = "", lang: str = "", set: str = "", rarity: str = "", kind: str = "", owned: str = "",
     sort: str = "", fix: str = "", scan: str = "", tag: str = "", by: str = "", user=Depends(current_user),
 ):
-    # Language sticks between searches, like variant and condition. "Chinese"
-    # searches TCGdex's Taiwan and Hong Kong sets and the mainland sets stored here.
-    lang = lang or request.session.get("search_lang", "en")
-    lang = tcgdex.choice_of(lang) if tcgdex.choice_of(lang) in tcgdex.CHOICES else "en"
-    request.session["search_lang"] = lang
-    langs = tcgdex.expand(lang)
+    # No language picked: every language, one tile per art (#95). A language picked under Filters sticks between
+    # searches, like variant and condition. "Chinese" searches TCGdex's Taiwan and Hong Kong sets and the
+    # mainland sets stored here.
+    lang = lang or request.session.get("find_lang", ALL)
+    lang = ALL if lang == ALL else tcgdex.choice_of(lang) if tcgdex.choice_of(lang) in tcgdex.CHOICES else ALL
+    request.session["find_lang"] = lang
+    langs = _expand(lang)
+    loading = _loading(lang)  # languages left out until their card catalog is here
+    langs = [x for x in langs if x not in loading]
     many = len(langs) > 1  # set filter values carry their language: 'zh-tw:SV8a'
     set_lang, _, set_code = set.partition(":") if many and ":" in set else (langs[0], "", set)
     if many and ":" in set:
@@ -72,7 +75,7 @@ def search_view(
     sort = sort if sort in search.SORTS else ""
     set_rank: dict = {}  # (language, TCGdex set id) -> 0 (oldest) .. 1 (newest)
     hand = []
-    for one in tcgdex.expand(lang):
+    for one in [x for x in _expand(lang) if x not in loading]:
         # An English Pokémon name searches for that Pokémon's name in the chosen language.
         one_query, one_translation = query, None
         if one != "en" and name and not by:
@@ -221,8 +224,8 @@ def search_view(
             log.info("no evolution strip for %r: %s", name, e)
     known_rarities = [r[0] for r in conn.execute(
         "SELECT DISTINCT c.rarity FROM cards c JOIN sets s ON s.set_id = c.set_id "
-        f"WHERE s.language IN ({','.join('?' * len(tcgdex.expand(lang)))}) AND c.rarity IS NOT NULL",
-        tcgdex.expand(lang))]
+        f"WHERE s.language IN ({','.join('?' * len(_expand(lang)))}) AND c.rarity IS NOT NULL",
+        _expand(lang))]
     carry = {k: v for k, v in (("fix", fix if _fix_row(user, fix) else ""), ("scan", scan if _scan_fix(user, scan) else "")) if v}
     keep = {k: v for k, v in (("by", picked_by), ("set", set), ("rarity", rarity), ("kind", kind), ("owned", owned), ("sort", sort), ("tag", tag)) if v}
     # Artists whose name has what was typed, offered above the results.
@@ -230,13 +233,19 @@ def search_view(
         n for n in _artist_matches(q, 3) if chase.artist_norm(n) != chase.artist_norm(q)]
     artist_here = chase.artist(conn, artist_q) if by else None
     set_names = {x["id"]: x["name"] for x in sets}
-    active = ([(tcgdex.CHOICES[lang], "lang")] if lang not in BUTTON_LANGS else []) + [
+    active = ([(tcgdex.CHOICES[lang], "lang")] if lang != ALL else []) + [
         (label, key) for key, label in (("by", "Artist" if by else None), ("set", set_names.get(set)), ("rarity", rarity), ("kind", search.KINDS.get(kind)),
                                         ("owned", {"yes": "Owned", "no": "Not owned"}.get(owned)),
                                         ("sort", search.SORTS.get(sort)), ("tag", f"#{tag}")) if key in keep and label]
     every = {"q": q, "lang": lang, **keep, **carry}
     clear = {key: "/search?" + urlencode({k: v for k, v in every.items() if v and k != key and not (key == "lang" and k == "set")}
-                                         | ({"lang": "en"} if key == "lang" else {})) for _, key in active}
+                                         | ({"lang": ALL} if key == "lang" else {})) for _, key in active}
+    found_cards = len(results)
+    by_art = lang in BY_ART
+    if by_art:  # one tile per art; the covers' prices are worked out as they come on screen
+        if lang == ALL and not sort:  # every language: newest sets first across them, not English then the rest
+            results = sorted(results, key=lambda r: -set_rank.get((r.get("lang"), catalog.tcgdex_set_id(r.get("set_id") or "")), 0))
+        results = find_arts.tiles(conn, results, owned_ids, _our_id)
     # Load as you scroll: 24 now, priced; the rest 24 at a time as they come on screen.
     _price_results(results[:search.PAGE] + hand, user)
     token = _find_pages.keep(user, results, ("?" + urlencode(carry)) if carry else "", lang) \
@@ -245,18 +254,17 @@ def search_view(
         "user": user, "q": q, "lang": lang, "set": set, "results": results, "error": error, "hand": hand,
         "number": number, "total": total, "name": name, "set_matches": set_matches[:8],
         "rarity": rarity, "kind": kind, "owned": owned, "kinds": search.KINDS, "sort": sort, "sorts": search.SORTS,
-        "rarities": search.rarity_choices(known_rarities, tcgdex.expand(lang)[0]),
+        "rarities": search.rarity_choices(known_rarities, _expand(lang)[0]),
         "translation": translation, "translate_error": translate_error,
         "languages": tcgdex.CHOICES, "sets": sets,
-        "filter_count": sum(1 for v in (lang not in BUTTON_LANGS, by, set, rarity, kind, owned, sort, tag) if v),
+        "filter_count": sum(1 for v in (lang != ALL, by, set, rarity, kind, owned, sort, tag) if v),
+        "by_art": by_art, "found_cards": found_cards, "loading": [LANGUAGES[x] for x in loading],
         "by": by, "by_chip": picked_by, "artist_hits": artist_hits,
         "artist_link": "/artists/" + quote(chase.artist_norm(artist_q)) if by and artist_q and (
             artist_here or chase.artist_norm(artist_q) in web._artist_norms(web.api)) else None,
         "artist_name": (artist_here or {}).get("name") or next(
             (n for n in tcgdex.artist_names(web.api) if chase.artist_norm(n) == chase.artist_norm(artist_q)), artist_q) if by else "",
         "tag": tag, "my_tags": tags.mine(conn),
-        # English · Japanese · Chinese buttons: same search and filters in another language (a set belongs to one language).
-        "lang_url": "/search?" + urlencode({k: v for k, v in every.items() if v and k not in ("lang", "set")}) + "&lang=__L__",
         "variants": inventory.VARIANTS, "conditions": inventory.CONDITIONS,
         "variant": request.session.get("entry_variant", "normal"),
         "condition": request.session.get("entry_condition", "NM"),
@@ -502,7 +510,7 @@ def _read_words(q: str, lang: str) -> "smart.Reading":
     if not q.strip():
         return smart.Reading(q=q, rest=q)
     candidates = []
-    for one in tcgdex.expand(lang):
+    for one in _expand(lang):
         try:
             if one == chinese.LANG:
                 listed = [{"id": catalog.tcgdex_set_id(r[0]), "plain_name": r[1]} for r in
@@ -569,14 +577,30 @@ def search_saved_delete(name: str = Form(...), user=Depends(current_user)):
     return RedirectResponse("/search", status_code=303)
 
 
-BUTTON_LANGS = ("en", "ja", "zh")  # Find's language buttons; Korean and the rest are under Filter
+ALL = "all"  # Find's default: no language picked, every language grouped by art (#95)
+BY_ART = (ALL, "en", "ja", "zh")  # languages shown one tile per art; Korean is searched on its own, as before
+
+
+def _expand(lang: str) -> list[str]:
+    """The languages a Find search covers: every grouped language for ALL, else the picked one's."""
+    return list(find_arts.FIND_LANGS) if lang == ALL else tcgdex.expand(lang)
+
+
+def _loading(lang: str) -> list[str]:
+    """With every language: the ones left out because their card catalog isn't complete yet (it's fetched in the
+    background meanwhile), so a search never waits on TCGdex for them. English is always searched, as one
+    language is today; with the catalog switched off, every language asks TCGdex."""
+    if lang != ALL or not card_index.enabled():
+        return []
+    return [one for one in find_arts.FIND_LANGS
+            if one not in ("en", chinese.LANG) and not card_index.ready(web.api_for(one))]
 
 
 @router.get("/describe", response_class=HTMLResponse)
-def describe_pokemon(request: Request, words: str = "", colour: str = "", kind: list[str] = Query([]), lang: str = "en",
+def describe_pokemon(request: Request, words: str = "", colour: str = "", kind: list[str] = Query([]), lang: str = ALL,
                      user=Depends(current_user)):
     """Find's "Don't know the name?": sprites of the Pokémon that fit what you typed and picked."""
-    ctx = {"user": user, "lang": lang if lang in tcgdex.CHOICES else "en", "results": [], "state": "ready",
+    ctx = {"user": user, "lang": lang if lang in tcgdex.CHOICES or lang == ALL else ALL, "results": [], "state": "ready",
            "asked": bool(words.strip() or colour or any(kind))}
     kind = [k for k in kind if k][:2]  # up to two types; a Pokémon must have both
     if not web.describer.ready():
@@ -669,7 +693,7 @@ def preview(request: Request, lang: str, card_id: str, user=Depends(current_user
         "from_find": True, "offered": offered, "extra": None, "extra_price": None, "extra_source": None,
         "site_labels": web.LINK_LABELS,
         "pokemon": _card_pokemon(user, card["name"], lang), "pokemon_sets": chase.followed(conn, user["collection_id"]),
-        "art_languages": chase_pages.art_languages(conn, user["collection_id"], our_card_id),
+        "card_languages": find_arts.card_languages(conn, user["collection_id"], our_card_id),
         "variants": inventory.VARIANTS, "conditions": inventory.CONDITIONS,
         "condition": request.session.get("entry_condition", "NM"),
         "origins": inventory.ORIGINS, "origin": request.session.get("entry_origin", ""),

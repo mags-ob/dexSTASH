@@ -168,7 +168,11 @@ def crops(image, box=None) -> list:
 # The illustration window of a card picture (left, top, right, bottom as fractions), for art matching:
 # without the frame, text box and language, the same art printed in English and Japanese looks the same.
 # Tried on Larvitar and Tyranitar in English, Japanese and Taiwan Chinese (docs/plans/116-match-arts-by-illustration.md).
-ART_BOX = (0.08, 0.10, 0.92, 0.50)
+# Nov 2026 (#95): tighter, as mainland Chinese pictures have a wider border and a different shape, so the old box
+# (0.08, 0.10, 0.92, 0.50) took in part of the frame: the same art scored 0.86-0.88 across English and mainland
+# Chinese, and 0.97-0.99 with this box, while different arts stayed at 0.81 or less.
+ART_BOX = (0.12, 0.12, 0.88, 0.46)
+ART_VERSION = 2  # raised when ART_BOX changes, so every illustration is made again (Index._art_file)
 
 
 def crop_art(image):
@@ -294,8 +298,12 @@ class Index:
     def _files(self) -> tuple[Path, Path]:
         return self.folder / f"{self.lang}.npy", self.folder / f"{self.lang}.json"
 
-    def _art_file(self) -> Path:
-        return self.folder / f"{self.lang}.art.npy"
+    def _art_file(self, version: int = ART_VERSION) -> Path:
+        """The illustrations, one file per ART_VERSION: a new crop starts with none and makes them again."""
+        return self.folder / (f"{self.lang}.art.npy" if version == 1 else f"{self.lang}.art{version}.npy")
+
+    def _old_art_files(self) -> list[Path]:
+        return [self._art_file(v) for v in range(1, ART_VERSION)]
 
     def keys(self) -> set[str]:
         return {r["key"] for r in self.rows}
@@ -359,7 +367,7 @@ class Index:
         """Forget this index, files and all."""
         with self.lock:
             self.rows, self.vectors, self.art = [], self.vectors[:0], self.art[:0]
-        for f in (*self._files(), self._art_file()):
+        for f in (*self._files(), self._art_file(), *self._old_art_files()):
             f.unlink(missing_ok=True)
 
     def save(self) -> None:
@@ -377,6 +385,8 @@ class Index:
         tmp = self._art_file().with_suffix(".tmp")
         tmp.write_bytes(art.getvalue())
         tmp.replace(self._art_file())
+        for old in self._old_art_files():  # illustrations made with an older crop
+            old.unlink(missing_ok=True)
         tmp = meta.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(rows))
         tmp.replace(meta)
@@ -440,7 +450,10 @@ def stats_saved(conn) -> dict:
 
 # --- which pictures, and where they come from -------------------------------------
 
-LANGS = ("en", "ja", "zh-cn")  # Enhanced Search covers every set in these
+LANGS = ("en", "ja", "zh-cn", "zh-tw")  # Enhanced Search covers every set in these
+# Taiwan pictures are fingerprinted for arts only (#95): many Taiwan cards have no Japanese twin with a picture.
+# Scans keep reading the Japanese ones for Taiwan cards (BATCH_INDEXES), as before.
+ARTS_ONLY = ("zh-tw",)
 
 
 def drop_kept_images() -> int:
@@ -458,10 +471,10 @@ def _safe(number: str) -> str:
 
 
 def all_sets(conn, api_for) -> tuple[list[dict], list[str]]:
-    """Every set to fingerprint: TCGdex's English and Japanese sets and the
+    """Every set to fingerprint: TCGdex's English, Japanese and Taiwan sets and the
     mainland Chinese sets stored here. Also the languages TCGdex couldn't list."""
     out, failed = [], []
-    for lang in ("en", "ja"):
+    for lang in ("en", "ja", "zh-tw"):
         try:
             listed = api_for(lang).list_sets()
         except Exception as e:
@@ -600,8 +613,8 @@ def index_sets(conn, encoder, api_for, job=None, fetch=None) -> str:
     from . import arts
     if done or made or not arts.built(conn):
         arts.rebuild(conn, job)
-    names = {"en": "English", "ja": "Japanese"}
-    note = (f" Couldn't reach TCGdex for {' or '.join(names[l] for l in unreachable)}." if unreachable else "")
+    note = (f" Couldn't reach TCGdex for {' or '.join(_LANG_NAMES.get(lang, lang) for lang in unreachable)}."
+            if unreachable else "")
     if not done and not made and not failed:
         return "Enhanced Search is up to date." + note
     text = f"Fingerprinted {done} picture{'' if done == 1 else 's'}."
@@ -611,7 +624,7 @@ def index_sets(conn, encoder, api_for, job=None, fetch=None) -> str:
 
 
 FILL_SAVE_EVERY = 64  # illustrations made between saves, so a restart loses little
-_LANG_NAMES = {"en": "English", "ja": "Japanese", "zh-cn": "Chinese"}
+_LANG_NAMES = {"en": "English", "ja": "Japanese", "zh-cn": "Chinese", "zh-tw": "Taiwan Chinese"}
 
 
 def fill_illustrations(encoder, job=None, fetch=None) -> tuple[int, int]:
@@ -742,7 +755,7 @@ def search(conn, encoder, image, box=None, k: int = MATCHES, batch_lang: str | N
     number, name, image, set_name, score (0-100)}. batch_lang keeps it to that batch's language
     (Chinese: mainland first, then Taiwan); None searches every indexed language."""
     have = languages()
-    wanted = BATCH_INDEXES.get(batch_lang, (batch_lang,)) if batch_lang else tuple(have)
+    wanted = BATCH_INDEXES.get(batch_lang, (batch_lang,)) if batch_lang else tuple(x for x in have if x not in ARTS_ONLY)
     langs = [lang for lang in wanted if lang in have]
     if not langs:
         return []

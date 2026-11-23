@@ -312,6 +312,36 @@ def set_where(set_id: str | None, stored_name: str | None, number: str | None = 
     return out + (f" · {number}" if number else "")
 
 
+_printed_codes: dict[str, str] | None = None
+
+
+def printed_code(set_id: str | None, lang: str | None = None) -> str:
+    """The set's code as printed or listed, readable in any language: a Japanese or Chinese set's own id
+    ('SV8a', 'CSV7C'), an English set's printed code from the scanner's list ('SSP'), else its id in capitals."""
+    global _printed_codes
+    lang, _, code = (set_id or "").rpartition(":") if ":" in (set_id or "") else (lang or "en", "", set_id or "")
+    if lang != "en":
+        return code
+    if _printed_codes is None:
+        import json
+        from pathlib import Path
+        try:
+            listed = json.loads(Path(__file__).with_name("set_codes.json").read_text())
+        except (OSError, ValueError):
+            listed = {}
+        _printed_codes = {tcgdex_id: printed for printed, ids in listed.items() for tcgdex_id in ids if len(ids) == 1}
+    return _printed_codes.get(code) or code.upper()
+
+
+def set_code_line(set_id: str | None, number: str | None, total: int | None = None, lang: str | None = None) -> str:
+    """Find's set line, the same in every language (#95): 'SV8a · 054/106'. The total only follows a plain number."""
+    code = printed_code(set_id, lang)
+    number = number or ""
+    if number and total and number.isdigit():
+        number = f"{number}/{total}"
+    return " · ".join(x for x in (code, number) if x)
+
+
 def set_code(set_id: str | None) -> str:
     """The short code shown in a set's image box when it has no logo."""
     code = (set_id or "").split(":", 1)[-1]

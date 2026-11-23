@@ -217,6 +217,81 @@ def test_the_catalog_fetches_grown_sets_again_and_takes_basic_fields(client, mon
     assert main.conn.execute("SELECT COUNT(*) FROM index_cards").fetchone()[0] == 0
 
 
+class NoGraphQL:
+    """TCGdex as of Nov 2026 (#95): GraphQL fails, set lists have no artist or Pokémon, each card has them."""
+
+    DETAILS = {"base1-4": {"illustrator": "Mitsuhiro Arita", "dexId": [6], "rarity": "Rare Holo", "category": "Pokemon"},
+               "base1-96": {"rarity": "Uncommon", "category": "Energy", "energyType": "Special"}}
+
+    def __init__(self, lang="en"):
+        self.cards = []
+
+        def handle(request: httpx.Request):
+            path = request.url.path
+            if path.endswith("/sets"):
+                return httpx.Response(200, json=INDEX_SETS[:1])
+            if path.endswith("/graphql"):
+                return httpx.Response(200, json={"errors": [{"message": "Cannot return null for non-nullable field Card.rarity."}]})
+            if "/sets/" in path:
+                return httpx.Response(200, json={"cards": [{"id": c["id"], "localId": c["localId"], "name": c["name"]}
+                                                           for c in INDEX_CARDS["base1"]]})
+            if "/cards/" not in path:
+                return httpx.Response(404, json={})
+            card_id = path.rsplit("/", 1)[1]
+            self.cards.append(card_id)
+            details = dict(self.DETAILS[card_id])
+            if lang == "zh-tw":
+                details.pop("dexId", None)  # Taiwan cards carry no Pokémon number
+            return httpx.Response(200, json={"id": card_id, **details})
+
+        self.api = tcgdex.TCGdex(lang, client=httpx.Client(transport=httpx.MockTransport(handle),
+                                                          base_url=f"https://api.tcgdex.net/v2/{lang}"))
+
+
+def test_the_catalog_fetches_each_cards_artist_and_pokemon_when_graphql_fails(client, monkeypatch):
+    _setup_with_set(client)
+    _index_on(monkeypatch)
+    row = lambda lang, cid: tuple(main.conn.execute("SELECT illustrator, dex_ids, rarity, kind FROM index_cards "
+                                                    "WHERE lang = ? AND id = ?", (lang, cid)).fetchone())
+    ja, tw = NoGraphQL("ja"), NoGraphQL("zh-tw")
+    assert card_index.build(ja.api, main.conn, sleep=lambda s: None)[0] == 1
+    assert row("ja", "base1-4")[:2] == (None, None)  # the set list alone
+    assert card_index.fill_details(ja.api, main.conn) == 2
+    assert row("ja", "base1-4") == ("Mitsuhiro Arita", "[6]", "Rare Holo", "pokemon")
+    assert row("ja", "base1-96") == ("", None, "Uncommon", "energy")  # no artist: kept as '' and not asked again
+    assert card_index.fill_details(ja.api, main.conn) == 0 and len(ja.cards) == 2
+    card_index.build(tw.api, main.conn, sleep=lambda s: None)
+    card_index.fill_details(tw.api, main.conn)
+    assert row("zh-tw", "base1-4")[:2] == ("Mitsuhiro Arita", "[6]")  # the Japanese twin's Pokémon number
+    # The set fetched again (still no GraphQL) keeps the details, so they aren't asked for again.
+    main.conn.execute("UPDATE index_sets SET fetched_at = '2000-01-01' WHERE lang = 'ja'")
+    assert card_index.build(ja.api, main.conn, sleep=lambda s: None)[0] == 1
+    assert row("ja", "base1-4") == ("Mitsuhiro Arita", "[6]", "Rare Holo", "pokemon")
+    assert card_index.fill_details(ja.api, main.conn) == 0
+
+
+def test_taiwan_cards_with_no_japanese_twin_take_their_pokemon_from_their_name(client, monkeypatch):
+    from test_app import SAMPLE_NAMES
+    _setup_with_set(client)
+    _index_on(monkeypatch)
+    main.conn.executemany("INSERT INTO index_cards (lang, id, set_id, local_id, name, folded, illustrator, kind, dex_ids) "
+                          "VALUES ('zh-tw', ?, 'S7R', ?, ?, '', 'Someone', ?, NULL)",
+                          [("S7R-028", "028", "噴火龍V", "pokemon"), ("S7R-029", "029", "<火箭隊的>噴火龍", "pokemon"),
+                           ("S7R-100", "100", "寶可夢中心", "trainer")])
+    assert card_index.dex_from_names(main.conn, SAMPLE_NAMES) == 2
+    got = dict(main.conn.execute("SELECT id, dex_ids FROM index_cards WHERE lang = 'zh-tw' AND set_id = 'S7R'").fetchall())
+    assert got == {"S7R-028": "[6]", "S7R-029": "[6]", "S7R-100": None}
+
+
+def test_cards_from_graphql_are_never_asked_for_one_by_one(client, monkeypatch):
+    _setup_with_set(client)
+    _index_on(monkeypatch)
+    fake = IndexTCGdex()
+    card_index.build(fake.api, main.conn, sleep=lambda s: None)
+    monkeypatch.setattr(fake.api, "get_card", lambda card_id: (_ for _ in ()).throw(AssertionError(card_id)))
+    assert card_index.fill_details(fake.api, main.conn) == 0  # sv1-004 has no artist, and that's known
+
+
 def test_find_prices_cards_nobody_keeps_from_tcgcsv(client):
     _setup_with_set(client)
     main.conn.execute("INSERT INTO tcgcsv_groups (category, group_id, name, abbreviation) VALUES (3, 300, 'Far Set', 'FAR')")

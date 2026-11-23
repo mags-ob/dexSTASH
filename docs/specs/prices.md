@@ -87,7 +87,12 @@ same stored numbers, so a card's tile, its page, a set's value and the stash's w
     date, and per source what it did and its first errors. The last 30 are kept; Data sources shows the latest (opened by itself when it wasn't
     `ok`), with a link to Older price updates for the rest, newest first.
 20. The nightly run is on by default at 04:00 in the install's time zone; Data sources turns it off or moves
-    it. After it come the nightly chores: the backup, the picture tidy-up, and thinning history. A night
+    it. It runs as jobs, one after another: Check for updates (as the Data sources button, without its
+    Enhanced Search and picture steps), so new sets and followed Pokémon's new cards are priced the same
+    night; the price update, with Find's card catalog (new sets, then each card's artist and Pokémon); new
+    sets for Enhanced Search (pictures, then illustrations, then arts, which need the catalog's artists and
+    Pokémon); and last the nightly chores: the backup, the picture tidy-up and recheck, and thinning
+    history. A step that fails is logged and the rest still run (#95). A night
     missed while the server was off isn't caught up, and a failed run is tried again the next night.
 21. A short run prices new cards straight away: after an add, an import, or a scan batch's matches, for just
     those cards' sets, from TCGCSV, CardTrader, PriceCharting and TCGdex. Sets added during a run are queued

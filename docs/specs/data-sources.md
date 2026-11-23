@@ -70,7 +70,7 @@ each site's terms. A new source, or a new use of an old one, starts here.
 
 15. Account › Data sources is for the admin who set up the install. Its tabs:
     - **Cards**: Check for updates (new and changed sets on TCGdex and in the Chinese sets, new cards of
-      followed Pokémon, new sprites, missing pictures), card sets and languages, Pokémon data (names, sprites,
+      followed Pokémon, new sprites, missing pictures; the nightly update runs it too, before prices), card sets and languages, Pokémon data (names, sprites,
       descriptions).
     - **Prices**: Update prices, the nightly update, rebuilding downloaded data, sets not matched on TCGCSV or CardTrader (with a way to
       pick the match), sets with no price source, how many printings each source prices, the latest full
