@@ -65,7 +65,7 @@ Open your domain. The first visit asks for a one-time setup code, which is in th
 
 The app downloads card data and prices into your own `data/` folder while it runs; none of it is in this repository. [NOTICE.md](NOTICE.md) credits each source and its terms.
 
-| Source | What it gives | On? |
+| Source | What it gives | Status |
 | --- | --- | --- |
 | [TCGdex](https://tcgdex.dev) | Sets, cards and card pictures | Always on |
 | [PokéAPI](https://pokeapi.co) | Pokémon names, types and sprites | Always on |
