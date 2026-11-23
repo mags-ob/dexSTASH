@@ -12,6 +12,27 @@ os.environ.setdefault("DEXSTASH_TCGCSV", "0")  # round 11: TCGCSV is tested with
 os.environ.setdefault("DEXSTASH_EURO_RATE", "0")  # and the ECB rate with a saved reply
 os.environ.setdefault("DEXSTASH_CARD_INDEX", "0")  # round 15d: the local card catalog is tested on its own
 
+import socket  # noqa: E402
+
+# Tests never reach another site (#128). A request that would is refused at once and names the site, so a test
+# that leaks to the real TCGdex fails the same on every machine instead of only where the site can be reached.
+# Proxy settings are cleared too, or a request would only reach the proxy on this machine and slip through.
+for _name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+    os.environ.pop(_name, None)
+_LOCAL = ("localhost", "testserver", "127.", "::1", "0.0.0.0")
+_getaddrinfo = socket.getaddrinfo
+
+
+def _local_only(host, *args, **kwargs):
+    """socket.getaddrinfo for this machine only; any other host is refused with its name."""
+    name = host.decode() if isinstance(host, bytes) else str(host)
+    if host is not None and not name.startswith(_LOCAL):
+        raise socket.gaierror(socket.EAI_NONAME, f"Tests don't reach other sites ({name})")
+    return _getaddrinfo(host, *args, **kwargs)
+
+
+socket.getaddrinfo = _local_only
+
 from app import sites  # noqa: E402
 
 # Round 14: the tests' database is a new install, so every price and picture site would start switched off.
