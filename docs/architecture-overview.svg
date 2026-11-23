@@ -93,7 +93,7 @@ font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
 <text class="t" x="36" y="476">Your data/ folder</text>
 <rect class="k-sql" x="307.0" y="461" width="56" height="20" rx="4"/><text class="kt" x="314.0" y="475">SQLite</text>
 <text class="d" x="36" y="498">dexstash.db: your data, 50 tables</text>
-<text class="d" x="36" y="516">dexstash-catalog.db: downloads, 15 tables</text>
+<text class="d" x="36" y="516">dexstash-catalog.db: downloads, 16 tables</text>
 <text class="d" x="36" y="534">backups/: before upgrades, nightly, by hand</text>
 <text class="d" x="36" y="552">scans/, card-photos/: your photos</text>
 <text class="d" x="36" y="570">models/, index/: Enhanced Search</text>

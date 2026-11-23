@@ -47,4 +47,5 @@ Priority: R1 and R5 Must; R2 and R3 Should; R4 Could (scanning is off by default
 
 ## Open questions
 
-- Is the first public release (1.0.0) tied to a feature set? (maintainer)
+- None right now. (The first public release, 1.0.0, is everything merged up to Find by art, #95.)
+

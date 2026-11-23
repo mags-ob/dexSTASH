@@ -1,8 +1,14 @@
 # Changelog
 
-Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor version, and a round shipped in parts raises the patch version for each later part. On start, a new version backs up the database before changing it; an older version won't start on a database a newer one has changed (see "Updating" in the README).
+Versions follow `MAJOR.MINOR.PATCH`: from 1.0.0, a release with new features raises the minor version and a release with only fixes raises the patch version (before 1.0, each round raised the minor version). On start, a new version backs up the database before changing it; an older version won't start on a database a newer one has changed (see [Updating](docs/updating.md)).
 
-## Unreleased
+## 1.0.0
+
+The first public release: Find searches every language with one tile per art, arts match by the illustration, trade scans, and editing arts on the grid. Database step 20.
+
+**Before updating:** press Account › Backups › **Back up now** and **Download photos**, and keep both off the server. 0.29 won't start on a database 1.0.0 has updated; to go back, restore the backup made before the update (`data/backups/…-upgrade.db`), as [Updating](docs/updating.md) explains.
+
+**After updating:** with Enhanced Search on, a background task gives every picture an illustration fingerprint and groups every Pokémon's arts again. It takes a while; Data sources shows how far it is, and pages keep working meanwhile. `DEXSTASH_VERSION=1.0` in `.env` follows the newest 1.0.x.
 
 ### Added
 - **Find searches every language at once, one tile per art.** With no language picked, a search covers English, Japanese and Chinese, and the same art in several languages shows once, with EN, JA and ZH tags (filled when you have that one). The language buttons under the search box are gone: pick a language in Filters, and it shows as a chip with ✕. A card page shows the languages its art is printed in near the picture, in each language's colour, filled when you have it, for any card (#95).
@@ -23,6 +29,7 @@ Versions follow `MAJOR.MINOR.PATCH`. Until 1.0 each round raises the minor versi
 - **A card or set TCGdex doesn't answer for no longer shows "Can't reach your server".** The app's own page says "Couldn't load this card" (or set) with Try again and Back, and writes why to the log. The offline screen is only for a server that really can't be reached, and the "upgrade didn't finish" page now shows on a phone too (#77).
 
 ### Changed
+- **A shorter README.** Quick start now gets the app reachable, with the steps for your own reverse proxy or the bundled Caddy, where the setup code is, and a link to the full setup guide. Where data comes from is one table of sources, saying which are optional.
 - **Set codes instead of Japanese and Chinese set names.** Find's tiles show the set code and number ("SV8a · 054/106") in every language, and Find's set results and the card view show a Japanese or Chinese set by its code, so they read the same whatever the language. English sets keep their names on the card view (#95).
 - **The project scan reads private words only from `rules/private-words.txt`**, no longer from the `DEXSTASH_PRIVATE_WORDS` variable; move any words still set there into the file. It also finds Python on Windows (#108).
 - **"Last price update" on Data sources › Prices shows the latest full run only.** Older ones (the last 30) are on a new Older price updates page, linked under it. A latest run with problems still opens by itself (#65).

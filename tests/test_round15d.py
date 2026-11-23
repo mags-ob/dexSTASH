@@ -306,4 +306,4 @@ def test_find_prices_cards_nobody_keeps_from_tcgcsv(client):
 
 def test_version_is_0153():
     from app import __version__
-    assert __version__.startswith("0.")
+    assert tuple(int(x) for x in __version__.split(".")) >= (0, 15, 3)
