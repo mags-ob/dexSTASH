@@ -50,11 +50,13 @@ for a person to check and add them, all on the household's own server with no cl
 ### Enhanced Search
 
 12. When the text can't settle the card, Enhanced Search compares the photo with fingerprints of every set's
-    card pictures in English, Japanese and mainland Chinese. It's turned on from Data sources, which
+    card pictures in English, Japanese and mainland Chinese (Taiwan sets' own pictures are fingerprinted too,
+    for arts only; scans read the Japanese ones for Taiwan cards). It's turned on from Data sources, which
     downloads the picture model (CLIP ViT-B/32 as ONNX, about 350 MB) into `data/models/`.
 13. Pictures are downloaded one at a time, fingerprinted and dropped: only the fingerprints are kept, one
     index per language in `data/index/`. Each picture gets two: the whole card (`<lang>.npy`, what Enhanced
-    Search compares) and the illustration only (`<lang>.art.npy`, row for row, for arts; zeros until it's made).
+    Search compares) and the illustration only (`<lang>.art2.npy`, row for row, for arts; zeros until it's made;
+    the 2 is `pictures.ART_VERSION`, raised when the crop changes so every illustration is made again).
     Pictures fingerprinted before illustrations existed are downloaded once more in the background
     ("Fingerprinting illustrations", after new sets, part of Check for updates and once after upgrading); a
     restart picks up where it stopped. A picture that can't be downloaded again counts as tried, so the fill

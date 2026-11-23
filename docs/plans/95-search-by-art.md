@@ -134,3 +134,19 @@ Testing: with Best match, every English art came first and the Japanese and Chin
 each language's results were simply joined. With every language and no sort picked, results are now ordered by
 how new their set is within its language (the same rank Newest set uses), before grouping, so an art takes the
 place of its newest card. A picked language or another sort is unchanged.
+
+## 23 Nov 2026: tighter crop and Taiwan cards (maintainer chose both)
+
+Checks on the test copy (Ampharos, #181):
+- Same art, English and mainland Sword & Shield cards scored 0.86-0.88 with the old crop (bar 0.885). Mainland
+  pictures are 286x400 with a wider border; English 245x337. With (0.12, 0.12, 0.88, 0.46) the same pairs
+  scored 0.97-0.99, pairs already matched stayed 0.96-0.97 and different arts by the same artist 0.81 or less.
+  `pictures.ART_BOX` changes and `ART_VERSION` 2 keeps illustrations in `<lang>.art2.npy`, so every one is made
+  again in the background (about 38,000 queued downloads, once); the old file goes on the first save.
+- 2,665 of 5,959 Taiwan Pokémon cards had no Pokémon (no Japanese twin on TCGdex), and Taiwan cards borrowed a
+  Japanese picture most Japanese cards don't have. `card_index.dex_from_names` reads the Pokémon from the
+  Chinese name; Enhanced Search now also fingerprints Taiwan sets' own TCGdex pictures (`pictures.LANGS`), for
+  arts only: scans keep reading the Japanese pictures for Taiwan cards (`ARTS_ONLY`).
+- After-upgrade task 12 runs both. Bar and rule unchanged.
+- Open: cards with no TCGdex picture at all (most Japanese; Taiwan 蒼空烈流) stay alone unless Limitless pictures
+  are fingerprinted too (asked the maintainer; Limitless publishes no terms for its pictures).

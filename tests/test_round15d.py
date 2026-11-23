@@ -270,6 +270,19 @@ def test_the_catalog_fetches_each_cards_artist_and_pokemon_when_graphql_fails(cl
     assert card_index.fill_details(ja.api, main.conn) == 0
 
 
+def test_taiwan_cards_with_no_japanese_twin_take_their_pokemon_from_their_name(client, monkeypatch):
+    from test_app import SAMPLE_NAMES
+    _setup_with_set(client)
+    _index_on(monkeypatch)
+    main.conn.executemany("INSERT INTO index_cards (lang, id, set_id, local_id, name, folded, illustrator, kind, dex_ids) "
+                          "VALUES ('zh-tw', ?, 'S7R', ?, ?, '', 'Someone', ?, NULL)",
+                          [("S7R-028", "028", "噴火龍V", "pokemon"), ("S7R-029", "029", "<火箭隊的>噴火龍", "pokemon"),
+                           ("S7R-100", "100", "寶可夢中心", "trainer")])
+    assert card_index.dex_from_names(main.conn, SAMPLE_NAMES) == 2
+    got = dict(main.conn.execute("SELECT id, dex_ids FROM index_cards WHERE lang = 'zh-tw' AND set_id = 'S7R'").fetchall())
+    assert got == {"S7R-028": "[6]", "S7R-029": "[6]", "S7R-100": None}
+
+
 def test_cards_from_graphql_are_never_asked_for_one_by_one(client, monkeypatch):
     _setup_with_set(client)
     _index_on(monkeypatch)

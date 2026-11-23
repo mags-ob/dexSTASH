@@ -42,7 +42,7 @@ it on a page that says what it is, what you have of it and what it's worth.
    Each card's artist, Pokémon and rarity come with its set when TCGdex's GraphQL answers; when it doesn't
    (since Nov 2026 it fails sets with a missing field, and has no Japanese or Taiwan sets), they're fetched one
    card at a time in the background, once, and kept when the set is fetched again. Taiwan cards take their
-   Japanese twin's Pokémon. Arts are grouped again when that finishes (#95).
+   Japanese twin's Pokémon, else the one their Chinese name names. Arts are grouped again when that finishes (#95).
 10. Prices on results come from stored prices only; a page never fetches one (see [prices](prices.md)).
     An empty Find shows Recently viewed, the cards opened last, as picture and name only, with no price line
     (#66).

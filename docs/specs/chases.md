@@ -32,7 +32,8 @@ the stash.
    illustrators never, not even through a card with no illustrator. Mainland Chinese cards take their
    illustrator from the Chinese datasets (saved with their tags). A rainbow or gold
    version (rarity group "secret") of a same-illustrator card joins at 0.85: it's its own card in the art, with its
-   rarity in gold in the art sheet. Taiwan Chinese cards use their Japanese twin's fingerprints. A card whose
+   rarity in gold in the art sheet. Taiwan Chinese cards use their own picture's fingerprints, else their
+   Japanese twin's. The illustration is the box (0.12, 0.12, 0.88, 0.46) of the picture. A card whose
    illustration isn't made yet falls back to the old rule (same illustrator, whole card at 0.92). Without
    Enhanced Search, the whole card is all there is. Every other Pokémon's cards are grouped the same way into
    `catalog.card_arts` after the illustrations change (for Find); a followed Pokémon's arts, with your fixes,

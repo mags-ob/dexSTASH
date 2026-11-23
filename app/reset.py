@@ -18,7 +18,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from . import backup, db
+from . import backup, db, pictures
 
 DATA = db.DB_PATH.parent
 
@@ -31,6 +31,7 @@ ERASE = [
     ("index/zh-cn.npy", "Enhanced Search fingerprints of Chinese cards (they include cards added by hand)"),
     ("index/zh-cn.json", None),
     ("index/zh-cn.art.npy", None),
+    (f"index/zh-cn.art{pictures.ART_VERSION}.npy", None),
 ]
 # Kept: downloads that are the same for everyone.
 KEEP = [

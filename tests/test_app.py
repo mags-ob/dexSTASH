@@ -2077,6 +2077,7 @@ def pics(client, monkeypatch, tmp_path):
     """Picture search with a fake model, its files in a temporary folder."""
     monkeypatch.setattr(web, "api", FakePictureAPI())
     monkeypatch.setitem(web._other_apis, "ja", NoSetsAPI())
+    monkeypatch.setitem(web._other_apis, "zh-tw", NoSetsAPI())  # Taiwan pictures are fingerprinted for arts too (#95)
     for name, sub in (("IMAGES", "card-images"), ("INDEX", "index"), ("MODELS", "models")):
         monkeypatch.setattr(pictures, name, tmp_path / sub)
     pictures.forget_loaded()

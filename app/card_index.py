@@ -192,9 +192,31 @@ def fill_details(api, conn=None, progress=None, limit: int | None = None) -> int
         filled += 1
     conn.execute("""UPDATE index_cards SET dex_ids = (SELECT j.dex_ids FROM index_cards j WHERE j.lang = 'ja'
                     AND j.id = index_cards.id) WHERE lang = 'zh-tw' AND dex_ids IS NULL""")
+    dex_from_names(conn)
     if filled:
         log.info("card index %s: details of %d cards fetched", api.lang, filled)
     return filled
+
+
+def dex_from_names(conn, names=None) -> int:
+    """Taiwan Pokémon cards with no Japanese twin (TCGdex has many Taiwan sets it has no Japanese cards for): their
+    Pokémon from the card's Chinese name ('電龍V' -> 181), when the name list is here. Returns how many."""
+    if names is None:
+        from .names import Names
+        names = Names(db.DB_PATH.parent / "pokemon_species_names.csv")
+    if not names.available():
+        return 0
+    rows = conn.execute("SELECT id, name FROM index_cards WHERE lang = 'zh-tw' AND dex_ids IS NULL "
+                        "AND kind = 'pokemon'").fetchall()
+    found = []
+    for r in rows:
+        name = (r["name"] or "").replace("<", "").replace(">", "")  # '<火箭隊的>電龍'
+        english = names.to_english(name)
+        dex = names.species_id(english) if english else names.species_id(name)
+        if dex:
+            found.append((json.dumps([dex]), r["id"]))
+    conn.executemany("UPDATE index_cards SET dex_ids = ? WHERE lang = 'zh-tw' AND id = ?", found)
+    return len(found)
 
 
 def due(conn, lang: str, sets: list[dict]) -> list[dict]:
