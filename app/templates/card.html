@@ -7,7 +7,7 @@
 {%- if fix_row %}{{ back_to("/imports/" ~ fix_row.batch_id ~ "#row-" ~ fix_row.id, "the import") }}
 {%- elif scan_fix %}{{ back_to("/scans/" ~ scan_fix.batch_id ~ "#scan-" ~ scan_fix.id, "the batch") }}
 {%- elif preview or from_find %}{{ back_to(request.session.get('find_url') or '/search', "Find") }}
-{%- else %}{{ back_to("/sets/" ~ card.set_id, set_label(card.set_id, card.set_name)) }}{% endif %}
+{%- else %}{{ back_to("/sets/" ~ card.set_id, card_set(card.set_id, card.set_name)) }}{% endif %}
 {%- endblock %}
 
 {% block content %}
@@ -72,8 +72,17 @@
       <div style="margin:0;font-size:22px;font-weight:600;line-height:1.2;flex:1;min-width:0">{{ card.name }}{% if shown.translated %}{# The English name on its own line under it #}<div class="muted cv-en" style="font-weight:400;font-size:16px">{{ shown.en }}</div>{% endif %}</div>
     </div>
     {# The set name opens the set. #}
-    <div class="muted" style="font-size:14px"><a class="muted" href="{{ ('/set-preview/' ~ lang ~ '/' ~ (tcgdex_set | urlencode)) if preview else ('/sets/' ~ card.set_id) }}">{{ set_label(card.set_id, card.set_name) }}</a> &middot; <span class="cno">#{{ card.number }}</span></div>
+    <div class="muted" style="font-size:14px"><a class="muted" href="{{ ('/set-preview/' ~ lang ~ '/' ~ (tcgdex_set | urlencode)) if preview else ('/sets/' ~ card.set_id) }}">{{ card_set(card.set_id, card.set_name, lang if preview else None) }}</a> &middot; <span class="cno">#{{ card.number }}</span></div>
     {% if card.rarity or card_types(card.types) %}<div class="cv-kind">{{ rarity_line(card.rarity) }}{% if card.rarity and card_types(card.types) %} &middot; {% endif %}{{ type_line(card.types) }}</div>{% endif %}
+    {% if card_languages %}{# The languages the card's art is printed in, near the picture (#95): each in its colour,
+       filled when you have that language; a tap opens that language's card. One chip for a card in one language. #}
+    <div class="pr-row cv-langs" aria-label="Languages">
+      {% for l in card_languages %}
+      {% if l.link %}<a class="pr-chip lchip lchip-{{ l.key }}{% if l.owned %} have{% endif %}" href="{{ l.link }}" aria-label="{{ l.label }}{{ ', you have it' if l.owned }}">{{ l.label }}</a>
+      {% else %}<span class="pr-chip lchip lchip-{{ l.key }} here{% if l.owned %} have{% endif %}" aria-current="page" aria-label="{{ l.label }}{{ ', you have it' if l.owned }}">{{ l.label }}</span>{% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
     {# One card's price: the first printing you own, else the printing picked for adding. #}
     {% macro source_text(label, src) -%}
       {{ label }}{% if src %} &middot; {% if src.short in ("Your link", "Found") and src.url %}<a href="{{ src.url }}" target="_blank" rel="noopener">{{ src.label }}</a>{% else %}{{ src.label }}{% if src.label == "TCGplayer" %} price{% endif %}{% endif %}{% endif %}
@@ -178,17 +187,6 @@
     {% for v in offered %}{% set have = v in owned_variants %}{% set src = price_sources.get(v) %}
     <span class="pr-chip{% if have %} have{% endif %}">{% if have %}{{ icon("check", 13) }}{% elif chase %}{{ icon("heart-on", 13) }}{% endif %}{{ variants[v] }}
       {%- if not owned_count %} <small>{% if v in price_map %}{% if src and src.label.startswith("≈") %}&asymp;&#8202;{% endif %}{{ price_map[v] | money }}{% else %}no price{% endif %}</small>{% endif %}</span>
-    {% endfor %}
-  </div>
-</section>
-{% endif %}
-{% if art_languages %}
-<section class="cv-prints" aria-label="Languages">{# The same art in other languages (a followed Pokémon or artist), ✓ the ones you have #}
-  <h2 class="cv-label">Languages</h2>
-  <div class="pr-row">
-    {% for l in art_languages %}{% set inner %}{% if l.owned %}{{ icon("check", 13) }}{% endif %}{{ l.label }}{% endset %}
-    {% if l.link %}<a class="pr-chip{% if l.owned %} have{% endif %}" href="{{ l.link }}">{{ inner }}</a>
-    {% else %}<span class="pr-chip here{% if l.owned %} have{% endif %}" aria-current="page">{{ inner }}</span>{% endif %}
     {% endfor %}
   </div>
 </section>
@@ -336,7 +334,7 @@
 
 <dialog id="cv-add-dialog" class="cv-add">
 <div class="cv-add-head"><h2>Add card</h2>{{ x_close("this.closest('dialog').close()") }}</div>
-<p class="muted" style="margin:0 0 4px;font-size:14px">{{ card.name }} &middot; {{ card.set_name }} <span class="cno">#{{ card.number }}</span></p>
+<p class="muted" style="margin:0 0 4px;font-size:14px">{{ card.name }} &middot; {{ card_set(card.set_id, card.set_name, lang if preview else None) }} <span class="cno">#{{ card.number }}</span></p>
 <form id="cv-add" method="post" action="{{ '/search/add' if preview else '/cards/' ~ card.id ~ '/adjust' }}">
   <input type="hidden" name="card_id" value="{{ tcgdex_card_id }}"><input type="hidden" name="set_id" value="{{ tcgdex_set }}"><input type="hidden" name="lang" value="{{ lang }}">
   <div class="cv-label">Printing</div>

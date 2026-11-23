@@ -56,14 +56,28 @@ def test_illustrations_written_for_other_rows_are_made_again(tmp_path, monkeypat
     index = pictures.Index("en", tmp_path)
     index.put([{"card": "a", "set": "s", "key": "k1"}], v[:1], v[1:2])
     index.save()
-    np.save(tmp_path / "en.art.npy", np.zeros((5, DIM), np.float16))  # out of step with the rows
+    np.save(index._art_file(), np.zeros((5, DIM), np.float16))  # out of step with the rows
     again = pictures.Index("en", tmp_path)
     assert len(again.rows) == 1 and again.art_count() == 0 and len(again.missing_art()) == 1
     # The illustrations' file is not a language of its own.
     monkeypatch.setattr(pictures, "INDEX", tmp_path)
     assert pictures.languages() == ["en"]
     again.drop()
-    assert not (tmp_path / "en.art.npy").exists()
+    assert not index._art_file().exists()
+
+
+def test_a_new_crop_makes_every_illustration_again(tmp_path):
+    v = np.eye(DIM, dtype=np.float32)
+    old = tmp_path / "en.art.npy"  # made with the first crop (ART_VERSION 1)
+    index = pictures.Index("en", tmp_path)
+    index.put([{"card": "a", "set": "s", "key": "k1"}], v[:1])
+    index.save()
+    np.save(old, v[1:2].astype(np.float16))
+    again = pictures.Index("en", tmp_path)
+    assert pictures.ART_VERSION > 1 and again.art_count() == 0 and len(again.missing_art()) == 1
+    again.put_art(["k1"], v[2:3])
+    again.save()
+    assert not old.exists() and pictures.Index("en", tmp_path).art_count() == 1
 
 
 # --- AC3/AC4: the rule ---------------------------------------------------------------------------------------

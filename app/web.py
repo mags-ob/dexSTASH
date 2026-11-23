@@ -183,6 +183,19 @@ def _set_label(set_id: str | None, name: str | None) -> str:
 
 
 templates.env.globals["set_label"] = _set_label
+
+
+def _card_set(set_id: str | None, name: str | None, lang: str | None = None) -> str:
+    """A card's set as the card view and Find's set results show it (#95): an English set by its name, a Japanese
+    or Chinese one by its code, which reads the same in any language. lang: when set_id is TCGdex's own."""
+    where = set_id.split(":", 1)[0] if ":" in (set_id or "") else (lang or "en")
+    if where == "en":
+        return _set_label(set_id, name)
+    return display.printed_code(set_id, where) or name or ""
+
+
+templates.env.globals["card_set"] = _card_set
+templates.env.globals["set_code_line"] = display.set_code_line
 templates.env.globals["set_where"] = display.set_where
 templates.env.globals["words_used"] = lambda: pokemon_words.suggestions(conn)
 # Search and name boxes: no autocorrect, capitals or spell check. Notes keep them.
@@ -465,7 +478,23 @@ def _after_nightly() -> None:
         rollup_conn.close()
 
 
-nightly = sync.Nightly(updater, after=_after_nightly, jobs=background)
+def _nightly_checks(c, job) -> str | None:
+    """The nightly Check for updates, unless the Chinese sets are loading or a check is already going."""
+    if background.running("chs") or background.running("update"):
+        return None
+    from .routes import data_sources  # the routes import this module, so not at the top
+    return data_sources.check_updates(c, job or jobs.Job("nightly-checks", "Nightly check for updates"), nightly=True)
+
+
+def _nightly_pictures(c, job) -> str | None:
+    """New sets for Enhanced Search, after the price update has filled the card catalog's artists and Pokémon."""
+    if _pictures_ready() and _index_pictures("Adding new sets to Enhanced Search"):
+        return "New sets are being added to Enhanced Search."
+    return None
+
+
+nightly = sync.Nightly(updater, after=_after_nightly, jobs=background, checks=_nightly_checks,
+                       pictures=_nightly_pictures)
 
 matcher = importer.Matcher(lambda lang: api_for(lang), jobs=background)
 

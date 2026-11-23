@@ -100,17 +100,17 @@ def test_edit_arts_opens_a_sheet_of_the_arts_cards(client, monkeypatch):
 def test_the_card_page_lists_the_arts_languages(client, monkeypatch):
     _clefairy(client, monkeypatch)
     page = client.get("/cards/sv03.5-035").text
-    langs = page.split('aria-label="Languages"')[1].split("</section>")[0]
-    assert '<span class="pr-chip here" aria-current="page">English</span>' in langs
-    assert '<a class="pr-chip" href="/preview/ja/SV2a-035">Japanese</a>' in langs
-    assert re.search(r'<a class="pr-chip have" href="/cards/zh-tw:SV2a-035"><svg[^>]*>.*?</svg>Chinese</a>', langs, re.S)
-    assert page.index('aria-label="Printings"') < page.index('aria-label="Languages"')
-    assert 'aria-label="Languages"' not in client.get("/cards/t1-1").text  # in no followed art
-    # An art in one language only: nothing to list.
-    main.conn.execute("INSERT INTO sets (set_id, name, printed_total, total) VALUES ('base1', 'Base Set', 102, 102)")
-    main.conn.execute("INSERT INTO cards (id, set_id, number, sort_number, is_main_set, name) VALUES ('base1-5', 'base1', '5', 5, 1, 'Clefairy')")
-    main.conn.commit()
-    assert 'aria-label="Languages"' not in client.get("/cards/base1-5").text
+    langs = page.split('aria-label="Languages"')[1].split("</div>")[0]
+    # #95: near the picture, each in its language's colour, filled when you have it; no tick.
+    assert '<span class="pr-chip lchip lchip-en here" aria-current="page" aria-label="English">English</span>' in langs
+    assert '<a class="pr-chip lchip lchip-ja" href="/preview/ja/SV2a-035" aria-label="Japanese">Japanese</a>' in langs
+    assert '<a class="pr-chip lchip lchip-zh have" href="/cards/zh-tw:SV2a-035" aria-label="Chinese, you have it">Chinese</a>' in langs
+    assert "<svg" not in langs
+    assert page.index('aria-label="Languages"') < page.index('class="cv-pricebox"') < page.index('aria-label="Printings"')
+    # A card in one language still shows its one chip, so every card page looks the same.
+    page = client.get("/cards/t1-1").text
+    langs = page.split('aria-label="Languages"')[1].split("</div>")[0]
+    assert langs.count('class="pr-chip') == 1 and "English" in langs
 
 
 def test_the_pokemon_words_start_collapsed_as_on_find(client, monkeypatch):

@@ -1,6 +1,7 @@
 """A local card catalog for Find, search and close matches.
 
-Every card of every TCGdex set in a language, fetched once per set with one GraphQL request and kept in the
+Every card of every TCGdex set in a language, fetched once per set with one GraphQL request (or the set's
+list, then each card's details one at a time when GraphQL refuses) and kept in the
 catalog file (dexstash-catalog.db, index_sets and index_cards), with a full-text index of names and artists
 (index_names, SQLite FTS5 with trigrams, so any part of a name matches as TCGdex's own filter does). Once a
 language has every set, TCGdex.search_cards answers from here instead of asking TCGdex, and Find's rarity and
@@ -115,6 +116,11 @@ def _row(lang: str, set_id: str, c: dict) -> tuple:
 def store_set(conn, lang: str, set_id: str, cards: list[dict], listed: int | None = None) -> int:
     """Keep one set's cards (replacing what was kept). listed is how many cards TCGdex's set list says it has."""
     rows = [_row(lang, set_id, c) for c in cards if c.get("id")]
+    # A set list without details (GraphQL refused) keeps the details fetched card by card before (fill_details).
+    kept = {r["id"]: r for r in conn.execute("SELECT id, rarity, illustrator, kind, dex_ids FROM index_cards "
+                                             "WHERE lang = ? AND set_id = ? AND illustrator IS NOT NULL", (lang, set_id))}
+    rows = [r[:7] + (r[7] or kept[r[1]]["rarity"], kept[r[1]]["illustrator"], r[9] or kept[r[1]]["kind"],
+                     kept[r[1]]["dex_ids"]) if r[8] is None and r[1] in kept else r for r in rows]
     with db.transaction(conn):
         conn.execute("DELETE FROM index_cards WHERE lang = ? AND set_id = ?", (lang, set_id))
         conn.executemany("""INSERT OR REPLACE INTO index_cards (lang, id, set_id, local_id, name, folded, image, rarity,
@@ -143,6 +149,8 @@ def _fetch_set(api, set_id: str) -> list[dict] | None:
             body = resp.json()
             cards = ((body.get("data") or {}).get("set") or {}).get("cards")
             if not body.get("errors") and isinstance(cards, list):
+                for c in cards:  # details came: a card with no artist isn't asked again (fill_details)
+                    c["illustrator"] = c.get("illustrator") or ""
                 return cards
         except Exception as e:
             log.info("index: GraphQL for %s %s failed: %s", api.lang, set_id, e)
@@ -151,6 +159,64 @@ def _fetch_set(api, set_id: str) -> list[dict] | None:
     except Exception as e:
         log.info("index: set %s %s not fetched: %s", api.lang, set_id, e)
         return None
+
+
+def fill_details(api, conn=None, progress=None, limit: int | None = None) -> int:
+    """The artist, Pokémon number and rarity of cards kept without them, asked of TCGdex one card at a time
+    through the queue. TCGdex's GraphQL stopped sending them (Nov 2026: it fails a set over one card's missing
+    field, and has no Japanese or Taiwan sets), and arts and Find's groups need them. A card with no artist
+    keeps '' so it isn't asked again; one TCGdex didn't send is asked next time. Taiwan cards, which have no
+    Pokémon number, take their Japanese twin's. Returns how many cards were filled."""
+    conn = conn or _db()
+    ids = [r[0] for r in conn.execute("SELECT id FROM index_cards WHERE lang = ? AND illustrator IS NULL "
+                                      "ORDER BY set_id DESC, id", (api.lang,)).fetchall()][:limit]
+    filled = 0
+    for n, card_id in enumerate(ids):
+        if progress is not None and n % 25 == 0:
+            progress(n, len(ids))
+        try:
+            c = api.get_card(card_id)
+        except Exception as e:
+            log.info("index: details of %s %s not fetched: %s", api.lang, card_id, e)
+            continue
+        if not isinstance(c, dict):
+            continue
+        dex = c.get("dexId")
+        rarity = c.get("rarity") if c.get("rarity") not in (None, "None") else None
+        conn.execute("UPDATE index_cards SET illustrator = ?, dex_ids = ?, rarity = COALESCE(?, rarity), "
+                     "kind = COALESCE(?, kind) WHERE lang = ? AND id = ?",
+                     (c.get("illustrator") or "", json.dumps(dex) if dex else None, rarity, kind_of(c), api.lang, card_id))
+        if _FTS:
+            conn.execute("UPDATE index_names SET artist = ? WHERE lang = ? AND id = ?",
+                         (fold(c.get("illustrator")), api.lang, card_id))
+        filled += 1
+    conn.execute("""UPDATE index_cards SET dex_ids = (SELECT j.dex_ids FROM index_cards j WHERE j.lang = 'ja'
+                    AND j.id = index_cards.id) WHERE lang = 'zh-tw' AND dex_ids IS NULL""")
+    dex_from_names(conn)
+    if filled:
+        log.info("card index %s: details of %d cards fetched", api.lang, filled)
+    return filled
+
+
+def dex_from_names(conn, names=None) -> int:
+    """Taiwan Pokémon cards with no Japanese twin (TCGdex has many Taiwan sets it has no Japanese cards for): their
+    Pokémon from the card's Chinese name ('電龍V' -> 181), when the name list is here. Returns how many."""
+    if names is None:
+        from .names import Names
+        names = Names(db.DB_PATH.parent / "pokemon_species_names.csv")
+    if not names.available():
+        return 0
+    rows = conn.execute("SELECT id, name FROM index_cards WHERE lang = 'zh-tw' AND dex_ids IS NULL "
+                        "AND kind = 'pokemon'").fetchall()
+    found = []
+    for r in rows:
+        name = (r["name"] or "").replace("<", "").replace(">", "")  # '<火箭隊的>電龍'
+        english = names.to_english(name)
+        dex = names.species_id(english) if english else names.species_id(name)
+        if dex:
+            found.append((json.dumps([dex]), r["id"]))
+    conn.executemany("UPDATE index_cards SET dex_ids = ? WHERE lang = 'zh-tw' AND id = ?", found)
+    return len(found)
 
 
 def due(conn, lang: str, sets: list[dict]) -> list[dict]:
@@ -236,17 +302,28 @@ def languages(conn) -> list[str]:
     return [r[0] for r in conn.execute("SELECT DISTINCT lang FROM index_sets")]
 
 
+def _arts_again(conn, job=None) -> None:
+    """Group the arts again with the new artists and Pokémon, when Enhanced Search has illustrations to match."""
+    from . import arts, pictures
+    if pictures.languages():
+        arts.rebuild(conn, job)
+
+
 def refresh(conn, api_for) -> list[str]:
     """The price update's turn: every language already in the index. Returns problems."""
     if not enabled():
         return []
     errors = []
+    filled = 0
     for lang in languages(conn):
         try:
             errors += build(api_for(lang), conn)[1]
+            filled += fill_details(api_for(lang), conn)
         except Exception as e:
             log.warning("card index %s: %s", lang, e)
             errors.append(f"card index {lang}: {e}")
+    if filled:
+        _arts_again(conn)
     if not errors:
         return []
     return [f"Card catalog: {len(errors)} set{'s' if len(errors) != 1 else ''} not fetched; tried again next time."]
@@ -277,7 +354,11 @@ def start(api, priority: int = 0, wait: bool = False) -> bool:
 
     def run(conn, job):
         fetched, errors = build(api, sleep=lambda s: (job.progress(job.done + 1), time.sleep(s)))
+        filled = fill_details(api, progress=lambda n, total: job.progress(n, total, "Fetching artists and Pokémon"))
+        if filled:
+            _arts_again(conn, job)
         return (f"{fetched} set{'' if fetched == 1 else 's'} added to Find's card catalog"
+                + (f", details of {filled} cards" if filled else "")
                 + (f"; {len(errors)} not fetched, tried again next time." if errors else "."))
     name = LANG_NAMES.get(api.lang, api.lang)
     return runner.start(_key(api.lang), f"Downloading Find's card catalog ({name})", run, priority=priority, wait=wait)
@@ -303,6 +384,16 @@ def complete(conn, api) -> bool:
     if not ok:
         start(api)
     return ok
+
+
+def ready(api) -> bool:
+    """The index is on and holds every set of api's language, so a search needn't wait on TCGdex for it."""
+    if not enabled():
+        return False
+    try:
+        return complete(_db(), api)
+    except Exception:
+        return False
 
 
 def _like(text: str) -> str:

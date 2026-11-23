@@ -112,6 +112,23 @@ def illustrations(conn: sqlite3.Connection) -> None:
         web._index_pictures("Fingerprinting illustrations")
 
 
+def catalog_details(conn: sqlite3.Connection) -> None:
+    """0.30: Find's card catalog fetches each card's artist and Pokémon, which TCGdex's GraphQL stopped sending
+    (card_index.fill_details), in the background; arts are grouped again when it's done."""
+    from . import card_index, web
+    for lang in card_index.languages(conn):
+        card_index.start(web.api_for(lang))
+
+
+def illustrations_again(conn: sqlite3.Connection) -> None:
+    """0.30 (#95): a tighter illustration crop (pictures.ART_VERSION 2) and Taiwan cards' own pictures, so every
+    illustration is made again in the background; Taiwan cards with no Japanese twin get their Pokémon from their
+    name first, so the arts grouped afterwards include them."""
+    from . import card_index
+    card_index.dex_from_names(conn)
+    illustrations(conn)
+
+
 TASKS: list[Task] = [
     Task(1, "Remove TCG Pocket sets", no_pocket),
     Task(2, "Remove pictures saved from English versions", no_english_pictures),
@@ -125,6 +142,8 @@ TASKS: list[Task] = [
     Task(8, "Match sets to TCGplayer again", tcgplayer_matches),
     Task(9, "Move the CardTrader token from .env into the app", move_keys),
     Task(10, "Fingerprint card illustrations for arts", illustrations, slow=True),
+    Task(11, "Fetch artists and Pokémon for Find's card catalog", catalog_details, slow=True),
+    Task(12, "Fingerprint card illustrations again with a tighter crop", illustrations_again, slow=True),
 ]
 
 

@@ -18,6 +18,15 @@
   .cv-tabs button { flex:1; padding:7px 0; border:0; border-radius:8px; background:none; font:inherit; font-size:14px; font-weight:500; color:var(--muted); min-height:0; }
   .cv-sub { font-size:17px; margin:16px 0 4px; }
   .cv-prints { margin-top:6px; }
+  /* Language chips under the rarity (#95): outlined in the language's colour, filled when you have that language. */
+  .cv-langs { justify-content:center; margin:8px 0 2px; }
+  .lchip-en { color:var(--lang-en); border-color:var(--lang-en); } .lchip-ja { color:var(--lang-ja); border-color:var(--lang-ja); }
+  .lchip-zh { color:var(--lang-zh); border-color:var(--lang-zh); }
+  .lchip.have.lchip-en { background:var(--lang-en); } .lchip.have.lchip-ja { background:var(--lang-ja); }
+  .lchip.have.lchip-zh { background:var(--lang-zh); }
+  .lchip.have { color:#fff; }
+  /* Dark text where white is too faint on the fill (contrast 4.5:1): mainland yellow, and every colour in dark mode. */
+  .lchip.have.lchip-zh, :root[data-mode=dark] .lchip.have { color:#1d1d1f; }
   .copies { display:grid; gap:10px; margin-top:12px; }
   .copy { border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); overflow:hidden; }
   .copy-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 14px; font-size:15px;

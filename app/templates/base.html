@@ -48,7 +48,7 @@
 {%- macro on(prefixes) -%}{% if lit(prefixes) == "1" %} class="on"{% endif %}{%- endmacro -%}
 {%- macro lit(prefixes) -%}{%- set ns = namespace(hit=false) -%}{%- for p in prefixes -%}{%- if path == p or (p != "/" and path.startswith(p)) -%}{%- set ns.hit = true -%}{%- endif -%}{%- endfor -%}{%- if ns.hit %}1{% endif -%}{%- endmacro -%}
 {#- Tapping Find while on Find starts over, in English. -#}
-{%- set find_href = "/search?lang=en" if lit(find_paths) == "1" else "/search" -%}
+{%- set find_href = "/search?lang=all" if lit(find_paths) == "1" else "/search" -%}
 {#- Generic titles (the four places) show only on phones; a title that names a thing shows everywhere. -#}
 {%- set heading_html = self.heading() -%}
 {%- set generic = (heading_html | striptags | trim) in ["Home", "Find", "Scan", "My Stash", app_name] -%}
