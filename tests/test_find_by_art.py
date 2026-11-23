@@ -159,3 +159,26 @@ def test_every_language_lists_newest_sets_first_across_languages(client, monkeyp
     # Test Set is the newest in every language, then Dotted Set, then Old Set: not English first, then the rest.
     assert [h.rsplit("/", 1)[1].split("-")[0] for h in order] == ["t1"] * 3 + ["sv03.5"] * 3 + ["old"] * 3
     assert order[:3] == ["/preview/en/t1-1", "/preview/ja/t1-1", "/preview/zh-tw/t1-1"]
+
+
+def test_set_codes_read_the_same_in_every_language():
+    from app import display
+    assert display.printed_code("sv08") == "SSP" and display.printed_code("sv03.5") == "MEW"  # English: the printed code
+    assert display.printed_code("t1") == "T1"  # not listed: its id
+    assert display.printed_code("SV8a", "ja") == "SV8a" and display.printed_code("zh-cn:CSV7C") == "CSV7C"
+    assert display.set_code_line("SV8a", "054", 106, "ja") == "SV8a · 054/106"
+    assert display.set_code_line("sv08", "TG05", 191) == "SSP · TG05"  # the total only follows a plain number
+    assert display.set_code_line("svp", "001") == "SVP · 001"
+
+
+def test_find_tiles_and_card_views_show_set_codes_not_foreign_set_names(client, monkeypatch):
+    _setup(client, monkeypatch)
+    page = client.get("/search", params={"q": "1", "lang": "ja"}).text
+    grid = page.split('id="find-grid"')[1]
+    assert '<span class="t">t1 · 1/2</span>' in grid and "Test Set" not in grid.replace('title="Test Set', "")  # AC14
+    page = client.get("/search", params={"q": "1", "lang": "all"}).text
+    assert '<span class="t">T1 · 1/2</span>' in page.split('id="find-grid"')[1]  # English tiles too
+    top = client.get("/preview/ja/t1-1").text.split('class="cno"')[0].rsplit("<a ", 1)[1]
+    assert ">t1</a>" in top and "Test Set" not in top  # a Japanese card's view: the code
+    client.post("/search/add", data={"card_id": "t1-1", "set_id": "t1", "lang": "en", "variant": "normal", "condition": "NM"})
+    assert 'href="/sets/t1">Test Set</a>' in client.get("/cards/t1-1").text  # an English card keeps its set's name

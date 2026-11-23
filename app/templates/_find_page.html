@@ -5,7 +5,7 @@
   {%- set href = '/cards/' ~ r.id ~ (carry or '?from=find') if r.local else '/preview/' ~ (r.lang or lang) ~ '/' ~ r.id ~ carry -%}
   {% call tile('/cards/' ~ r.id ~ (carry or '?from=find') if r.local else '/preview/' ~ (r.lang or lang) ~ '/' ~ r.id ~ carry,
           card_pics(r.id if r.local else our_card_id(r.id, r.lang or lang), r.image_url), cname(r.name, r.id if (r.local and ":" in r.id) else (r.lang or lang), r.english),
-          r.number, r.set_logo, price=r.price, third=set_label(r.set_id, r.set_name), owned=r.owned,
+          r.number, r.set_logo, price=r.price, third=set_code_line(r.set_id, r.number, r.printed_total, r.lang or lang), owned=r.owned,
           title=r.set_name ~ " #" ~ r.number ~ (" · " ~ r.rarity if r.rarity else ""),
           pic_id=(r.id if r.local else our_card_id(r.id, r.lang or lang)), star=r.chased,
           pending=(r.lang or lang) ~ "|" ~ r.id if r.price_pending else none, langs=r.langs) %}

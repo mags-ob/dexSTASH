@@ -183,6 +183,19 @@ def _set_label(set_id: str | None, name: str | None) -> str:
 
 
 templates.env.globals["set_label"] = _set_label
+
+
+def _card_set(set_id: str | None, name: str | None, lang: str | None = None) -> str:
+    """A card's set as the card view and Find's set results show it (#95): an English set by its name, a Japanese
+    or Chinese one by its code, which reads the same in any language. lang: when set_id is TCGdex's own."""
+    where = set_id.split(":", 1)[0] if ":" in (set_id or "") else (lang or "en")
+    if where == "en":
+        return _set_label(set_id, name)
+    return display.printed_code(set_id, where) or name or ""
+
+
+templates.env.globals["card_set"] = _card_set
+templates.env.globals["set_code_line"] = display.set_code_line
 templates.env.globals["set_where"] = display.set_where
 templates.env.globals["words_used"] = lambda: pokemon_words.suggestions(conn)
 # Search and name boxes: no autocorrect, capitals or spell check. Notes keep them.

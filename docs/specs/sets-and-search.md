@@ -23,6 +23,10 @@ it on a page that says what it is, what you have of it and what it's worth.
    ticked by default). A picked language shows as a chip under the search box with ✕ (back to every language),
    counts on the Filters badge and sticks between searches. English, Japanese and Chinese still show one tile
    per art, with that language's card as the picture; Korean shows its cards one by one.
+   A tile's set line is the set code and number in every language ("SV8a · 054/106", "SSP · 054/191"): a
+   Japanese or Chinese set's own code, an English set's printed code from the scanner's list (else its id),
+   with the printed total only after a plain number. Find's set results and the card page and preview show a
+   Japanese or Chinese set by its code too; English sets keep their names (#95).
 2. A search can be a name, a number (`125`), a number with its printed total (`125/197`), or both
    (`charizard 125`). Accents and case don't matter.
 3. An English Pokémon name also finds the card in the searched language, from PokéAPI's names list, so

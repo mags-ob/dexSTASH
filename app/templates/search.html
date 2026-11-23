@@ -116,8 +116,8 @@
   {% for s in set_matches %}
   <a class="set-hit" href="{{ '/sets/' ~ s.set_id ~ '?from=find' if s.stored else '/set-preview/' ~ s.lang ~ '/' ~ (s.id | urlencode) }}">
     {% if s.logo %}<span class="logo"><img src="{{ s.logo }}" alt="" data-fail="remove-parent"></span>{% endif %}
-    <span style="flex:1;min-width:0"><strong>{{ s.plain_name }}</strong><br>
-      <span class="muted" style="font-size:12px">{{ s.id }}{% if lang == "zh" or (lang == "all" and s.lang.startswith("zh")) %} &middot; {{ "mainland" if s.lang == "zh-cn" else "Taiwan & Hong Kong" }}{% endif %}{% if s.owned %} &middot; you have cards from it{% endif %}</span></span>
+    <span style="flex:1;min-width:0"><strong>{{ card_set(s.set_id, s.plain_name, s.lang) }}</strong><br>
+      <span class="muted" style="font-size:12px">{% if s.lang == "en" %}{{ s.id }}{% else %}{{ "Japanese" if s.lang == "ja" else "Chinese" }}{% endif %}{% if lang == "zh" or (lang == "all" and s.lang.startswith("zh")) %} &middot; {{ "mainland" if s.lang == "zh-cn" else "Taiwan & Hong Kong" }}{% endif %}{% if s.owned %} &middot; you have cards from it{% endif %}</span></span>
     <span class="muted" aria-hidden="true">&rsaquo;</span>
   </a>
   {% endfor %}

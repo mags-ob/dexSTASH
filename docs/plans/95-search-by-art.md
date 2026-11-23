@@ -164,3 +164,14 @@ these jobs, in this order (same priority, so the runner keeps the order):
 4. The chores (backup, picture tidy and recheck, history roll-up). The picture recheck stays here only.
 A failed step is logged; the rest still run. Arts may be grouped twice on a night with both new catalog
 details and new pictures; that's a few minutes at night, kept simple.
+
+## 23 Nov 2026: set code and number instead of foreign set names (maintainer asked)
+
+Japanese and Chinese set names can't be read by an English reader. Rather than translating (first proposed),
+the maintainer chose the printed set code and number, which read the same in any language:
+- Find's tiles: the third line is the set code and number for every language ("SV8a · 054/106",
+  "SSP · 054/191"). English codes come from `set_codes.json` (the scanner's printed codes, TCGdex id ->
+  code), else the TCGdex id in capitals. The total is added only to a plain number (not TG05).
+- Find's set results and the card view (page and preview): a Japanese or Chinese set shows its code where
+  its name was; English keeps its name. `display.set_code_line` and the `card_set` template global.
+- Card names are unchanged (Pokémon names already show in English). No new data or requests.
