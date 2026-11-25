@@ -2,7 +2,7 @@
 
 These steps assume a Linux server or NAS with Docker, and Caddy as the reverse proxy that serves HTTPS; any reverse proxy works the same way. On your own server, run dexSTASH as two containers built from one image:
 
-- `dexstash`, the web app. Your Caddy proxies to `dexstash:8000`. The port isn't opened to the LAN, so only Caddy can reach it. Limits: 1 CPU, 1 GB.
+- `dexstash`, the web app. Your Caddy proxies to `dexstash:8000`. The port isn't opened to the LAN, so only Caddy can reach it. Limits: 1 CPU, 2 GB (`DEXSTASH_APP_MEMORY`, see App memory below).
 - `dexstash-scanner` reads scan photos, runs Enhanced Search and fingerprints, and looks up pictures. It runs at low priority (1 CPU, 1.4 GB), so pages and searches stay quick while a batch is being read. Nothing reaches into it. It starts only with the `scanner` profile (step 3).
 
 Both share `data/`: your database (`dexstash.db`), the downloaded card data, prices and Find's card catalog (`dexstash-catalog.db`), backups, scan photos and the Pokémon name list. Without scanning, or on a host that runs one container, see [docs/scanning.md](scanning.md).

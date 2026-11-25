@@ -84,6 +84,14 @@ def in_page() -> bool:
     return getattr(_page, "on", False)
 
 
+def mark_page() -> None:
+    """A page's helper thread (jobs.pool): its TCGdex requests get the page's quick try too."""
+    _page.on = True
+
+
+UNREACHABLE = "Couldn't reach TCGdex. Try again in a minute."  # shown on pages; the detail goes to the log
+
+
 class Unreachable(httpx.TransportError):
     """TCGdex timed out for a page a moment ago, so this page doesn't try."""
 
@@ -303,7 +311,8 @@ class TCGdex:
             stale = have is None or time.monotonic() - self._sets_at > SETS_MAX_AGE
             if stale and have is not None and not self._sets_fetching:
                 self._sets_fetching = True
-                threading.Thread(target=self._fetch_sets, name="tcgdex-sets", daemon=True).start()
+                from . import jobs
+                jobs.thread(self._fetch_sets, "tcgdex-sets")
         if have is None:
             with self._sets_first:  # one first fetch at a time; the others wait for it
                 if self._sets is None:

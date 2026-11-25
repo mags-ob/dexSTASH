@@ -44,15 +44,10 @@ OTHER_LANGUAGE_THRESHOLD = 0.885
 NO_ARTIST_THRESHOLD = 0.94
 RECOLOUR_THRESHOLD = 0.85    # a rainbow or gold version of a same-artist card (scored 0.88 and 0.93 in the test)
 TOO_MANY = 3000    # a filtered list this long means TCGdex ignored the filter
-WORDS = ((0.92, "Very close"), (0.80, "Possible"), (0.0, "Long shot"))
 
 
 def now() -> str:
     return clock.now()
-
-
-def likeness_word(score: float | None) -> str:
-    return next(word for floor, word in WORDS if (score or 0) >= floor)
 
 
 # --- following ----------------------------------------------------------------------
@@ -185,25 +180,32 @@ def _norm(text: str | None) -> str:
 def list_briefs(api, dex: int, names_in: list[str]) -> list[dict]:
     """Brief cards in api.lang that may be this Pokémon: TCGdex's dexId filter,
     or a name search when the filter isn't honoured (the caller checks each
-    card's dexId either way)."""
+    card's dexId either way). TCG Pocket cards are left out (#121). Raises when every request failed, so a page
+    says TCGdex couldn't be reached rather than that there are no cards."""
+    failure = None
     try:
         resp = api.client.get("/cards", params={"dexId": f"eq:{dex}"})
         resp.raise_for_status()
         found = resp.json()
         if isinstance(found, list) and 0 < len(found) < TOO_MANY:
-            return found
+            return tcgdex.without_pocket(found)
     except Exception as e:
         log.info("dexId filter failed in %s: %s", api.lang, e)
-    out, seen = [], set()
+        failure = e
+    out, seen, answered = [], set(), False
     for name in dict.fromkeys(n for n in names_in if n):
         try:
             for b in api.search_cards(name=name):
                 if b["id"] not in seen:
                     seen.add(b["id"])
                     out.append(b)
+            answered = True
         except Exception as e:
             log.info("name search %r failed in %s: %s", name, api.lang, e)
-    return out
+            failure = e
+    if failure is not None and not answered:
+        raise failure
+    return tcgdex.without_pocket(out)
 
 
 def _variants(detail: dict) -> list[str]:
@@ -243,7 +245,7 @@ def card_row(lang: str, detail: dict, set_detail: dict) -> dict:
     }
 
 
-def save_cards(conn: sqlite3.Connection, dex: int, rows: list[dict]) -> int:
+def save_cards(conn: sqlite3.Connection, dex: int, rows: list[dict], commit: bool = True) -> int:
     """Add or refresh cards. Cards you took out (how 'removed') stay out; ones
     you added by hand stay 'manual'. Returns how many were new."""
     have = {r[0] for r in conn.execute("SELECT card_id FROM pokemon_cards WHERE dex_id = ?", (dex,))}
@@ -265,7 +267,8 @@ def save_cards(conn: sqlite3.Connection, dex: int, rows: list[dict]) -> int:
             {**{k: r.get(k) for k in ("card_id", "lang", "set_id", "set_name", "set_code", "release_date", "number",
                                       "name", "illustrator", "rarity", "image_url", "variants", "prices_json")},
              "dex": dex, "at": stamp})
-    conn.commit()
+    if commit:
+        conn.commit()
     return len({r["card_id"] for r in rows} - have)
 
 
@@ -642,20 +645,22 @@ def merge(conn: sqlite3.Connection, dex: int, cards: list[str], by: int | None) 
     return len(picked)
 
 
-def add_card(conn: sqlite3.Connection, dex: int, row: dict, by: int | None) -> None:
+def add_card(conn: sqlite3.Connection, dex: int, row: dict, by: int | None, commit: bool = True) -> None:
     """Add any card to a Pokémon's set by hand ("Added by you")."""
-    save_cards(conn, dex, [row])
+    save_cards(conn, dex, [row], commit=False)
     conn.execute("UPDATE pokemon_cards SET how = 'manual', added_by = ? WHERE dex_id = ? AND card_id = ?",
                  (by, dex, row["card_id"]))
-    conn.commit()
+    if commit:
+        conn.commit()
 
 
-def remove_card(conn: sqlite3.Connection, dex: int, card_id: str) -> None:
+def remove_card(conn: sqlite3.Connection, dex: int, card_id: str, commit: bool = True) -> None:
     """Take a card out of a Pokémon's set: one you added goes; an automatic one
     is kept out of every later listing."""
     conn.execute("DELETE FROM pokemon_cards WHERE dex_id = ? AND card_id = ? AND how = 'manual'", (dex, card_id))
     conn.execute("UPDATE pokemon_cards SET how = 'removed' WHERE dex_id = ? AND card_id = ?", (dex, card_id))
-    conn.commit()
+    if commit:
+        conn.commit()
 
 
 def row_from_cards(conn: sqlite3.Connection, card_id: str) -> dict | None:

@@ -102,8 +102,15 @@ def account_password(
     request: Request, current: str = Form(...), new: str = Form(...), again: str = Form(...),
     user=Depends(current_user),
 ):
+    # Wrong current passwords count like wrong sign-ins, so a signed-in phone can't be used to guess it.
+    address = request.client.host if request.client else ""
+    wait = web.lockout.locked_for(user["username"], address)
+    if wait:
+        return _account_page(request, user, _wait_text(wait), error=True)
     if not auth.verify_password(current, user["password_hash"]):
+        web.lockout.failed(user["username"], address)
         return _account_page(request, user, "Your current password isn't right.", error=True)
+    web.lockout.succeeded(user["username"], address)
     if new != again:
         return _account_page(request, user, "The new passwords don't match.", error=True)
     try:
@@ -170,9 +177,11 @@ def account_clear(request: Request, confirm: str = Form(""), forget_matches: str
     """The second confirmation is typing CLEAR (the first is the browser's confirm box)."""
     if confirm.strip() != "CLEAR":
         return _account_page(request, user, "Nothing was cleared. Type CLEAR in capitals to confirm.", error=True)
+    saved = backup.make(conn, web.BACKUPS, "clear")  # a copy first, so a slip can be undone from Backups
     importer.clear_collection(conn, user["collection_id"], forget_matches=bool(forget_matches))
     scans.clear_collection(conn, user["collection_id"])
-    return _account_page(request, user, "The collection is empty. Accounts and card data are still here.")
+    return _account_page(request, user, "The collection is empty. Accounts and card data are still here. "
+                                        f"A backup from just before is saved as {saved.name}.")
 
 
 

@@ -3139,7 +3139,7 @@ def test_chase_box_links_photos_and_unchase(client, monkeypatch, tmp_path):
     # Stop chasing: the photos go too, file and all.
     want_id = main.conn.execute("SELECT id FROM wants WHERE card_id = 't1-1'").fetchone()[0]
     client.post(f"/wants/{want_id}/remove")
-    assert not chase_box.has_any(main.conn, user_id, "t1-1")
+    assert not chase_box.links(main.conn, user_id, "t1-1") and not chase_box.photos(main.conn, user_id, "t1-1")
     assert not (tmp_path / photo["photo"].rsplit("/", 1)[1]).exists()
 
 

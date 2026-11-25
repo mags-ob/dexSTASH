@@ -122,8 +122,7 @@ class Scanner:
                     time.sleep(card_pictures.PAUSE)
             finally:
                 conn.close()
-        self._followed = threading.Thread(target=run, daemon=True, name="followed-pictures")
-        self._followed.start()
+        self._followed = jobs.thread(run, "followed-pictures")
         if wait:
             self._followed.join()
 

@@ -201,7 +201,8 @@ def _find_ref(ref: str) -> tuple[str, str, str]:
         try:
             set_id = search.preview(source, card_id)["set_id"]
         except Exception as e:
-            raise HTTPException(502, f"Couldn't load card {card_id} from TCGdex: {e}")
+            log.warning("couldn't load card %s from TCGdex: %s", card_id, e)
+            raise HTTPException(502, "Couldn't load this card from TCGdex. Try again in a minute.")
     else:
         raise HTTPException(400)
     return lang, card_id, set_id
@@ -330,8 +331,9 @@ def _back_to(scan: dict, back: str) -> str:
     return f"/scans/{scan['batch_id']}#scan-{scan['id']}"
 
 
-def _offer(lang: str, card_id: str) -> dict:
-    """A match's printings and prices (card_id is TCGdex's id in lang). Nothing is stored for a card you don't have."""
+def _offer(lang: str, card_id: str, quiet: bool = True) -> dict:
+    """A match's printings and prices (card_id is TCGdex's id in lang). Nothing is stored for a card you don't have.
+    quiet: when TCGdex can't be reached the offer has no price; otherwise the error is raised (tile prices count them)."""
     our = catalog.local_id(lang, card_id)
     card = conn.execute("SELECT c.*, s.name AS set_name FROM cards c JOIN sets s ON s.set_id = c.set_id WHERE c.id = ?",
                         (our,)).fetchone()
@@ -348,6 +350,8 @@ def _offer(lang: str, card_id: str) -> dict:
             flags = {"has_normal": "normal", "has_reverse": "reverse", "has_holo": "holo", "has_first_ed": "firstEdition"}
             card = {f: bool((found.get("variants") or {}).get(k)) for f, k in flags.items()}
         except Exception:
+            if not quiet:
+                raise
             card = None  # TCGdex can't be reached: no price, links still work
         offered = inventory.offered_variants(card, prices.real_variants(card_prices))
     else:
@@ -403,35 +407,51 @@ def _match_info(user, lang: str, card_id: str, name: str, number: str, set_name:
 
 class TilePrices:
     """Prices on the batch grid's tiles. A card whose prices are stored here is priced at once;
-    any other is looked up on a background thread, and its tile is drawn again when the price is in."""
+    any other is looked up on a background thread, taking turns with other requests to TCGdex, and its tile is
+    drawn again when the price is in. After a few failed lookups in a row the thread stops for a while."""
 
     FRESH = 1800
+    FAILURES = 3   # failed lookups in a row before the thread stops,
+    REST = 60      # and no new lookups for this many seconds
 
     def __init__(self):
         self.offers: dict[str, tuple[float, dict]] = {}
         self.waiting: dict[str, tuple[str, str, int]] = {}
         self.lock = threading.Lock()
         self.thread: threading.Thread | None = None
+        self.resting_until = 0.0
 
     def get(self, lang: str, card_id: str, batch_id: int) -> dict | None:
         our = catalog.local_id(lang, card_id)
         hit = self.offers.get(our)
         if hit and hit[0] > time.monotonic() - self.FRESH:
             return hit[1]
-        if conn.execute("SELECT 1 FROM prices WHERE card_id = ? LIMIT 1", (our,)).fetchone():
+        if conn.execute("SELECT 1 FROM prices WHERE card_id = ? UNION ALL SELECT 1 FROM typed_prices WHERE card_id = ? "
+                        "LIMIT 1", (our, our)).fetchone():
             return self._keep(our, _offer(lang, card_id))
         with self.lock:
+            if time.monotonic() < self.resting_until:
+                return None
             self.waiting.setdefault(our, (lang, card_id, batch_id))
             if self.thread is None:
-                self.thread = threading.Thread(target=self.run, daemon=True)
-                self.thread.start()
+                self.thread = jobs.thread(self.run, "tile-prices")
         return None
 
+    def forget(self, our: str) -> None:
+        """A price was typed or removed for this card: its tiles work it out again at the next look."""
+        with self.lock:
+            self.offers.pop(our, None)
+
     def _keep(self, our: str, offer: dict) -> dict:
-        self.offers[our] = (time.monotonic(), offer)
+        now = time.monotonic()
+        with self.lock:
+            for old in [k for k, (at, _) in self.offers.items() if at < now - self.FRESH]:
+                del self.offers[old]
+            self.offers[our] = (now, offer)
         return offer
 
     def run(self) -> None:
+        failed = 0
         while True:
             with self.lock:
                 if not self.waiting:
@@ -439,14 +459,22 @@ class TilePrices:
                     return
                 our, (lang, card_id, batch_id) = next(iter(self.waiting.items()))
             try:
-                self._keep(our, _offer(lang, card_id))
+                self._keep(our, _offer(lang, card_id, quiet=False))
+                failed = 0
                 # the batch page fetches rows whose rev changed, so its tiles get the price
                 conn.execute("UPDATE scans SET rev = rev WHERE batch_id = ? AND guesses_json LIKE ?",
                              (batch_id, f'[{{"id": "{card_id}"%'))
                 conn.commit()
-            except Exception:
-                log.exception("tile price for %s", our)
-                self._keep(our, {"our": our, "price_map": {}, "offered": ["normal"], "default": "normal"})
+            except Exception as e:
+                log.info("tile price for %s: %s", our, e)
+                failed += 1
+                if failed >= self.FAILURES:
+                    with self.lock:
+                        self.waiting.clear()
+                        self.resting_until = time.monotonic() + self.REST
+                        self.thread = None
+                    log.info("tile prices stopped for %d seconds after %d failed lookups", self.REST, failed)
+                    return
             finally:
                 with self.lock:
                     self.waiting.pop(our, None)
@@ -458,6 +486,8 @@ class TilePrices:
 
 
 tile_prices = TilePrices()
+# A typed price shows on its tiles and in the totals at once (looked up when called, so a new tile_prices is used).
+extras.PRICE_CHANGED.append(lambda card_id: tile_prices.forget(card_id))
 
 
 def _tile(scan: dict, batch: dict) -> dict | None:
@@ -902,9 +932,8 @@ def _price_matches_later(batch: dict) -> None:
                                       if job_conn.execute("SELECT 1 FROM cards WHERE id = ?", (m["our"],)).fetchone()])
         if set_ids:
             sync.refresh_sets(job_conn, web.api_for, set_ids)
-        with tile_prices.lock:  # the batch grid's tiles show the new prices
-            for m in matches:
-                tile_prices.offers.pop(m["our"], None)
+        for m in matches:  # the batch grid's tiles show the new prices
+            tile_prices.forget(m["our"])
     cards = len({m["our"] for m in matches})
     web.background.start(f"scan-prices:{batch['id']}",
                          f"Prices for scan batch '{name}': {cards} card{'s' if cards != 1 else ''}, "
@@ -975,6 +1004,11 @@ def scan_batch_changes(request: Request, batch_id: int, since: int = 0, user=Dep
 async def scan_upload(request: Request, batch_id: int, photos: list[UploadFile] = File(...),
                       client_id: str = Form(""), side: str = Form(""), user=Depends(current_user)):
     batch = _scan_batch_or_404(user, batch_id)
+    if len(photos) > scans.MAX_PHOTOS:
+        message = f"Send at most {scans.MAX_PHOTOS} photos at a time."
+        if request.headers.get("X-Scan-Upload"):
+            return HTMLResponse(f'<p class="error">{message}</p>', status_code=413)
+        raise HTTPException(413, message)
     added, error = [], None
     client_id = client_id.strip()[:64] if len(photos) == 1 else ""  # One photo at a time carries the phone's id
     if client_id and scans.sent_before(conn, batch_id, client_id):

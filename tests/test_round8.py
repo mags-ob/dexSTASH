@@ -324,7 +324,7 @@ def test_a_shared_binder_needs_a_code_and_shows_only_whats_public(client):
     main.conn.execute("UPDATE cards SET saved_picture = 'abc.jpg', saved_from = '', saved_src = '/card-photos/x.jpg' WHERE id = 't1-1'")
     main.conn.commit()
     assert shared_pages._private_saved(main.conn.execute("SELECT * FROM cards WHERE id = 't1-1'").fetchone())
-    assert [u for u, _ in shared_pages._public_pictures(token, "t1-1")] == [f"/b/{token}/picture/t1-1?sprite=1"]
+    assert [u for u, _ in shared_pages._public_pictures(token, "t1-1")] == []  # no sprite downloaded either (#123 SH5)
     main.conn.execute("UPDATE cards SET saved_src = 'https://assets.tcgdex.net/en/x/1/high.webp' WHERE id = 't1-1'")
     assert shared_pages._public_pictures(token, "t1-1")[0][0] == f"/b/{token}/picture/t1-1"
 

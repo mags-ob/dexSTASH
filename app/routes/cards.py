@@ -272,11 +272,11 @@ def _card_extras_save(card_id, user, data, tcgplayer_url, pricecharting_url, man
         if image_url:
             handmade._drop_photo(image_url)
         message = e.detail if isinstance(e, HTTPException) else str(e)
-        return RedirectResponse(f"/cards/{card_id}?extra_error={quote(message)}#fix", status_code=303)
+        return RedirectResponse(f"/cards/{quote(card_id)}?extra_error={quote(message)}#fix", status_code=303)
     conn.commit()
     picture_saver.queue([card_id])  # a new link or photo shows in every grid within seconds
     web._price_soon(card_id)  # a card you don't have: its set is read, so it keeps prices with yours from now on
-    return RedirectResponse(f"/cards/{card_id}?extra_saved={quote('Saved.')}#fix", status_code=303)
+    return RedirectResponse(f"/cards/{quote(card_id)}?extra_saved={quote('Saved.')}#fix", status_code=303)
 
 
 @router.post("/cards/{card_id}/extras/reset")

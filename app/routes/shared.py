@@ -106,21 +106,32 @@ def _binder_rows(binder: dict, **filters) -> list[dict]:
 def _public_pictures(token: str, card_id: str) -> list[tuple[str, str]]:
     """A card's pictures for visitors: the saved copy (unless it's your photo or scan), pictures on the web, then
     the Pokémon's sprite. Never your photos, scans or anything behind the login."""
-    card = conn.execute("SELECT * FROM cards WHERE id = ?", (card_id,)).fetchone()
-    if card is None:
-        return []
-    out = []
-    if card["saved_picture"] and not _private_saved(card):
-        out.append((f"/b/{token}/picture/{quote(card_id)}", ""))
-    for url, label in card_pictures.candidates(card, extras.get(conn, card_id)) + card_pictures.more(conn, card_id):
-        if label in _PRIVATE_PICTURES:
-            continue
-        if url.startswith("https://"):
-            out.append((url, ""))
-        elif url.startswith("/chs-img/"):  # Through this binder's own address, never /chs-img itself
-            out.append((f"/b/{token}/picture/{quote(card_id)}?chs=1", ""))
-    out.append((f"/b/{token}/picture/{quote(card_id)}?sprite=1", ""))
-    return list(dict.fromkeys(out))
+    return _public_pictures_for(token, [card_id]).get(card_id, [])
+
+
+def _public_pictures_for(token: str, card_ids: list[str]) -> dict[str, list[tuple[str, str]]]:
+    """_public_pictures for many cards, reading the cards and their extras in one query each."""
+    ids = list(dict.fromkeys(card_ids))
+    marks = ",".join("?" * len(ids))
+    cards = {r["id"]: r for r in conn.execute(f"SELECT * FROM cards WHERE id IN ({marks})", ids)} if ids else {}
+    added = {r["card_id"]: dict(r) for r in conn.execute(
+        f"SELECT * FROM card_extras WHERE card_id IN ({marks})", ids)} if ids else {}
+    found = {}
+    for card_id, card in cards.items():
+        out = []
+        if card["saved_picture"] and not _private_saved(card):
+            out.append((f"/b/{token}/picture/{quote(card_id)}", ""))
+        for url, label in card_pictures.candidates(card, added.get(card_id)) + card_pictures.more(conn, card_id):
+            if label in _PRIVATE_PICTURES:
+                continue
+            if url.startswith("https://"):
+                out.append((url, ""))
+            elif url.startswith("/chs-img/"):  # Through this binder's own address, never /chs-img itself
+                out.append((f"/b/{token}/picture/{quote(card_id)}?chs=1", ""))
+        if _sprite_for(card["twin_name"] or card["name"]):  # only a sprite that's there; none asked for otherwise
+            out.append((f"/b/{token}/picture/{quote(card_id)}?sprite=1", ""))
+        found[card_id] = list(dict.fromkeys(out))
+    return found
 
 
 @router.get("/b/{token}")
@@ -132,12 +143,13 @@ def public_binder(request: Request, token: str, q: str = "", set: str = "", rari
         return refusal
     if code_id is None:
         return _public(request, "public_code.html", {"token": token, "error": None})
-    every = _binder_rows(binder)
+    # The binder is built once; only a search, filter or other sort builds its rows again.
+    raw = collection.cards(conn, binder["collection_id"], binder=str(binder["id"]))["rows"]
+    every = shared.public_rows(raw)
     # The owner's pages, in their layout and order, unless the grid is asked for (or its search or filters)
     if view == "pages" or (view != "grid" and not any((q, set, rarity, language, price, tag, printing)) and sort == "price_desc"):
         from .binders import dex_of, pages_for
         kept = binder_pages.settings(conn, binder["collection_id"], binder["id"])
-        raw = collection.cards(conn, binder["collection_id"], binder=str(binder["id"]))["rows"]
         ordered = shared.public_rows(binder_pages.ordered(raw, kept["sort"], dex_of))  # sorted before the details go
         return _public(request, "public_binder_pages.html", {
             "token": token, "binder": binder, "total": sum(r["value"] for r in every),
@@ -157,8 +169,9 @@ def public_binder(request: Request, token: str, q: str = "", set: str = "", rari
     rows = _binder_rows(binder, q=q, set_id=set, rarity=rarity, language=language, price=price, tag=tag, sort=sort)
     if printing:
         rows = [r for r in rows if r["variant"] == printing]
+    pics = _public_pictures_for(token, [r["card_id"] for r in rows])
     for r in rows:
-        r["pics"] = _public_pictures(token, r["card_id"])
+        r["pics"] = pics.get(r["card_id"], [])
     return _public(request, "public_binder.html", {
         "token": token, "binder": binder, "rows": rows, "total": sum(r["value"] for r in every),
         "count": sum(r["quantity"] for r in every), "shown": sum(r["quantity"] for r in rows),

@@ -29,5 +29,5 @@ Every request uses the User-Agent `dexSTASH/<version> (+<this repository>)`. The
 | Japanese card pictures (*switch*) | Limitless TCG | Limitless's terms |
 | Pokémon descriptions (*switch*) | [Bulbapedia](https://bulbapedia.bulbagarden.net) | CC BY-NC-SA 2.5, personal use |
 | Picture matching model (CLIP ViT-B/32 as ONNX) | OpenAI CLIP, via Jina's clip-as-service | MIT |
-| Prices | TCGCSV (TCGplayer's prices) and Cardmarket via TCGdex; CardTrader's official API with the host's own token | Each source's terms; only for your own collection |
+| Prices | TCGCSV (TCGplayer's prices) and TCGdex; CardTrader's and PriceCharting's official APIs with the host's own keys | Each source's terms; only for your own collection |
 | Exchange rates | [European Central Bank](https://www.ecb.europa.eu) reference rates | Free reuse with the source named |

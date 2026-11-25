@@ -2,9 +2,9 @@
 move, and how much price history is kept.
 
 The chart shows the cards you have today at each day's prices, so adding a card isn't counted as a rise. A
-line's price on a day is its latest TCGplayer price at or before that day (TCGdex's when there is one, else the
-marked price that stood in for it: your link or price, a found link, ≈ English or ≈ another printing). Before a
-line's first price, its first price is used.
+line's price on a day is its main price at or before that day: the average of its sources (prices.resolve), or
+what came before the average was kept (a TCGplayer price, or the price that stood in for one). Before a line's
+first price, its first price is used.
 """
 
 import bisect

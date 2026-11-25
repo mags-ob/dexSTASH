@@ -4,7 +4,7 @@ from urllib.parse import quote, urlencode
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from .. import chase, chase_pages, pokemon_words, tcgdex, themes
+from .. import chase, chase_pages, db, pokemon_words, tcgdex, themes
 from .. import web
 from ..web import (_Route, _artist_matches, _evolution, _following, _group_in_scanner, _in_thread, _pictures_ready,
                    _pokemon_name, background, chase_api, conn, current_user, templates)
@@ -254,25 +254,28 @@ async def card_pokemon_sets(request: Request, card_id: str, user=Depends(current
     """Add to a Pokémon set…: tick the followed Pokémon whose set this card belongs in."""
     form = await request.form()
 
-    def work():  # Off the event loop, as one transaction
+    def work():  # Off the event loop. Every tick is saved together, then the changed Pokémon's arts are grouped again.
         ticked = {int(d) for d in form.getlist("dex") if str(d).isdigit()}
         row = chase.row_from_cards(conn, card_id)
         if row is None:
             raise HTTPException(404)
-        for f in chase.followed(conn, user["collection_id"]):
-            dex = f["dex_id"]
-            inside = conn.execute("SELECT how FROM pokemon_cards WHERE dex_id = ? AND card_id = ?", (dex, card_id)).fetchone()
-            if dex in ticked and (inside is None or inside["how"] == "removed"):
-                if inside is not None:
-                    conn.execute("UPDATE pokemon_cards SET how = 'auto' WHERE dex_id = ? AND card_id = ?", (dex, card_id))
-                    conn.commit()
-                else:
-                    chase.add_card(conn, dex, row, user["id"])
-                _regroup(dex)
-            elif dex not in ticked and inside is not None and inside["how"] != "removed":
-                chase.remove_card(conn, dex, card_id)
-                _regroup(dex)
-        return RedirectResponse(f"/cards/{card_id}?extra_saved={quote('Saved your Pokémon sets.')}#fix", status_code=303)
+        changed = []
+        with db.transaction(conn):
+            for f in chase.followed(conn, user["collection_id"]):
+                dex = f["dex_id"]
+                inside = conn.execute("SELECT how FROM pokemon_cards WHERE dex_id = ? AND card_id = ?", (dex, card_id)).fetchone()
+                if dex in ticked and (inside is None or inside["how"] == "removed"):
+                    if inside is not None:
+                        conn.execute("UPDATE pokemon_cards SET how = 'auto' WHERE dex_id = ? AND card_id = ?", (dex, card_id))
+                    else:
+                        chase.add_card(conn, dex, row, user["id"], commit=False)
+                    changed.append(dex)
+                elif dex not in ticked and inside is not None and inside["how"] != "removed":
+                    chase.remove_card(conn, dex, card_id, commit=False)
+                    changed.append(dex)
+        for dex in changed:
+            _regroup(dex)
+        return RedirectResponse(f"/cards/{quote(card_id)}?extra_saved={quote('Saved your Pokémon sets.')}#fix", status_code=303)
     return await _in_thread(work)
 
 

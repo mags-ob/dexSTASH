@@ -98,9 +98,8 @@ def after_first_page(conn) -> threading.Thread:
             work_conn.close()
             _took("after the first page", started)
 
-    thread = threading.Thread(target=run, daemon=True, name="startup-after")
-    thread.start()
-    return thread
+    from . import jobs
+    return jobs.thread(run, "startup-after")
 
 
 def start(conn, backups: Path) -> bool:

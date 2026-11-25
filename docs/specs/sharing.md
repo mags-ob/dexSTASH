@@ -37,7 +37,8 @@ for selling.
 12. A visitor never sees: condition, notes, who added a card, what was paid, where a copy came from, other
     binders, chases, the household's own tags, any other page of the app, or the household's photos and
     scans. A card whose only saved picture is the owner's photo or scan shows a picture from the web or the
-    Pokémon's sprite instead.
+    Pokémon's sprite instead (the sprite only when it's downloaded). A visit builds the binder once and reads
+    its cards' pictures together (#123).
 13. Visitor pages are sent with `noindex, nofollow`, no referrer and no caching.
 
 ### Wrong codes

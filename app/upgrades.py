@@ -129,6 +129,21 @@ def illustrations_again(conn: sqlite3.Connection) -> None:
     illustrations(conn)
 
 
+def no_pocket_again(conn: sqlite3.Connection) -> None:
+    """1.0.1 (#121): Pokémon sets kept TCG Pocket cards that TCGdex's Pokédex filter returned. They go again (a Pocket
+    card someone owns stays, as in task 1), and those Pokémon's arts are grouped again without them."""
+    from . import catalog, chase
+    from .tcgdex import card_set_id, is_pocket
+    dexes = sorted({r[0] for r in conn.execute("SELECT dex_id, set_id FROM pokemon_cards") if is_pocket(r[1])})
+    catalog.drop_pocket(conn)
+    pocket = [r[0] for r in conn.execute("SELECT DISTINCT card_id FROM art_fixes")
+              if is_pocket(card_set_id(r[0].split(":", 1)[-1]))]
+    conn.executemany("DELETE FROM art_fixes WHERE card_id = ? OR join_card_id = ?", [(c, c) for c in pocket])
+    conn.commit()
+    for dex in dexes:
+        chase.regroup(conn, dex, chase.fingerprints(conn, dex, None, art=True))
+
+
 TASKS: list[Task] = [
     Task(1, "Remove TCG Pocket sets", no_pocket),
     Task(2, "Remove pictures saved from English versions", no_english_pictures),
@@ -144,6 +159,7 @@ TASKS: list[Task] = [
     Task(10, "Fingerprint card illustrations for arts", illustrations, slow=True),
     Task(11, "Fetch artists and Pokémon for Find's card catalog", catalog_details, slow=True),
     Task(12, "Fingerprint card illustrations again with a tighter crop", illustrations_again, slow=True),
+    Task(13, "Remove TCG Pocket cards from Pokémon sets", no_pocket_again, slow=True),
 ]
 
 

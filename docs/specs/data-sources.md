@@ -19,7 +19,10 @@ each site's terms. A new source, or a new use of an old one, starts here.
    PriceCharting a second), and background work gives way to page loads.
 5. Background requests take turns per site (`sites.wait_turn`): at most 5 a second to one site, shared by every
    job and download thread in that container. A 429 or 503 stops that site's queue for its Retry-After, else
-   30 seconds, doubling up to 5 minutes while it keeps refusing. Page requests skip the queue (#77).
+   30 seconds, doubling up to 5 minutes while it keeps refusing. Page requests skip the queue (#77). Every
+   background thread starts through `jobs.thread`, which marks it so its requests queue; a test fails on any
+   other thread in `app/` that isn't on its short list of threads that never reach another site (#123). A page's
+   own download pool keeps the page's quick try on TCGdex.
 
 ### Always on
 

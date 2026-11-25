@@ -103,7 +103,8 @@ guide; this spec holds the statements a change must keep true.
     `secret_key`, `api_keys.json` and downloaded models and lists. Backing up `data/` and `.env` backs up the
     install.
 25. The app copies `dexstash.db` into `data/backups/` before an upgrade (5 kept), each night after the price
-    update (7 kept), by hand (10 kept), before a restore (3 kept) and before starting over (3 kept).
+    update (7 kept), by hand (10 kept), before a restore (3 kept), before starting over (3 kept), before
+    Clear collection (3 kept) and before an import that removes cards (3 kept).
 26. Backups hold `dexstash.db` only. The catalog is rebuilt from Data sources; card photos are downloaded as
     a zip from Account › Backups; scan photos are deleted once their card is added.
 27. Restoring a backup first saves the current database, then signs everyone out.

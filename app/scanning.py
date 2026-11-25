@@ -144,8 +144,8 @@ class LightWork:
         if not self.enabled or (self._thread and self._thread.is_alive()):
             return
         self._stopping.clear()
-        self._thread = threading.Thread(target=self._run, daemon=True, name="light-picture-work")
-        self._thread.start()
+        from . import jobs
+        self._thread = jobs.thread(self._run, "light-picture-work")
 
     def _run(self) -> None:
         self.native_id = threading.get_native_id()

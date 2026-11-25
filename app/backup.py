@@ -22,10 +22,11 @@ from pathlib import Path
 
 from . import clock
 
-KEEP = {"upgrade": 5, "manual": 10, "restore": 3, "reset": 3, "rename": 1, "nightly": 7}
+KEEP = {"upgrade": 5, "manual": 10, "restore": 3, "reset": 3, "rename": 1, "nightly": 7, "clear": 3, "import": 3}
 LABELS = {"upgrade": "Before an upgrade", "manual": "Made by hand", "restore": "Before a restore", "reset": "Before starting over",
-          "rename": "Before the move to dexSTASH", "nightly": "Nightly"}
-_NAME = re.compile(r"^dexstash-(\d{8}-\d{6})(?:-(\d{1,3}))?-(upgrade|manual|restore|reset|rename|nightly)\.db$")
+          "rename": "Before the move to dexSTASH", "nightly": "Nightly", "clear": "Before clearing",
+          "import": "Before an import"}
+_NAME = re.compile(r"^dexstash-(\d{8}-\d{6})(?:-(\d{1,3}))?-(upgrade|manual|restore|reset|rename|nightly|clear|import)\.db$")
 # Copies from before the app's rename carry the old name; they're renamed once so they still show.
 _OLD_NAME = re.compile(r"^(?!dexstash-)[a-z]+(-\d{8}-\d{6}(?:-\d{1,3})?-(?:upgrade|manual|restore|reset|rename|nightly)\.db)$")
 

@@ -37,7 +37,11 @@ it on a page that says what it is, what you have of it and what it's worth.
    search by itself.
 6. Filters: set, rarity, kind (Pokémon, Trainer, Energy), owned or not, tag, who added it. Sorts: best match
    (the default), Number, Name, Price high to low, Price low to high, Newest set, Oldest set.
-7. Results show 24 at a time, up to 400.
+7. Results show 24 at a time, up to 400. A rarity or kind filter, or a smart word that needs each card's
+   details, asks TCGdex about at most 96 cards that aren't stored here (newest sets first), with the page's quick
+   try. When that left cards out, the end of the results offers to look further, 96 more each time (#123).
+   When TCGdex can't be reached, Find says "Couldn't reach TCGdex. Try again in a minute." and the detail goes
+   to the Activity log.
 8. A search can be saved with a name (up to 30 per login) and runs again from a chip under the Find box. A
    saved search keeps the words, language, set, filters and sort.
 9. Once a language's whole card list is in Find's card catalog (fetched in the background the first time

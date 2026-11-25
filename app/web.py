@@ -827,10 +827,9 @@ def _read_set_later(lang: str, tcgdex_set_id: str, set_name: str | None) -> None
         _set_reads.add(key)
 
     def run():
-        jobs.mark_background()
         with _set_read_turn:
             _read_set_now(lang, tcgdex_set_id, set_name, key)
-    threading.Thread(target=run, daemon=True, name="set-values").start()
+    jobs.thread(run, "set-values")
 
 
 def _read_set_now(lang: str, tcgdex_set_id: str, set_name: str | None, key: int) -> None:
@@ -1037,7 +1036,8 @@ def _ensure_card(lang: str, set_id: str, card_id: str) -> str:
         try:
             catalog.cache_set(conn, api_for(lang), set_id)
         except Exception as e:
-            raise HTTPException(502, f"Could not load set '{set_id}' from TCGdex: {e}")
+            log.warning("couldn't load set %s from TCGdex: %s", set_id, e)
+            raise HTTPException(502, "Couldn't load this set from TCGdex. Try again in a minute.")
         if conn.execute("SELECT 1 FROM cards WHERE id = ?", (our_card_id,)).fetchone() is None:
             raise HTTPException(404, f"Card {card_id} isn't in set {set_id}.")
     return our_card_id

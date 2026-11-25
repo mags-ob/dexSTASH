@@ -2,6 +2,21 @@
 
 Versions follow `MAJOR.MINOR.PATCH`: from 1.0.0, a release with new features raises the minor version and a release with only fixes raises the patch version (before 1.0, each round raised the minor version). On start, a new version backs up the database before changing it; an older version won't start on a database a newer one has changed (see [Updating](docs/updating.md)).
 
+## Unreleased
+
+**After updating:** a background task removes TCG Pocket cards from Pokémon pages and groups those Pokémon's arts again (a Pocket card someone owns is kept). The container also starts faster, as it only changes the data folder's owner when it isn't yours already.
+
+### Fixed
+- **Find doesn't flood TCGdex.** A rarity or kind filter looks up at most 96 cards that aren't stored here, with the page's short wait, and a slow TCGdex can't hold the page for minutes. When TCGdex can't be reached, Find says so plainly, with the detail in the Activity log (#123).
+- **All background work takes turns with other requests to each site**, including the photo reader, Enhanced Search, scan tile prices, followed-picture checks and the work after a start (#123).
+- **A price typed for a scanned card shows on its tile and in the batch or trade total straight away**, and a Chinese card on a scan shows its CardTrader price before you add it (#123).
+- **A backup is made before Clear collection and before an import that removes cards**, and only an admin can remove cards with an import (#123).
+- **Wrong current passwords on Account count towards the sign-in lockout**, and an upload takes at most 50 photos (#123).
+- **TCG Pocket cards no longer show up on Pokémon pages**, and a Pokémon page says when TCGdex couldn't be reached instead of "No English cards found" (#121, #123).
+- **Shared binder pages load faster** and no longer ask for sprites that aren't downloaded (#123).
+- **"Add to a Pokémon set" saves every tick together**, and a card id with `#` or `?` in it returns to the right page after an error (#123).
+- **Outdated notes** in NOTICE.md, `.env.example`, the deploy guide and two code descriptions now match what the app does (#58).
+
 ## 1.0.0
 
 The first public release: Find searches every language with one tile per art, arts match by the illustration, trade scans, and editing arts on the grid. Database step 20.

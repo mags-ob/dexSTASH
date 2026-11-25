@@ -60,6 +60,17 @@ def in_background() -> bool:
     return getattr(_local, "background", False)
 
 
+def thread(target, name: str, *args) -> threading.Thread:
+    """A started daemon thread for background work. It is marked first, so its requests to other sites wait for
+    pages and take turns per site (sites.wait_turn). Every thread in app/ that can reach another site starts here."""
+    def run():
+        mark_background()
+        target(*args)
+    started = threading.Thread(target=run, daemon=True, name=name)
+    started.start()
+    return started
+
+
 def pause_for_pages(longest: float = PAGE_WAIT, sleep=time.sleep) -> float:
     """On a background thread: wait while pages are being answered, and a moment after, up to longest seconds.
     A page's own thread never waits. Returns the seconds waited."""
@@ -135,24 +146,6 @@ class StoredJob:
 
     running = Job.running
     describe = Job.describe
-
-
-RemoteJob = StoredJob  # its name before round 23
-
-
-class Progress:
-    """Progress for a row only (the scanner's jobs, before round 23): job.progress() writes to it."""
-
-    def __init__(self, conn, job_id: int):
-        self.conn, self.id, self._at = conn, job_id, 0.0
-
-    def progress(self, done: int, total: int | None = None, step: str | None = None) -> None:
-        if time.time() - self._at < 1 and total is None and step is None:
-            return
-        self._at = time.time()
-        self.conn.execute("UPDATE jobs SET done = ?, total = COALESCE(?, total), step = COALESCE(?, step) WHERE id = ?",
-                          (done, total, step, self.id))
-        self.conn.commit()
 
 
 # --- the runner -----------------------------------------------------------------------------------------------
@@ -405,6 +398,12 @@ class Jobs:
 
 
 def pool(workers: int):
-    """A download pool. Inside a background job its threads wait for pages too; a page's own pool doesn't."""
+    """A download pool. Inside a background job its threads wait for pages too. A page's own pool keeps the page's
+    quick try on TCGdex (tcgdex.page_wait), so a slow TCGdex can't hold the page for minutes."""
     from concurrent.futures import ThreadPoolExecutor
-    return ThreadPoolExecutor(max_workers=workers, initializer=mark_background if in_background() else None)
+    from . import tcgdex
+    if in_background():
+        return ThreadPoolExecutor(max_workers=workers, initializer=mark_background)
+    if tcgdex.in_page():
+        return ThreadPoolExecutor(max_workers=workers, initializer=tcgdex.mark_page)
+    return ThreadPoolExecutor(max_workers=workers)

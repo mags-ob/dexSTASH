@@ -426,7 +426,7 @@ class Nightly:
         self._stop = threading.Event()
 
     def start(self) -> None:
-        threading.Thread(target=self._loop, daemon=True, name="nightly-schedule").start()
+        jobs.thread(self._loop, "nightly-schedule")
 
     def stop(self) -> None:
         self._stop.set()

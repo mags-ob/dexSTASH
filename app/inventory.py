@@ -71,11 +71,6 @@ def find_card(conn: sqlite3.Connection, set_id: str, number: str) -> sqlite3.Row
     return row
 
 
-def variant_exists(card: sqlite3.Row, variant: str) -> bool:
-    flag = _VARIANT_FLAG.get(variant)
-    return True if flag is None else _has(card, flag)
-
-
 def adjust(conn: sqlite3.Connection, user_id: int, card_id: str, variant: str, condition: str, delta: int,
            by: int | None = None, source: str = "manual", origin: str | None = None) -> int:
     """Add (delta > 0) or remove (delta < 0) copies. user_id is the collection;

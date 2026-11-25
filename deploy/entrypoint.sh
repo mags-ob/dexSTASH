@@ -6,7 +6,11 @@ PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
 mkdir -p /srv/data
 if [ "$(id -u)" = "0" ]; then
-    chown -R "$PUID:$PGID" /srv/data
+    # Only when the folder belongs to someone else (a new folder, or PUID/PGID changed): going through thousands
+    # of card pictures on every start makes it slow.
+    if [ "$(stat -c %u:%g /srv/data)" != "$PUID:$PGID" ]; then
+        chown -R "$PUID:$PGID" /srv/data
+    fi
     exec setpriv --reuid="$PUID" --regid="$PGID" --clear-groups "$@"
 fi
 exec "$@"

@@ -153,9 +153,9 @@
 {% endif %}
 
 <h2 style="font-size:16px;margin-top:28px">Clear collection</h2>
-<p class="muted" style="font-size:13px;margin-top:0">Empties every card, chase, spending entry, note, history entry and import. Accounts and the downloaded card data and prices stay, so nothing needs reinstalling. This can't be undone.</p>
+<p class="muted" style="font-size:13px;margin-top:0">Empties every card, chase, spending entry, note, history entry and import. Accounts and the downloaded card data and prices stay, so nothing needs reinstalling. A backup is made first, so it can be restored from Backups.</p>
 <form method="post" action="/account/clear" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"
-      data-confirm="Clear the whole collection? This can't be undone.">
+      data-confirm="Clear the whole collection? A backup is made first.">
   <input name="confirm" placeholder="Type CLEAR to confirm" autocomplete="off" autocapitalize="characters" required pattern="CLEAR" style="flex:1 1 180px;min-width:0">
   <label class="muted" style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" name="forget_matches" value="1" style="padding:0"> Also forget import matches</label>
   <button>Clear collection</button>

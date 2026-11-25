@@ -22,6 +22,7 @@ log = logging.getLogger("dexstash.scan")
 GUESSES = 5  # guesses kept per photo, best first
 
 MAX_BYTES = 20_000_000
+MAX_PHOTOS = 50  # photos in one upload; the phone sends one at a time, the plain form a handful
 MAX_SIDE = 1600       # photos are shrunk to this; plenty for the small print at the bottom
 PICTURE = ("picture_waiting", "picture_searching", "picture_ready")  # in the Picture search queue
 PENDING = ("waiting", "reading", "ready", "nomatch", "failed") + PICTURE
@@ -1073,8 +1074,8 @@ class Worker:
         self.problem = None
         with self._lock:
             if self._thread is None:
-                self._thread = threading.Thread(target=self._run, daemon=True)
-                self._thread.start()
+                from . import jobs
+                self._thread = jobs.thread(self._run, "scan-reader")
             thread = self._thread
         if wait:
             thread.join()
@@ -1131,8 +1132,8 @@ class PictureWorker:
             return
         with self._lock:
             if self._thread is None:
-                self._thread = threading.Thread(target=self._run, daemon=True)
-                self._thread.start()
+                from . import jobs
+                self._thread = jobs.thread(self._run, "enhanced-search")
             thread = self._thread
         if wait:
             thread.join()

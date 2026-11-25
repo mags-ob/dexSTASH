@@ -75,7 +75,8 @@ def for_day(species_id: int, day: date, folder: Path | None = None) -> str | Non
         with _lock:
             if _facts is None and not _loading:
                 _loading = True
-                threading.Thread(target=_load, args=(folder,), name="facts", daemon=True).start()
+                from . import jobs
+                jobs.thread(_load, "facts", folder)
         return None
     texts = _facts.get(species_id)
     return texts[day.toordinal() % len(texts)] if texts else None

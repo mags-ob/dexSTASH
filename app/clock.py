@@ -5,7 +5,6 @@ follow the time zone setting (display.py). tests/test_round19.py fails if code w
 from datetime import datetime, timedelta, timezone
 
 FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-NOW_SQL = "strftime('%Y-%m-%dT%H:%M:%SZ', 'now')"  # the same, worked out by SQLite
 
 
 def stamp(when: datetime) -> str:

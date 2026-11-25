@@ -4,7 +4,7 @@ import json
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 
-from .. import catalog, chinese, importer, inventory, search
+from .. import backup, catalog, chinese, importer, inventory, search
 from .. import binders, tcgdex
 from ..tcgdex import LANGUAGES
 from .. import web
@@ -128,12 +128,16 @@ def import_ignore_row(row_id: int, undo: str = Form(""), user=Depends(current_us
 def import_apply(request: Request, batch_id: int, lower: str = Form(""), remove_missing: str = Form(""),
                  to_binder: str = Form(""), new_binder: str = Form(""), user=Depends(current_user)):
     _batch_or_404(user, batch_id)
+    if remove_missing and not user["is_admin"]:
+        raise HTTPException(403, "Only an admin can remove cards that aren't in the file.")
     binder_id = None
     if to_binder:  # optional "Put these in binder"; the default is Not in a binder
         try:
             binder_id, _ = _binder_choice(user, to_binder, new_binder)
         except ValueError as e:
             raise HTTPException(400, str(e))
+    if remove_missing:  # a copy first, so cards removed by mistake can be got back from Backups
+        backup.make(conn, web.BACKUPS, "import")
     try:
         done = importer.apply(conn, user["collection_id"], batch_id, user["id"], lower=bool(lower),
                               remove_missing=bool(remove_missing))

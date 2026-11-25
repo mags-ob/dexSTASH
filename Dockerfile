@@ -1,9 +1,8 @@
 FROM python:3.13-slim
 
-# Kept the same as app/__init__.py's __version__ (a test checks).
+# No version label: the version lives only in app/__init__.py, and the image is tagged with it when released.
 LABEL org.opencontainers.image.title="dexSTASH" \
       org.opencontainers.image.description="A self-hosted Pokémon card collection app" \
-      org.opencontainers.image.version="1.0.0" \
       org.opencontainers.image.licenses="AGPL-3.0-only" \
       org.opencontainers.image.source="https://github.com/mags-ob/dexSTASH"
 

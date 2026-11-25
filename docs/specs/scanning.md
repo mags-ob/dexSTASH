@@ -74,8 +74,11 @@ for a person to check and add them, all on the household's own server with no cl
     all" sets the condition or price paid on every matched card not yet added. The batch's From and Binder
     choice applies to every card added from it.
 17. While a photo waits in review its matched card's prices are fetched (a short price run for those sets),
-    so the price shows before Add. Links to a TCGplayer or PriceCharting search are offered; a link found
-    there can be saved on the card.
+    so the price shows before Add. A price for the whole card (CardTrader's) goes on the printing the scan
+    shows when nobody has or chases the card yet. A price typed for a scanned card shows on its tile and in the
+    batch or trade total at once. Tile prices take turns with other requests to TCGdex and stop for a minute
+    after three failed lookups in a row. An upload takes at most 50 photos (#123). Links to a TCGplayer or
+    PriceCharting search are offered; a link found there can be saved on the card.
 18. Add puts every matched photo not yet added into the stash, logged as scanned. Photos still being read or
     with no match stay in the batch.
 19. Adding a card deletes its photo and the text read from it. Removing a photo moves it to Deleted scans,

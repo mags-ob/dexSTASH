@@ -12,7 +12,8 @@ from .tcgdex import TCGdex, image_url
 MAX_RESULTS = 400     # Shown 24 at a time (PAGE), so more can come back
 PAGE = 24
 MAX_SET_RESULTS = 400  # a whole set, when browsing one
-MAX_DETAILS = 400      # cards looked up one by one for the rarity and type filters
+MAX_DETAILS = 96       # cards looked up on TCGdex one by one for the rarity and type filters, per step (#123)
+MAX_CHECKED = 400      # cards checked at most, when their details are stored here (no request)
 
 
 KINDS = {"pokemon": "Pokémon", "trainer": "Trainer", "energy": "Energy"}
@@ -73,12 +74,15 @@ def _details(api, briefs: list[dict]) -> list[dict]:
 
 def find_cards(api: TCGdex, q: str, set_id: str | None = None, rarity: str | None = None,
                kind: str | None = None, smart=None, release=None, vintage_years: int = 20,
-               stored=None, artist: str | None = None, longer=None) -> list[dict]:
+               stored=None, artist: str | None = None, longer=None, deeper: int = 1,
+               capped: list | None = None) -> list[dict]:
     """Matching cards, newest sets first. With set_id, only that set is
     searched, and an empty query lists the whole set in number order.
     rarity and kind ('pokemon', 'trainer', 'energy') need each card's details,
-    so they look at up to MAX_DETAILS cards. smart: the smart words read from the
-    search (smart.Reading; q is then what's left), release: set id -> release date."""
+    so they look at up to MAX_CHECKED cards, asking TCGdex about at most MAX_DETAILS × deeper of them (newest
+    first). When that limit left cards out, True is added to capped, so the page can offer to look further.
+    smart: the smart words read from the search (smart.Reading; q is then what's left), release: set id ->
+    release date."""
     number, total, name = parse_query(q)
     if not number and not name and not set_id and not artist:
         return []
@@ -136,13 +140,20 @@ def find_cards(api: TCGdex, q: str, set_id: str | None = None, rarity: str | Non
     rarity_of: dict[str, str | None] = {}
     if rarity or kind or detail_check:
         briefs.sort(key=lambda c: order.get(set_of(c), -1), reverse=True)
-        briefs = briefs[:MAX_DETAILS]
+        briefs = briefs[:MAX_CHECKED]
         kept = []
         here = {c["id"]: stored(c["id"]) for c in briefs} if stored and not detail_check else {}
         if not detail_check:  # The local catalog's briefs carry rarity and kind already
             here.update({c["id"]: {"rarity": c.get("rarity"), "_kind": c["_kind"]}
                          for c in briefs if c.get("_kind") and not here.get(c["id"])})
         ask = [c for c in briefs if not here.get(c["id"])]
+        limit = MAX_DETAILS * max(1, deeper)  # earlier steps' cards come from the saved replies
+        if len(ask) > limit:
+            left_out = {c["id"] for c in ask[limit:]}
+            ask = ask[:limit]
+            briefs = [c for c in briefs if c["id"] not in left_out]
+            if capped is not None:
+                capped.append(True)
         asked = dict(zip((c["id"] for c in ask), _details(api, ask)))
         for c in briefs:
             d = here.get(c["id"]) or asked[c["id"]]

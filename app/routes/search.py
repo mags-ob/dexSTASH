@@ -26,7 +26,8 @@ router = APIRouter(route_class=_Route)
 @router.get("/search")
 def search_view(
     request: Request, q: str = "", lang: str = "", set: str = "", rarity: str = "", kind: str = "", owned: str = "",
-    sort: str = "", fix: str = "", scan: str = "", tag: str = "", by: str = "", user=Depends(current_user),
+    sort: str = "", fix: str = "", scan: str = "", tag: str = "", by: str = "", deeper: int = 1,
+    user=Depends(current_user),
 ):
     # No language picked: every language, one tile per art (#95). A language picked under Filters sticks between
     # searches, like variant and condition. "Chinese" searches TCGdex's Taiwan and Hong Kong sets and the
@@ -65,6 +66,8 @@ def search_view(
     tag = tags.clean(tag)
     wanted_tags = list(dict.fromkeys(reading.tags + ([tag] if tag else [])))
     results, error, sets, set_matches = [], None, [], []
+    deeper = min(max(deeper, 1), 4)  # each step asks TCGdex about at most search.MAX_DETAILS more cards
+    capped: list = []
     vintage = smart.vintage_years(conn)
     owned_ids = {r[0] for r in conn.execute("SELECT DISTINCT card_id FROM inventory WHERE user_id = ?", (user["collection_id"],))}
     stored: dict = {}  # round 27: every tile's price comes from _price_results (tile_prices), as on the card page
@@ -82,7 +85,8 @@ def search_view(
             try:
                 one_translation = web.names.translate(name, one)
             except Exception as e:  # name list couldn't be downloaded
-                translate_error = f"Couldn't load the Pokémon name list, so names are searched as typed ({e})."
+                log.warning("Find couldn't load the Pokémon name list: %s", e)
+                translate_error = "Couldn't load the Pokémon name list, so names are searched as typed."
             if one_translation:
                 one_query = one_translation.name + (f" {number}" if number else "") + (f"/{total}" if total else "")
                 translation = translation or one_translation
@@ -143,7 +147,7 @@ def search_view(
                                                    kind=kind or None, smart=reading if reading.any else None,
                                                    release=getattr(client, "release_date", None), vintage_years=vintage,
                                                    stored=_stored_detail(one), artist=artist_q if by else None,
-                                                   longer=_longer_names):
+                                                   longer=_longer_names, deeper=deeper, capped=capped):
                             if r["id"] not in seen_ids:
                                 seen_ids[r["id"]] = True
                                 found.append(r)
@@ -153,8 +157,9 @@ def search_view(
                         # Prices: stored ones for cards you have; the rest are looked up as they come on screen.
                         r["price"] = stored.get(catalog.local_id(one, r["id"]))
                     results += found
-            except Exception as e:  # network error from TCGdex
-                error = f"Couldn't search TCGdex: {e}"
+            except Exception as e:  # network error from TCGdex: the detail goes to the Activity log
+                log.warning("Find couldn't search TCGdex: %s", e)
+                error = tcgdex.UNREACHABLE
 
             # Cards added by hand never come back from TCGdex, so they're looked up here.
             if query.strip() and not set and not reading.any and one in langs and not by:
@@ -271,6 +276,8 @@ def search_view(
         "origins": inventory.ORIGINS, "origin": request.session.get("entry_origin", ""),
         "max_results": search.MAX_SET_RESULTS if set else search.MAX_RESULTS,
         "token": token, "page": search.PAGE, "close": close, "filtered": filtered,
+        "look_further": "/search?" + urlencode({**{k: v for k, v in request.query_params.items() if k != "deeper"},
+                                                "deeper": deeper + 1}) if capped and deeper < 4 else None,
         "unfiltered": "/search?" + urlencode({k: v for k, v in {"q": q, "lang": lang, **carry}.items() if v}),
         "filter_names": [label for label, key in active if key not in ("sort", "lang")],
         "fix": carry.get("fix", ""), "fix_row": _fix_row(user, fix),
@@ -628,7 +635,8 @@ def set_preview(request: Request, lang: str, set_id: str, user=Depends(current_u
     try:
         data = tcgdex.cached_set(web.api_for(lang), set_id)
     except Exception as e:
-        raise HTTPException(502, f"Couldn't load set {set_id} from TCGdex: {e}")
+        log.warning("couldn't load set %s from TCGdex: %s", set_id, e)
+        raise HTTPException(502, "Couldn't load this set from TCGdex. Try again in a minute.")
     cards = [{"id": c["id"], "number": c["localId"], "name": c["name"], "image_url": tcgdex.image_url(c.get("image"))}
              for c in data.get("cards", [])]
     cards.sort(key=lambda c: (search.parse_number(c["number"], 0)[0], c["number"]))
@@ -671,7 +679,8 @@ def preview(request: Request, lang: str, card_id: str, user=Depends(current_user
     try:
         card = search.preview(web.api_for(lang), card_id)
     except Exception as e:
-        raise HTTPException(502, f"Couldn't load card {card_id} from TCGdex: {e}")
+        log.warning("couldn't load card %s from TCGdex: %s", card_id, e)
+        raise HTTPException(502, "Couldn't load this card from TCGdex. Try again in a minute.")
     card_prices, pricing = _prices_for(our_card_id, card, card["detail"])
     recent.record(conn, our_card_id, card.get("name"), card.get("number"), card.get("image_url"), f"/preview/{lang}/{card_id}")
     links = _links(card, lang, pricing, None, our_card_id)

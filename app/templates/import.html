@@ -59,9 +59,9 @@
       data-confirm="Apply this import to the collection?">
   <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" name="lower" value="1" checked style="padding:0;margin-top:4px">
     <span>Lower quantities to the file's<br><span class="muted" style="font-size:13px">Untick to only ever add cards.</span></span></label>
-  <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" name="remove_missing" value="1" style="padding:0;margin-top:4px">
+  {% if user.is_admin %}<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" name="remove_missing" value="1" style="padding:0;margin-top:4px">
     <span>Remove the {{ review.changes.missing | length }} card{{ "s" if review.changes.missing | length != 1 }} that aren't in the file<br>
-    <span class="muted" style="font-size:13px">{% if review.counts.unmatched %}Careful: some of them may be the {{ review.counts.unmatched }} rows that aren't matched yet. {% endif %}Off by default.</span></span></label>
+    <span class="muted" style="font-size:13px">{% if review.counts.unmatched %}Careful: some of them may be the {{ review.counts.unmatched }} rows that aren't matched yet. {% endif %}Off by default. A backup is made first.</span></span></label>{% endif %}
   <label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">Put the cards it adds in
     <select name="to_binder" aria-label="Binder" data-new-binder-select>
       <option value="">Not in a binder</option>

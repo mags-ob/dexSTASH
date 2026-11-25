@@ -355,19 +355,6 @@ def update_twins(conn: sqlite3.Connection, code: str, twins: dict[str, dict]) ->
     return 1
 
 
-def twin_search(card) -> str | None:
-    """Find-a-card address for a Chinese card's English version."""
-    if not card["twin_code"] or not card["twin_number"]:
-        return None
-    from urllib.parse import urlencode
-    from .scanner import SET_CODES
-    query = {"q": f"{card['twin_name'] or ''} {card['twin_number']}".strip(), "lang": "en"}
-    sets = SET_CODES.get(card["twin_code"].upper()) or []
-    if len(sets) == 1:
-        query["set"] = sets[0]
-    return "/search?" + urlencode(query)
-
-
 # --- pictures ---------------------------------------------------------------------
 
 SMALL_SIDE = 400  # pictures of cards nobody has, kept once viewed
@@ -468,16 +455,6 @@ def pictures_size(folder: Path | None = None) -> tuple[int, int]:
     """(pictures, bytes) kept for Chinese cards."""
     files = [p for p in (folder or PICTURES).rglob("*.jpg")] if (folder or PICTURES).exists() else []
     return len(files), sum(p.stat().st_size for p in files)
-
-
-def clear_pictures(folder: Path | None = None) -> int:
-    """Delete the kept pictures; they're fetched again when shown."""
-    count = 0
-    if (folder or PICTURES).exists():
-        for p in (folder or PICTURES).rglob("*.jpg"):
-            p.unlink(missing_ok=True)
-            count += 1
-    return count
 
 
 # --- the datasets table ------------------------------------------------------------

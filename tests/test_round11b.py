@@ -45,7 +45,7 @@ def test_shared_binder_never_shows_photos_or_scans(client):
         assert shared_pages._private_saved(main.conn.execute("SELECT * FROM cards WHERE id = 't1-1'").fetchone()), (src, label)
     web.extras.save(main.conn, "t1-1", user_id, photo="/card-photos/mine.jpg")
     pics = [u for u, _ in shared_pages._public_pictures(token, "t1-1")]
-    assert pics == [f"/b/{token}/picture/t1-1?sprite=1"]
+    assert pics == []  # no photo, scan or saved copy of either; and no sprite here to stand in (#123 SH5)
 
 
 def test_shared_binder_uses_the_same_sources_as_the_app(client):

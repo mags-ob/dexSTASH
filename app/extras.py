@@ -187,11 +187,18 @@ def reset(conn: sqlite3.Connection, card_id: str) -> None:
     conn.commit()
 
 
+# Called with the card's id after what you typed changes, so anything keeping prices in memory (scan tiles)
+# works them out again.
+PRICE_CHANGED: list = []
+
+
 def apply_price(conn: sqlite3.Connection, card_id: str) -> None:
     """Give the printings TCGdex has no price for the price from what you
     added (prices.resolve), so they count in the collection's value."""
     from . import prices
     prices.resolve(conn, card_id)
+    for hook in PRICE_CHANGED:
+        hook(card_id)
 
 
 def apply_all(conn: sqlite3.Connection) -> None:

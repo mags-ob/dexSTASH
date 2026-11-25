@@ -1,5 +1,8 @@
-"""Card prices from TCGdex, which passes on TCGplayer (USD, market price,
-near mint).
+"""Card prices: each source's quotes, and the price shown for each printing (resolve, the only place it's worked out).
+
+Each source (TCGCSV's TCGplayer prices, TCGdex, CardTrader, PriceCharting's API, and prices you type) writes its
+quotes to price_quotes. A printing's main price is the average of its sources, and each source keeps its own
+history (docs/specs/prices.md).
 
 TCGdex card responses carry a 'pricing' object:
   tcgplayer:  {unit, updated, 'normal': {marketPrice, midPrice, ...}, 'holofoil': {...}, 'reverse-holofoil': {...}}
@@ -351,7 +354,8 @@ def resolve(conn: sqlite3.Connection, card_id: str) -> None:
     card = conn.execute("SELECT * FROM cards WHERE id = ?", (card_id,)).fetchone()
     on_tcgplayer = {q["variant"] for q in quotes if q["source"] == TCGPLAYER and q["variant"]}
     swap = printing_swap(on_tcgplayer, tracked)
-    base = base_printing(card, tracked, {q["variant"] for q in quotes if q["variant"]})
+    quoted = {q["variant"] for q in quotes if q["variant"]}
+    base = base_printing(card, tracked, quoted) or (None if tracked else scanned_printing(conn, card, quoted))
     # Typed prices first, so a PriceCharting price you type wins over its API's (round 28); each for the printing it
     # was typed for, in its own currency.
     for t in extras.typed_rows(conn, card_id):
@@ -409,6 +413,23 @@ def base_printing(card, tracked: list[str], quoted: set[str]) -> str | None:
     mine = [v for v in tracked if v in BASE_PRINTINGS]
     known = mine or [v for v in offered_variants(card, quoted) if v in BASE_PRINTINGS]
     return known[0] if len(known) == 1 else None
+
+
+def scanned_printing(conn: sqlite3.Connection, card, quoted: set[str]) -> str | None:
+    """For a card nobody has or chases yet, waiting on a scan: the printing its scan shows (#123 T2), so a price for
+    the whole card (CardTrader's) is on its tile before it's added. A scan with no printing picked shows the card's
+    first printing, as its tile does."""
+    from .inventory import offered_variants
+    picked = [r[0] for r in conn.execute(
+        "SELECT DISTINCT COALESCE(s.variant, '') FROM scan_matches m JOIN scans s ON s.id = m.scan_id "
+        "WHERE m.card_id = ? AND s.status = 'ready' AND s.card_id IS NULL ORDER BY 1", (card["id"],))]
+    if not picked:
+        return None
+    named = [v for v in picked if v in BASE_PRINTINGS]
+    if named:
+        return named[0]
+    first = offered_variants(card, quoted)[:1] if "" in picked else []
+    return first[0] if first and first[0] in BASE_PRINTINGS else None
 
 
 PRICE_COLUMNS = ("card_id", "variant", "price", "origin", "basis", "low", "mid", "updated_at", "range_low", "range_high",

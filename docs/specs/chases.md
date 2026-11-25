@@ -25,7 +25,8 @@ the stash.
 7. Following starts a background job (shown under Running now) that lists the Pokémon's or artist's cards in
    English, Japanese and Taiwan Chinese, plus any loaded mainland Chinese sets, and stores what the chase
    pages need: illustrator, printings, picture and price. For a Pokémon, a card counts when its main Pokémon
-   has that Pokédex number.
+   has that Pokédex number. TCG Pocket cards are left out (#121). When TCGdex refuses or can't be reached, the
+   page says so rather than "No English cards found".
 8. A Pokémon's cards are grouped into arts by the illustration (the picture without its frame, text box and
    language, from the Enhanced Search store): the same illustrator and an illustration score of at least 0.93
    in one language, or 0.885 between languages; when either card has no illustrator, 0.94; different

@@ -227,11 +227,11 @@ def test_one_paste_box_works_out_the_site(client, switches, monkeypatch):
 
 # --- 7: the version -------------------------------------------------------------------------------
 
-def test_the_version_is_shown_and_matches_the_image_label(client):
+def test_the_version_is_shown_and_lives_in_one_place(client):
     from app import REPO_URL, __version__
     assert re.fullmatch(r"\d+\.\d+\.\d+", __version__)
     docker = (ROOT / "Dockerfile").read_text()
-    assert f'org.opencontainers.image.version="{__version__}"' in docker
+    assert "org.opencontainers.image.version" not in docker and __version__ not in docker  # #123 P2
     assert f'org.opencontainers.image.source="{REPO_URL}"' in docker
     _setup_with_set(client)
     page = client.get("/account").text

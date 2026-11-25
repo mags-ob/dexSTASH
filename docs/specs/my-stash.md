@@ -82,7 +82,8 @@ binders and sharing have their own specs.
     ignored.
 23. Before it's applied, the import shows how the file's quantities compare with the stash. Applying sets
     each line's quantity to the file's, records who imported, and puts purchase prices into one Spending
-    entry. Lowering quantities and removing lines missing from the file are choices.
+    entry. Lowering quantities and removing lines missing from the file are choices; only an admin can remove,
+    and a backup is made first (#123).
 24. Every match is remembered, so importing the same file again lines up without fixing rows again.
 25. The stash, or one binder, downloads as a CSV in dexSTASH's own columns or in Collectr's (so it can go back
     into Collectr or be imported here again), with a byte order mark so spreadsheet apps read Japanese and

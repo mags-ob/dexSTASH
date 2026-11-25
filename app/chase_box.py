@@ -66,10 +66,6 @@ def remove_photo(conn: sqlite3.Connection, collection_id: int, photo_id: int) ->
     handmade._drop_photo(row["photo"])
 
 
-def has_any(conn: sqlite3.Connection, collection_id: int, card_id: str) -> bool:
-    return bool(links(conn, collection_id, card_id) or photos(conn, collection_id, card_id))
-
-
 def drop(conn: sqlite3.Connection, collection_id: int, card_id: str) -> None:
     """Stop chasing: the box's links and photos go."""
     gone = photos(conn, collection_id, card_id)
