@@ -88,3 +88,25 @@ The five notes listed on the issue are brought in line with the specs.
 ## Notes
 
 - `tools/` is a process file, so P2 doesn't change `tools/release_image.py`.
+
+## Added 25 Nov 2026: #124 screens, wording and accessibility
+
+Mockups at 320 px, now and proposed, light and dark, in
+[docs/specs/wireframes/review-screens/](../specs/wireframes/review-screens/). They are made from the running app
+with the change applied in the browser, so colours and spacing are the real ones.
+
+| Item | Mockup | Change |
+| --- | --- | --- |
+| U1, PR4 | every sheet (grey text, tabs) | grey text darker in light mode (#5c5c61) and lighter in dark (#ababb2); teal text on a teal tint darker in light (#256b6b), lighter in dark (#7fd0d0). Worked out from the theme, so other themes pass too |
+| U2 | `card-taps.png` | chart range chips at least 32 × 44 px, the ✕ on tags at least 24 px |
+| U3, U4, U5, F5 | none (not visible) | import file box gets a label; binder pages scroller shows the accent focus ring; the Light/Dark switch uses real radio buttons; Find pictures get empty alt text when the name is under them |
+| M3, M7 | `value.png`, `add-by-hand.png` | one line "History starts … and fills in each night."; titles "Value" and "Add by hand" |
+| M4 | `import.png` | the shorter intro |
+| M5 | none (not visible) | the Pokémon picker loads when its sheet opens |
+| M6 | `spending.png` | amount, date and Save on their own rows below 360 px |
+| F3, F4 | `set-page.png` | the set code once; the sort switch on its own row below 360 px |
+| SH3, SH4 | `shared-binder.png`, `shared-card.png` | shared pages follow the visitor's light or dark setting; teal buttons with white text use #2e7d7d; a shared card opened on its own gets the full page |
+| SC2 | `scan.png` | the shorter scanning-off notice |
+| PR2 | `data-sources.png` | each About is two short sentences and a link to the README |
+| P9 | `activity-log.png` | "uvicorn.error" shows as "Web server" |
+| E1 (#123) | `find-look-further.png` | "Older cards weren't checked for this filter yet." and Look further, at the end of a capped search |
