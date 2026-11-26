@@ -17,8 +17,10 @@
   threads, so each lookup gets the page timeout (8 s, no retry) and skips TCGdex for a minute once it has timed
   out. `search.MAX_DETAILS` drops from 400 to 96: at most 96 cards are looked up on TCGdex per search. Cards whose
   details are stored here (or in the local catalog) don't count, since they cost no request.
-  When the limit cut some cards off, the end of the results offers to look further. That reruns the search with
-  the next 96 (`deeper=2`, `3`…). The cards already looked up come from the saved replies, so each step sends at
+  When the limit cut some cards off, scrolling to the end of the results checks the next 96 by itself (htmx
+  `revealed`, `deeper=2`, `3`…, at most 4 steps, so 384 cards) and adds what it finds, showing "Checking more
+  cards…" meanwhile. If a step fails, the line becomes a "Try again" link. Her choice, 26 Nov 2026, instead of
+  a Look further button. The cards already looked up come from the saved replies, so each step sends at
   most about 96 new requests. The link is a screen change, so it is in #124's mockups.
 - **E2. One way to start a background thread.** A new `jobs.thread(target, name)` starts a thread that is marked
   as background first, so its requests wait for pages and take turns per site. Every thread in `app/` that can
@@ -109,4 +111,4 @@ with the change applied in the browser, so colours and spacing are the real ones
 | SC2 | `scan.png` | the shorter scanning-off notice |
 | PR2 | `data-sources.png` | each About is two short sentences and a link to the README |
 | P9 | `activity-log.png` | "uvicorn.error" shows as "Web server" |
-| E1 (#123) | `find-look-further.png` | "Older cards weren't checked for this filter yet." and Look further, at the end of a capped search |
+| E1 (#123) | `find-more-on-scroll.png` | at the end of a capped search, scrolling down checks the next 96 by itself, with "Checking more cards…" while it works and "Try again" if it fails |
